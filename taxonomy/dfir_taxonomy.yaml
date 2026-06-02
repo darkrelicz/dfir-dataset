@@ -1,0 +1,361 @@
+version: "1.0"
+description: "DFIR Task Taxonomy for Shepherd fine-tuning dataset"
+date_created: "2026-06-15"
+
+difficulty_distribution:
+  junior: 0.30
+  mid: 0.50
+  senior: 0.20
+
+category_distribution:
+  artifact_analysis: 0.30
+  ttp_identification: 0.25
+  triage_decision: 0.18
+  detection_engineering: 0.14
+  report_generation: 0.13
+
+categories:
+  - id: artifact_analysis
+    name: "Artifact Analysis"
+    description: "Tasks focused on interpreting raw artifacts (memory, disk, registry, etc.)"
+    shepherd_alignment: ["Memory Agent", "Disk/KAPE Agent"]
+    priority: critical
+    sub_categories:
+      - id: process_analysis
+        name: "Process Analysis"
+        description: "Process tree interpretation, suspicious parent-child, DKOM detection"
+        primary_sources: ["MITRE ATT&CK", "Volatility"]
+        example_tasks_prefix: "AA"
+      - id: memory_structure
+        name: "Memory Structure Analysis"
+        description: "VAD analysis, injection detection via memory permissions, hollowed process indicators, malfind interpretation"
+        primary_sources: ["MITRE ATT&CK (T1055.*)"]
+        example_tasks_prefix: "AA"
+      - id: handle_object
+        name: "Handle & Object Analysis"
+        description: "Mutex analysis, named pipe enumeration, suspicious handle patterns"
+        primary_sources: ["MITRE ATT&CK (T1570, T1559)"]
+        example_tasks_prefix: "AA"
+      - id: registry_forensics
+        name: "Registry Forensics"
+        description: "Persistence keys (Run/RunOnce), service creation artifacts, shimcache interpretation"
+        primary_sources: ["MITRE ATT&CK (T1547.*)", "Atomic Red Team"]
+        example_tasks_prefix: "AA"
+      - id: filesystem_artifact
+        name: "Filesystem Artifact Analysis"
+        description: "Prefetch parsing, MFT timeline analysis, ADS detection, $UsnJrnl interpretation"
+        primary_sources: ["MITRE ATT&CK", "CISA"]
+        example_tasks_prefix: "AA"
+      - id: event_log_deep
+        name: "Event Log Deep Analysis"
+        description: "Logon chain reconstruction (4624/4625/4648), service install events (7045), PowerShell logging (4103/4104)"
+        primary_sources: ["Sigma rules", "MITRE ATT&CK"]
+        example_tasks_prefix: "AA"
+    example_tasks:
+      - id: "AA-01"
+        instruction: "Given this Volatility pslist output showing svchost.exe (PID 1284) with PPID 612 (services.exe) and svchost.exe (PID 4012) with PPID 2340 (explorer.exe), which process is suspicious and why?"
+        difficulty: junior
+        mitre_techniques: ["T1036.005"]
+        tools: ["Volatility 3", "pslist"]
+        reasoning_focus: "Parent-child relationship validation"
+        sub_category: "process_analysis"
+      - id: "AA-02"
+        instruction: "Interpret a 4624 logon event — what type is Logon Type 10?"
+        difficulty: junior
+        mitre_techniques: ["T1021.001"]
+        tools: ["Event Viewer"]
+        reasoning_focus: "Logon type meaning"
+        sub_category: "event_log_deep"
+      - id: "AA-03"
+        instruction: "Parse prefetch file metadata — what does the execution count tell you?"
+        difficulty: junior
+        mitre_techniques: ["T1059"]
+        tools: ["PECmd"]
+        reasoning_focus: "Prefetch analysis"
+        sub_category: "filesystem_artifact"
+      - id: "AA-04"
+        instruction: "Given pstree output with an orphan process, determine if DKOM is likely."
+        difficulty: mid
+        mitre_techniques: ["T1014"]
+        tools: ["Volatility 3", "pstree"]
+        reasoning_focus: "DKOM identification"
+        sub_category: "process_analysis"
+      - id: "AA-05"
+        instruction: "Interpret malfind output showing PAGE_EXECUTE_READWRITE in a non-image VAD — is this injection?"
+        difficulty: mid
+        mitre_techniques: ["T1055.001"]
+        tools: ["Volatility 3", "malfind"]
+        reasoning_focus: "Memory permission analysis"
+        sub_category: "memory_structure"
+      - id: "AA-06"
+        instruction: "Analyze mutex names from handles plugin — identify known malware mutexes."
+        difficulty: mid
+        mitre_techniques: ["T1106"]
+        tools: ["Volatility 3", "handles"]
+        reasoning_focus: "Known bad indicators"
+        sub_category: "handle_object"
+      - id: "AA-07"
+        instruction: "Examine Run/RunOnce keys from printkey output — classify persistence mechanism."
+        difficulty: mid
+        mitre_techniques: ["T1547.001"]
+        tools: ["Volatility 3", "printkey"]
+        reasoning_focus: "Persistence identification"
+        sub_category: "registry_forensics"
+      - id: "AA-08"
+        instruction: "Reconstruct logon chain from 4624→4648→4672 sequence — what does this indicate?"
+        difficulty: mid
+        mitre_techniques: ["T1078"]
+        tools: ["Event Viewer"]
+        reasoning_focus: "Behavior sequence interpretation"
+        sub_category: "event_log_deep"
+      - id: "AA-09"
+        instruction: "Correlate malfind + vadinfo + handles across multiple processes to confirm process hollowing."
+        difficulty: senior
+        mitre_techniques: ["T1055.012"]
+        tools: ["Volatility 3", "malfind", "vadinfo", "handles"]
+        reasoning_focus: "Multi-artifact correlation"
+        sub_category: "memory_structure"
+      - id: "AA-10"
+        instruction: "Cross-correlate shimcache entries with $UsnJrnl timestamps to establish execution timeline."
+        difficulty: senior
+        mitre_techniques: ["T1059.001"]
+        tools: ["AppCompatCacheParser", "MFTECmd"]
+        reasoning_focus: "Timeline analysis"
+        sub_category: "filesystem_artifact"
+
+  - id: ttp_identification
+    name: "TTP Identification"
+    description: "Tasks focused on mapping behaviors to MITRE ATT&CK techniques"
+    shepherd_alignment: ["All specialist agents"]
+    priority: critical
+    example_tasks:
+      - id: "TTP-01"
+        instruction: "Identify technique from a scenario describing scheduled task creation."
+        difficulty: junior
+        mitre_techniques: ["T1053.005"]
+        reasoning_focus: "Basic technique mapping"
+      - id: "TTP-02"
+        instruction: "Map 'attacker used PsExec to move to fileserver' to correct technique."
+        difficulty: junior
+        mitre_techniques: ["T1021.002"]
+        reasoning_focus: "Basic technique mapping"
+      - id: "TTP-03"
+        instruction: "Classify a PowerShell download cradle as initial access vs execution."
+        difficulty: junior
+        mitre_techniques: ["T1059.001"]
+        reasoning_focus: "Tactic classification"
+      - id: "TTP-04"
+        instruction: "Given a sequence of observed behaviors, construct partial attack chain with tactic progression."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Attack chain synthesis"
+      - id: "TTP-05"
+        instruction: "Distinguish between T1055.001 (DLL injection) and T1055.012 (process hollowing) from behavioral indicators."
+        difficulty: mid
+        mitre_techniques: ["T1055.001", "T1055.012"]
+        reasoning_focus: "Sub-technique differentiation"
+      - id: "TTP-06"
+        instruction: "Identify defense evasion technique from event log gap (cleared logs)."
+        difficulty: mid
+        mitre_techniques: ["T1070.001"]
+        reasoning_focus: "Negative indicator analysis"
+      - id: "TTP-07"
+        instruction: "Map WMI-based lateral movement to sub-technique and identify prerequisite techniques."
+        difficulty: mid
+        mitre_techniques: ["T1047"]
+        reasoning_focus: "Dependency identification"
+      - id: "TTP-08"
+        instruction: "Identify data staging behavior from filesystem artifact pattern."
+        difficulty: mid
+        mitre_techniques: ["T1074.001"]
+        reasoning_focus: "Behavioral pattern matching"
+      - id: "TTP-09"
+        instruction: "Given a complex intrusion narrative, produce full ATT&CK navigator layer with confidence ratings."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Comprehensive mapping"
+      - id: "TTP-10"
+        instruction: "Analyze novel behavior that doesn't map cleanly to existing ATT&CK — propose closest technique + gaps."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Extrapolation"
+
+  - id: triage_decision
+    name: "Triage Decision-Making"
+    description: "Tasks focused on prioritizing investigation steps and evidence collection"
+    shepherd_alignment: ["Orchestrator", "Memory Agent"]
+    priority: critical
+    example_tasks:
+      - id: "TRI-01"
+        instruction: "Given an AV alert on a workstation, list first 5 triage steps in priority order."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Standard operating procedure"
+      - id: "TRI-02"
+        instruction: "Decide whether to isolate a host based on a single suspicious process."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Risk assessment"
+      - id: "TRI-03"
+        instruction: "Prioritize between examining memory vs disk given a ransomware alert."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Evidence volatility"
+      - id: "TRI-04"
+        instruction: "Given 3 simultaneous alerts across different hosts, prioritize investigation order with justification."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Multi-host triage"
+      - id: "TRI-05"
+        instruction: "Determine which Volatility plugins to run next based on initial pslist anomalies."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["Volatility 3"]
+        reasoning_focus: "Tool selection"
+      - id: "TRI-06"
+        instruction: "Assess whether lateral movement has occurred based on initial indicators and recommend pivots."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Pivot planning"
+      - id: "TRI-07"
+        instruction: "Evaluate evidence sufficiency — do we have enough to confirm compromise or need more collection?"
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Confidence calibration"
+      - id: "TRI-08"
+        instruction: "Given a partially analyzed memory image, identify the critical evidence gaps."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Gap analysis"
+      - id: "TRI-09"
+        instruction: "Design a full triage workflow for a suspected supply chain compromise across 50 endpoints."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Workflow design at scale"
+      - id: "TRI-10"
+        instruction: "Given conflicting indicators (benign explanations vs malicious), reason through ambiguity and recommend path."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Ambiguity resolution"
+
+  - id: detection_engineering
+    name: "Detection Engineering"
+    description: "Tasks focused on creating and interpreting detection rules"
+    shepherd_alignment: ["Future detection capability"]
+    priority: high
+    example_tasks:
+      - id: "DE-01"
+        instruction: "Explain what a given Sigma rule detects in plain English."
+        difficulty: junior
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Rule interpretation"
+      - id: "DE-02"
+        instruction: "Identify the log source required for a specific Sigma rule to fire."
+        difficulty: junior
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Log source mapping"
+      - id: "DE-03"
+        instruction: "Explain the difference between Sigma rule levels (low/medium/high/critical)."
+        difficulty: junior
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Severity classification"
+      - id: "DE-04"
+        instruction: "Write a Sigma rule to detect a specific ATT&CK technique given a description."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Rule authoring"
+      - id: "DE-05"
+        instruction: "Identify detection gaps in an existing Sigma rule (evasion opportunities)."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Gap analysis"
+      - id: "DE-06"
+        instruction: "Translate a Sigma rule's detection logic to a Splunk SPL query."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["Sigma", "Splunk"]
+        reasoning_focus: "Cross-platform translation"
+      - id: "DE-07"
+        instruction: "Explain a YARA rule's detection logic and identify what malware family it targets."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["YARA"]
+        reasoning_focus: "YARA interpretation"
+      - id: "DE-08"
+        instruction: "Given a false positive report, modify a Sigma rule to reduce FP rate without losing coverage."
+        difficulty: mid
+        mitre_techniques: []
+        tools: ["Sigma"]
+        reasoning_focus: "Tuning"
+      - id: "DE-09"
+        instruction: "Design a detection strategy (multiple correlated rules) for a full attack chain."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Detection architecture"
+      - id: "DE-10"
+        instruction: "Evaluate detection coverage across MITRE ATT&CK matrix and identify priority gaps to fill."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Coverage assessment"
+
+  - id: report_generation
+    name: "Incident Report Generation"
+    description: "Tasks focused on producing evidence-cited IR reports and summaries"
+    shepherd_alignment: ["Report Agent", "Reviewer Agent"]
+    priority: high
+    example_tasks:
+      - id: "IR-01"
+        instruction: "Given a list of findings, write a 1-paragraph executive summary."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Summarization"
+      - id: "IR-02"
+        instruction: "Identify which findings in a draft report lack evidence citations."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Citation checking"
+      - id: "IR-03"
+        instruction: "Rewrite an overclaiming statement with appropriate confidence language."
+        difficulty: junior
+        mitre_techniques: []
+        reasoning_focus: "Calibration"
+      - id: "IR-04"
+        instruction: "Given raw Volatility output + event log findings, write a structured investigation summary."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Report writing"
+      - id: "IR-05"
+        instruction: "Add appropriate caveats and confidence levels to a set of forensic conclusions."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Uncertainty quantification"
+      - id: "IR-06"
+        instruction: "Organize findings by ATT&CK tactic phase into a timeline narrative."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Temporal organization"
+      - id: "IR-07"
+        instruction: "Write recommendations section based on identified TTPs and gaps."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Actionable recommendations"
+      - id: "IR-08"
+        instruction: "Review a draft report and identify logical gaps, unsupported conclusions, and missing next steps."
+        difficulty: mid
+        mitre_techniques: []
+        reasoning_focus: "Report review"
+      - id: "IR-09"
+        instruction: "Produce a full IR report from a complex multi-host investigation with evidence appendix."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Full report synthesis"
+      - id: "IR-10"
+        instruction: "Write both technical and executive versions of the same incident, calibrating detail level appropriately."
+        difficulty: senior
+        mitre_techniques: []
+        reasoning_focus: "Audience adaptation"

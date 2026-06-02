@@ -1,0 +1,11 @@
+# configs/packaging.yaml
+split:
+  train: 0.80
+  validation: 0.10
+  test: 0.10
+
+output:
+  format: "jsonl"
+  train_file: "data/packaged/train.jsonl"
+  validation_file: "data/packaged/validation.jsonl"
+  test_file: "data/packaged/test.jsonl"

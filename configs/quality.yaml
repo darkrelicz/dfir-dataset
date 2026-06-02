@@ -1,0 +1,13 @@
+# configs/quality.yaml
+scoring:
+  threshold: 3.5
+  weights:
+    factual_accuracy: 0.25
+    reasoning_quality: 0.25
+    operational_relevance: 0.20
+    specificity: 0.15
+    completeness: 0.15
+
+deduplication:
+  method: "minhash"
+  jaccard_threshold: 0.8

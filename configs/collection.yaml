@@ -1,0 +1,17 @@
+# configs/collection.yaml
+sources:
+  mitre_attack:
+    type: "stix"
+    output_dir: "data/raw/mitre_attack"
+  sigma_rules:
+    type: "git"
+    url: "https://github.com/SigmaHQ/sigma.git"
+    output_dir: "data/raw/sigma_rules"
+  atomic_red_team:
+    type: "git"
+    url: "https://github.com/redcanaryco/atomic-red-team.git"
+    output_dir: "data/raw/atomic_red_team"
+  cisa_advisories:
+    type: "scrape"
+    base_url: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    output_dir: "data/raw/cisa_advisories"
