@@ -41,7 +41,7 @@ For this version, focus on the 5 categories most relevant to Shepherd's current 
 | Handle & Object Analysis | Mutex analysis, named pipe enumeration, suspicious handle patterns | MITRE ATT&CK (T1570, T1559) |
 | Registry Forensics | Persistence keys (Run/RunOnce), service creation artifacts, shimcache interpretation | MITRE ATT&CK (T1547.*), Atomic Red Team |
 | Filesystem Artifact Analysis | Prefetch parsing, MFT timeline analysis, ADS detection, $UsnJrnl interpretation | MITRE ATT&CK, CISA |
-| Event Log Deep Analysis | Logon chain reconstruction (4624/4625/4648), service install events (7045), PowerShell logging (4103/4104) | Sigma rules, MITRE ATT&CK |
+| Event Log Analysis | Logon chain reconstruction (4624/4625/4648), service install events (7045), PowerShell logging (4103/4104) | Sigma rules, MITRE ATT&CK |
 ### Categories Deferred to Successor
 | Category | Why Deferred |
 |---|---|
@@ -670,6 +670,6 @@ When the internship ends, deliver the following to your successor:
 1. **API access:** ✅ Setting up a Google AI account for Gemini 2.5 Flash. Single model, single account. No Claude/GPT-4o accounts needed unless Flash quality is insufficient (fallback plan documented in §3.7).
 2. **Dataset hosting:** ✅ Local-only on DGX Sparks filesystem. No HuggingFace. Data loaded via `datasets.load_dataset("json", data_files=...)` — functionally identical to HF hosting for Unsloth training. Data path documented in `HANDOVER.md` for successor.
 3. **Shepherd MVP 2 status:** ✅ 3 core MVP 2 items remaining (process_plugin_mismatch finding, report provenance citations, parser/finding tests). 5 refactor gate items deferred to v0.2.1. Tag v0.2.0 after the 3 core items are complete.
-4. **Scope:** ✅ 5 task categories confirmed. Artifact Analysis expanded with 6 deep forensics sub-categories (memory structure analysis, handle/object analysis, registry forensics, filesystem artifact analysis, event log deep analysis). Category distribution adjusted: artifact_analysis 30%, ttp_identification 25%, triage_decision 18%, detection_engineering 14%, report_generation 13%.
+4. **Scope:** ✅ 5 task categories confirmed. Artifact Analysis expanded with 6 deep forensics sub-categories (memory structure analysis, handle/object analysis, registry forensics, filesystem artifact analysis, event log analysis). Category distribution adjusted: artifact_analysis 30%, ttp_identification 25%, triage_decision 18%, detection_engineering 14%, report_generation 13%.
 5. **DGX Sparks access:** ✅ Dedicated. No scheduling conflicts. Can run 3-4 LoRA rank experiments (16, 32, 64, 128) during weeks 9-10.
 6. **Synthesis approach:** ✅ Full LLM generation using Gemini 2.5 Flash for all pairs (~$9 total). No hybrid/template approach — research (LIMA, DEITA, Evol-Instruct) shows diversity from LLM generation outperforms template-based data for SFT, and the cost difference is negligible at Flash pricing.

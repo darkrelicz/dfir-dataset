@@ -15,3 +15,13 @@ sources:
     type: "scrape"
     base_url: "https://www.cisa.gov/news-events/cybersecurity-advisories"
     output_dir: "data/raw/cisa_advisories"
+  # yara_rules: 
+  #   type: "git"
+  #   url: "https://github.com/Yara-Rules/rules" # autocompleted, to check 
+  #   output_dir: "data/raw/yara_rules"
+  # splunk_security_content: 
+  #   type: "git"
+  #   url: "https://github.com/splunk/security_content.git" # autocompleted, to check
+  #   output_dir: "data/raw/splunk_security_content"
+  # dfir playbooks (open source, SANS, etc.)
+  # OSSEM (https://ossemproject.com/dm/intro.html)

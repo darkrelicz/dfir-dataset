@@ -1,6 +1,6 @@
 version: "1.0"
 description: "DFIR Task Taxonomy for Shepherd fine-tuning dataset"
-date_created: "2026-06-15"
+date_created: "2026-06-02"
 
 difficulty_distribution:
   junior: 0.30
@@ -25,32 +25,26 @@ categories:
         name: "Process Analysis"
         description: "Process tree interpretation, suspicious parent-child, DKOM detection"
         primary_sources: ["MITRE ATT&CK", "Volatility"]
-        example_tasks_prefix: "AA"
       - id: memory_structure
         name: "Memory Structure Analysis"
         description: "VAD analysis, injection detection via memory permissions, hollowed process indicators, malfind interpretation"
-        primary_sources: ["MITRE ATT&CK (T1055.*)"]
-        example_tasks_prefix: "AA"
+        primary_sources: ["MITRE ATT&CK (T1055.*)", "Volatility"]
       - id: handle_object
         name: "Handle & Object Analysis"
         description: "Mutex analysis, named pipe enumeration, suspicious handle patterns"
         primary_sources: ["MITRE ATT&CK (T1570, T1559)"]
-        example_tasks_prefix: "AA"
       - id: registry_forensics
         name: "Registry Forensics"
-        description: "Persistence keys (Run/RunOnce), service creation artifacts, shimcache interpretation"
+        description: "Persistence keys (Run/RunOnce), service creation artifacts, shimcache and amcache interpretation"
         primary_sources: ["MITRE ATT&CK (T1547.*)", "Atomic Red Team"]
-        example_tasks_prefix: "AA"
       - id: filesystem_artifact
         name: "Filesystem Artifact Analysis"
         description: "Prefetch parsing, MFT timeline analysis, ADS detection, $UsnJrnl interpretation"
         primary_sources: ["MITRE ATT&CK", "CISA"]
-        example_tasks_prefix: "AA"
-      - id: event_log_deep
-        name: "Event Log Deep Analysis"
+      - id: event_log
+        name: "Event Log Analysis"
         description: "Logon chain reconstruction (4624/4625/4648), service install events (7045), PowerShell logging (4103/4104)"
         primary_sources: ["Sigma rules", "MITRE ATT&CK"]
-        example_tasks_prefix: "AA"
     example_tasks:
       - id: "AA-01"
         instruction: "Given this Volatility pslist output showing svchost.exe (PID 1284) with PPID 612 (services.exe) and svchost.exe (PID 4012) with PPID 2340 (explorer.exe), which process is suspicious and why?"
@@ -60,14 +54,14 @@ categories:
         reasoning_focus: "Parent-child relationship validation"
         sub_category: "process_analysis"
       - id: "AA-02"
-        instruction: "Interpret a 4624 logon event — what type is Logon Type 10?"
+        instruction: "Interpret a 4624 logon event. What type is Logon Type 10?"
         difficulty: junior
         mitre_techniques: ["T1021.001"]
         tools: ["Event Viewer"]
         reasoning_focus: "Logon type meaning"
-        sub_category: "event_log_deep"
+        sub_category: "event_log"
       - id: "AA-03"
-        instruction: "Parse prefetch file metadata — what does the execution count tell you?"
+        instruction: "Parse prefetch file metadata. What does the execution count tell you?"
         difficulty: junior
         mitre_techniques: ["T1059"]
         tools: ["PECmd"]
@@ -81,33 +75,33 @@ categories:
         reasoning_focus: "DKOM identification"
         sub_category: "process_analysis"
       - id: "AA-05"
-        instruction: "Interpret malfind output showing PAGE_EXECUTE_READWRITE in a non-image VAD — is this injection?"
+        instruction: "Interpret malfind output showing PAGE_EXECUTE_READWRITE in a non-image VAD. Is this injection?"
         difficulty: mid
         mitre_techniques: ["T1055.001"]
         tools: ["Volatility 3", "malfind"]
         reasoning_focus: "Memory permission analysis"
         sub_category: "memory_structure"
       - id: "AA-06"
-        instruction: "Analyze mutex names from handles plugin — identify known malware mutexes."
+        instruction: "Analyze mutex names from handles plugin. Identify known malware mutexes."
         difficulty: mid
         mitre_techniques: ["T1106"]
         tools: ["Volatility 3", "handles"]
         reasoning_focus: "Known bad indicators"
         sub_category: "handle_object"
       - id: "AA-07"
-        instruction: "Examine Run/RunOnce keys from printkey output — classify persistence mechanism."
+        instruction: "Examine Run/RunOnce keys from printkey output. Classify persistence mechanism."
         difficulty: mid
         mitre_techniques: ["T1547.001"]
         tools: ["Volatility 3", "printkey"]
         reasoning_focus: "Persistence identification"
         sub_category: "registry_forensics"
       - id: "AA-08"
-        instruction: "Reconstruct logon chain from 4624→4648→4672 sequence — what does this indicate?"
+        instruction: "Reconstruct logon chain from 4624 -> 4648 -> 4672 sequence. What does this indicate?"
         difficulty: mid
         mitre_techniques: ["T1078"]
         tools: ["Event Viewer"]
         reasoning_focus: "Behavior sequence interpretation"
-        sub_category: "event_log_deep"
+        sub_category: "event_log"
       - id: "AA-09"
         instruction: "Correlate malfind + vadinfo + handles across multiple processes to confirm process hollowing."
         difficulty: senior
@@ -175,7 +169,7 @@ categories:
         mitre_techniques: []
         reasoning_focus: "Comprehensive mapping"
       - id: "TTP-10"
-        instruction: "Analyze novel behavior that doesn't map cleanly to existing ATT&CK — propose closest technique + gaps."
+        instruction: "Analyze novel behavior that doesn't map cleanly to existing ATT&CK. Propose closest technique + gaps."
         difficulty: senior
         mitre_techniques: []
         reasoning_focus: "Extrapolation"
@@ -218,7 +212,7 @@ categories:
         mitre_techniques: []
         reasoning_focus: "Pivot planning"
       - id: "TRI-07"
-        instruction: "Evaluate evidence sufficiency — do we have enough to confirm compromise or need more collection?"
+        instruction: "Evaluate evidence sufficiency. Do we have enough to confirm compromise or need more collection?"
         difficulty: mid
         mitre_techniques: []
         reasoning_focus: "Confidence calibration"

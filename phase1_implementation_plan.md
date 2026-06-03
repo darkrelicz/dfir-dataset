@@ -158,13 +158,13 @@ Below are the 10 example tasks per category. These are designed to span the diff
 | # | Difficulty | Sub-Category | Task Summary | Key ATT&CK |
 |---|---|---|---|---|
 | AA-01 | Junior | Process Analysis | Identify suspicious parent-child relationship in pslist output | T1036.005 |
-| AA-02 | Junior | Event Log Deep Analysis | Interpret a 4624 logon event — what type is Logon Type 10? | T1021.001 |
+| AA-02 | Junior | Event Log Analysis | Interpret a 4624 logon event — what type is Logon Type 10? | T1021.001 |
 | AA-03 | Junior | Filesystem Artifact | Parse prefetch file metadata — what does the execution count tell you? | T1059 |
 | AA-04 | Mid | Process Analysis | Given pstree output with orphan process, determine if DKOM is likely | T1014 |
 | AA-05 | Mid | Memory Structure | Interpret malfind output showing `PAGE_EXECUTE_READWRITE` in a non-image VAD — is this injection? | T1055.001 |
 | AA-06 | Mid | Handle & Object | Analyze mutex names from handles plugin — identify known malware mutexes | T1106 |
 | AA-07 | Mid | Registry Forensics | Examine Run/RunOnce keys from printkey output — classify persistence mechanism | T1547.001 |
-| AA-08 | Mid | Event Log Deep Analysis | Reconstruct logon chain from 4624→4648→4672 sequence — what does this indicate? | T1078 |
+| AA-08 | Mid | Event Log Analysis | Reconstruct logon chain from 4624→4648→4672 sequence — what does this indicate? | T1078 |
 | AA-09 | Senior | Memory Structure + Process | Correlate malfind + vadinfo + handles across multiple processes to confirm process hollowing | T1055.012 |
 | AA-10 | Senior | Filesystem + Registry | Cross-correlate shimcache entries with $UsnJrnl timestamps to establish execution timeline | T1059.001 |
 
