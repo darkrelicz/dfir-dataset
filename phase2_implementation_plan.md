@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build four independent, re-runnable collectors that pull structured DFIR source data from MITRE ATT&CK, SigmaHQ, Atomic Red Team, and CISA Advisories into a standardized JSONL format under `data/raw/`. This is **Week 3 Day 4 – Week 5** per the master plan (~8 working days).
+Build five independent, re-runnable collectors that pull structured DFIR source data from MITRE ATT&CK, SigmaHQ, Atomic Red Team, CISA Advisories, and the CISA KEV Catalog into a standardized JSONL format under `data/raw/`. This is **Week 3 Day 4 – Week 5** per the master plan (~8 working days).
 
 ## Background
 
@@ -11,7 +11,7 @@ Phase 1 delivered:
 - Taxonomy YAML (`taxonomy/dfir_taxonomy.yaml`) with 5 categories, 50 example tasks
 - Validation scripts and tests
 
-Phase 2 builds on this foundation by populating `collectors/` with working code that produces ~5,000+ raw documents.
+Phase 2 builds on this foundation by populating `collectors/` with working code that produces ~6,000+ raw documents.
 
 ---
 
@@ -20,9 +20,10 @@ Phase 2 builds on this foundation by populating `collectors/` with working code 
 > Resolved 2026-06-03.
 
 1. **CISA collector strategy:** ✅ Two-pass RSS + BeautifulSoup HTML scrape approved. Fetch full advisory content, not just RSS summaries.
-2. **Git clone caching:** ✅ `data/raw/.repos/` is the accepted location for shallow-cloned SigmaHQ and Atomic Red Team repos.
-3. **MITRE ATT&CK scope:** ✅ Enterprise matrix only for Phase 2. ICS and Mobile matrices deferred to successor (noted in `dfir_dataset_plan.md §2.6 Collector Implementation Notes`).
-4. **CISA rate limiting:** 1-second delay between requests (configured in `collection.yaml`).
+2. **CISA KEV catalog:** ✅ Added as a fifth collector. Single JSON download, grouped by vendor to produce documents with sufficient content for synthesis.
+3. **Git clone caching:** ✅ `data/raw/.repos/` is the accepted location for shallow-cloned SigmaHQ and Atomic Red Team repos.
+4. **MITRE ATT&CK scope:** ✅ Enterprise matrix only for Phase 2. ICS and Mobile matrices deferred to successor (noted in `dfir_dataset_plan.md §2.6 Collector Implementation Notes`).
+5. **CISA rate limiting:** 1-second delay between requests (configured in `collection.yaml`).
 
 ---
 
@@ -89,6 +90,13 @@ sources:
     request_delay_seconds: 1.0
     max_advisories: null            # null = collect all available
     user_agent: "dfir-dataset-collector/0.1 (research)"
+
+  cisa_kev:
+    type: "json"
+    json_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    output_dir: "data/raw/cisa_kev"
+    group_by: "vendorProject"       # Group entries by vendor for richer documents
+    min_group_size: 1               # Include even single-entry vendors
 
 settings:
   manifest_dir: "data/raw"
@@ -182,6 +190,7 @@ from collectors.mitre_attack import MitreAttackCollector
 from collectors.sigma_rules import SigmaRulesCollector
 from collectors.atomic_red_team import AtomicRedTeamCollector
 from collectors.cisa_advisories import CISAAdvisoryCollector
+from collectors.cisa_kev import CISAKEVCollector
 ```
 
 ---
@@ -274,11 +283,34 @@ Key implementation details:
 
 ---
 
+#### [NEW] [collectors/cisa_kev.py](file:///home/hunta/dfir-dataset/collectors/cisa_kev.py)
+
+**Strategy:** Download the KEV JSON catalog (single file) → group entries by `vendorProject` → emit one `RawDocument` per vendor group. Grouping by vendor produces documents with enough content for meaningful synthesis, since individual KEV entries are thin (~50-100 words each).
+
+Key implementation details:
+
+| Aspect | Approach |
+|---|---|
+| JSON download | `requests.get()` → parse directly, no caching needed (small file, ~1MB) |
+| Grouping | Group `vulnerabilities` array by `vendorProject` field |
+| Doc ID | `kev-{vendor_slug}` (e.g., `kev-microsoft`, `kev-apache`) |
+| `content_type` | `"kev_vendor_group"` |
+| `content_markdown` | Vendor name + table of CVEs with product, description, dates, ransomware flag + remediation actions |
+| `metadata` dict | `vendor`, `cve_count`, `cves[]`, `products[]`, `ransomware_use_count`, `date_range` (earliest/latest `dateAdded`) |
+| License | Public domain ✅ (US government work) |
+
+> [!NOTE]
+> Individual KEV entries are also available as flat records if a future phase needs per-CVE granularity. The vendor-grouped approach is chosen for Phase 2 because it produces documents rich enough for triage and detection engineering synthesis pairs.
+
+**Expected yield:** ~200-300 documents (vendor groups from ~1,200+ KEV entries)
+
+---
+
 ### Workstream 4 — Orchestration & Entry Point
 
 #### [NEW] [scripts/collect_all.py](file:///home/hunta/dfir-dataset/scripts/collect_all.py)
 
-Entry point that runs all 4 collectors sequentially and produces a combined manifest:
+Entry point that runs all 5 collectors sequentially and produces a combined manifest:
 
 ```python
 def main():
@@ -289,6 +321,7 @@ def main():
         SigmaRulesCollector(config["sources"]["sigma_rules"]),
         AtomicRedTeamCollector(config["sources"]["atomic_red_team"]),
         CISAAdvisoryCollector(config["sources"]["cisa_advisories"]),
+        CISAKEVCollector(config["sources"]["cisa_kev"]),
     ]
     results = []
     for collector in collectors:
@@ -322,6 +355,8 @@ Unit tests (no network required — use fixtures with sample YAML/JSON):
 | `test_sigma_attack_tag_extraction` | `attack.t1059.001` → `T1059.001` normalization |
 | `test_atomic_test_parsing` | Parse a sample ART YAML → one doc per atomic test |
 | `test_cisa_html_extraction` | Parse a sample advisory HTML → correct CVE/IOC extraction |
+| `test_kev_vendor_grouping` | Parse sample KEV JSON → correct vendor grouping and CVE counts |
+| `test_kev_ransomware_flag` | Ransomware use count correctly tallied per vendor group |
 | `test_base_collector_manifest` | Manifest contains required fields |
 | `test_write_documents_creates_jsonl` | Documents written as valid JSONL |
 
@@ -332,6 +367,7 @@ Sample data files for offline testing:
 - `sample_sigma_rule.yml` — one Sigma rule
 - `sample_atomic_test.yaml` — one ART technique file with 2 tests
 - `sample_cisa_advisory.html` — one CISA advisory page
+- `sample_kev_catalog.json` — subset of KEV catalog (10 entries across 3 vendors)
 
 #### [MODIFY] [README.md](file:///home/hunta/dfir-dataset/README.md)
 
@@ -369,22 +405,25 @@ graph TD
     B --> C2[WS3b: SigmaHQ Collector]
     B --> C3[WS3c: Atomic Red Team Collector]
     B --> C4[WS3d: CISA Advisory Collector]
+    B --> C5[WS3e: CISA KEV Collector]
     C1 --> D[WS4: collect_all.py]
     C2 --> D
     C3 --> D
     C4 --> D
+    C5 --> D
     D --> E[WS5: Tests + Documentation]
 ```
 
 **Recommended coding order** (based on complexity — easiest first to validate patterns early):
 1. Dependencies + Config (WS1) — 30 min
 2. Schemas + BaseCollector (WS2) — 1-2 hrs
-3. Sigma collector (WS3b) — simplest, validates git+YAML pattern — 2-3 hrs
-4. Atomic Red Team collector (WS3c) — same git+YAML pattern — 2-3 hrs
-5. MITRE ATT&CK collector (WS3a) — STIX API is well-documented but has more edge cases — 3-4 hrs
-6. CISA collector (WS3d) — most fragile (HTML scraping) so do last — 3-4 hrs
-7. `collect_all.py` orchestrator (WS4) — 1-2 hrs
-8. Tests + fixtures + docs (WS5) — 2-3 hrs
+3. CISA KEV collector (WS3e) — trivial single JSON download, validates BaseCollector pattern immediately — 30 min
+4. Sigma collector (WS3b) — simplest git+YAML pattern — 2-3 hrs
+5. Atomic Red Team collector (WS3c) — same git+YAML pattern — 2-3 hrs
+6. MITRE ATT&CK collector (WS3a) — STIX API is well-documented but has more edge cases — 3-4 hrs
+7. CISA Advisory collector (WS3d) — most fragile (HTML scraping) so do last — 3-4 hrs
+8. `collect_all.py` orchestrator (WS4) — 1-2 hrs
+9. Tests + fixtures + docs (WS5) — 2-3 hrs
 
 ---
 
@@ -400,7 +439,7 @@ pytest tests/test_collectors.py -v
 python -c "
 import jsonlines
 from collectors.schemas import RawDocument
-for source in ['mitre_attack', 'sigma_rules', 'atomic_red_team', 'cisa_advisories']:
+for source in ['mitre_attack', 'sigma_rules', 'atomic_red_team', 'cisa_advisories', 'cisa_kev']:
     with jsonlines.open(f'data/raw/{source}/{source}.jsonl') as reader:
         for doc in reader:
             RawDocument(**doc)  # Raises on invalid
@@ -423,9 +462,10 @@ python scripts/collect_all.py --source mitre_attack   # Expect ~800 docs
 python scripts/collect_all.py --source sigma_rules     # Expect ~3,000+ docs
 python scripts/collect_all.py --source atomic_red_team # Expect ~800+ docs
 python scripts/collect_all.py --source cisa_advisories # Expect ~500+ docs
+python scripts/collect_all.py --source cisa_kev        # Expect ~200-300 docs
 
 # Full run
-python scripts/collect_all.py                          # Expect ~5,000+ total
+python scripts/collect_all.py                          # Expect ~6,000+ total
 ```
 
 ### Spot-Check Validation
@@ -433,7 +473,8 @@ python scripts/collect_all.py                          # Expect ~5,000+ total
 - [ ] Open 5 random MITRE docs — verify `metadata.tactic`, `metadata.procedures` are populated
 - [ ] Open 5 random Sigma docs — verify `metadata.attack_tags` extracted correctly
 - [ ] Open 5 random ART docs — verify attack commands present in `content_markdown`
-- [ ] Open 5 random CISA docs — verify CVEs and IOCs extracted
-- [ ] Verify `data/raw/collection_manifest.json` has entries for all 4 sources
+- [ ] Open 5 random CISA advisory docs — verify CVEs and IOCs extracted
+- [ ] Open 5 random CISA KEV docs — verify `metadata.cves` populated and `ransomware_use_count` tallied
+- [ ] Verify `data/raw/collection_manifest.json` has entries for all 5 sources
 - [ ] Verify no docs have empty `content_markdown`
 - [ ] Verify `word_count` > 0 for all docs

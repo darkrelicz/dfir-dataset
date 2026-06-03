@@ -69,7 +69,8 @@ The collection pipeline targets only sources that are:
 | 2 | **SigmaHQ Rules** | ~3,000+ detection rules | YAML rules with metadata, references, tags | `git clone` + YAML parsing | LGPL 2.1 ✅ | 1-2 days |
 | 3 | **Atomic Red Team** | ~800+ test procedures | TTP test procedures with commands, expected output | `git clone` + YAML parsing | MIT ✅ | 1-2 days |
 | 4 | **CISA Advisories** | ~500+ recent advisories | Government threat advisories, IOCs, mitigations | Web scrape (RSS/HTML) | Public domain ✅ | 2-3 days |
-**Estimated raw document count: ~5,000+**
+| 5 | **CISA KEV Catalog** | ~1,200+ exploited vulnerabilities | CVE records with vendor, product, ransomware flag, remediation deadlines | JSON download | Public domain ✅ | 0.5 day |
+**Estimated raw document count: ~6,000+**
 #### Supplementary Sources (Opportunistic — add if time permits)
 | Source | Why Supplementary | Effort |
 |---|---|---|
@@ -78,7 +79,7 @@ The collection pipeline targets only sources that are:
 | **StackExchange InfoSec** | Real Q&A pairs; CC BY-SA 4.0 | Medium (API + filtering) |
 | **OSSEM** (Open Source Security Events Metadata) | Event schema documentation | Low (GitHub markdown) |
 > [!IMPORTANT]
-> **Do not collect from:** ScienceDirect (restrictive Elsevier ToS), paywalled sources, or sources requiring authentication. Stick to the 4 primary sources. They provide more than enough volume for 15-20K instruction pairs.
+> **Do not collect from:** ScienceDirect (restrictive Elsevier ToS), paywalled sources, or sources requiring authentication. Stick to the 5 primary sources. They provide more than enough volume for 15-20K instruction pairs.
 ### 2.3 Pipeline Architecture
 The collection pipeline is built as a set of independent, re-runnable Python scripts under a unified project structure.
 ```
@@ -93,7 +94,8 @@ dfir-dataset/
 │   ├── mitre_attack.py             # MITRE ATT&CK STIX collector
 │   ├── sigma_rules.py              # SigmaHQ YAML collector
 │   ├── atomic_red_team.py          # Atomic Red Team YAML collector
-│   └── cisa_advisories.py          # CISA advisory scraper
+│   ├── cisa_advisories.py          # CISA advisory scraper
+│   └── cisa_kev.py                 # CISA KEV catalog collector
 │
 ├── synthesizers/                   # Phase 3: Instruction pair generation
 │   ├── __init__.py
@@ -143,7 +145,8 @@ dfir-dataset/
 │   │   ├── mitre_attack/
 │   │   ├── sigma_rules/
 │   │   ├── atomic_red_team/
-│   │   └── cisa_advisories/
+│   │   ├── cisa_advisories/
+│   │   └── cisa_kev/
 │   ├── synthesized/                # Generated instruction pairs
 │   ├── filtered/                   # Quality-filtered pairs
 │   ├── packaged/                   # Final train/val/test splits
@@ -287,15 +290,31 @@ Key fields to extract:
 - IOCs (IPs, domains, hashes, file paths)
 - Recommended mitigations
 - MITRE ATT&CK mappings (when provided)
+#### CISA KEV Catalog Collector
+```python
+# Downloads CISA Known Exploited Vulnerabilities JSON catalog
+# Collects: CVE records with vendor, product, remediation, ransomware flag
+# Output: one document per vendor group (entries grouped by vendorProject)
+# Enrichment: ransomware campaign flag, remediation deadlines, product lists
+# Expected yield: ~200-300 documents (from ~1,200+ KEV entries)
+```
+Key fields to extract per vendor group:
+- Vendor name, product list
+- CVE IDs, descriptions
+- Dates added to catalog
+- Known ransomware campaign use flag
+- Required remediation actions
+- Due dates (federal agency deadlines)
 ### Phase 2 Deliverables
 - [ ] `BaseCollector` ABC and common utilities
 - [ ] MITRE ATT&CK collector — working and tested
 - [ ] SigmaHQ collector — working and tested
 - [ ] Atomic Red Team collector — working and tested
 - [ ] CISA Advisories collector — working and tested
+- [ ] CISA KEV catalog collector — working and tested
 - [ ] `collect_all.py` script that runs all collectors and produces a manifest
-- [ ] Validation: all 4 collectors produce valid JSONL with complete metadata
-- [ ] Raw corpus: ~5,000+ documents in `data/raw/`
+- [ ] Validation: all 5 collectors produce valid JSONL with complete metadata
+- [ ] Raw corpus: ~6,000+ documents in `data/raw/`
 ---
 ## Phase 3: Instruction Pair Synthesis (Week 5 Day 3 – Week 7)
 ### 3.1 Strategy: Single-Pass Teacher Synthesis with Category-Specific Prompts
