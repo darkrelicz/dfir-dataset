@@ -225,9 +225,11 @@ class BaseCollector(ABC):
 ```python
 # Uses mitreattack-python to pull from STIX
 # Collects: techniques, sub-techniques, procedures, mitigations, data sources
+# Scope: Enterprise ATT&CK matrix only (Phase 2)
+# Future: ICS ATT&CK and Mobile ATT&CK matrices (deferred to successor)
 # Output: one document per technique/sub-technique
 # Enrichment: link procedures to technique, include detection guidance
-# Expected yield: ~800 documents
+# Expected yield: ~800 documents (Enterprise only)
 ```
 Key fields to extract per technique:
 - Technique ID, name, description
@@ -635,11 +637,12 @@ When the internship ends, deliver the following to your successor:
 | Priority | Task | Why |
 |---|---|---|
 | 1 | Add Tier 2 sources (public threat intel blogs: Mandiant, CrowdStrike, Unit 42) | Increases dataset diversity and operational realism |
-| 2 | Expand to 10 task categories (add malware analysis, memory forensics, etc.) | Covers the full Shepherd specialist agent roster |
-| 3 | Implement two-pass teacher-verifier synthesis | Improves quality ceiling |
-| 4 | Scale to 50K+ pairs | Better model performance with more data |
-| 5 | Implement CRAFT/RAFT after Shepherd has a RAG layer (MVP 4) | Trains model to work with retrieved documents |
-| 6 | Build continuous evaluation pipeline | Measures improvement across dataset iterations |
+| 2 | Expand MITRE ATT&CK collection to ICS and Mobile matrices | ICS covers OT/SCADA environments; Mobile covers endpoint threats on managed devices. Both use the same `mitreattack-python` STIX API — only the STIX JSON URL changes |
+| 3 | Expand to 10 task categories (add malware analysis, memory forensics, etc.) | Covers the full Shepherd specialist agent roster |
+| 4 | Implement two-pass teacher-verifier synthesis | Improves quality ceiling |
+| 5 | Scale to 50K+ pairs | Better model performance with more data |
+| 6 | Implement CRAFT/RAFT after Shepherd has a RAG layer (MVP 4) | Trains model to work with retrieved documents |
+| 7 | Build continuous evaluation pipeline | Measures improvement across dataset iterations |
 ---
 ## Risk Register
 | Risk | Impact | Likelihood | Mitigation |
