@@ -1,6 +1,7 @@
 version: "1.0"
 description: "DFIR Task Taxonomy for Shepherd fine-tuning dataset"
 date_created: "2026-06-02"
+date_updated: "2026-06-03"
 
 difficulty_distribution:
   junior: 0.30

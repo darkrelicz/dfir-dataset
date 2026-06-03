@@ -1,10 +1,12 @@
-import sys
-from pathlib import Path
-from typing import Literal, Dict, List, Optional
-import yaml
-from pydantic import BaseModel, ValidationError, field_validator
 import re
+import sys
+import yaml
+
+from pathlib import Path
+from pydantic import BaseModel, ValidationError, field_validator
 from rich.console import Console
+from typing import Literal, Dict, List, Optional
+
 
 console = Console()
 
@@ -19,18 +21,17 @@ class ExampleTask(BaseModel):
 
     @field_validator("mitre_techniques")
     @classmethod
-    def validate_mitre_id(cls, v: List[str]) -> List[str]:
-        for tech in v:
-            if not re.match(r"^T\d{4}(\.\d{3})?$", tech):
-                raise ValueError(f"Invalid MITRE ATT&CK technique ID format: {tech}")
-        return v
+    def validate_mitre_id(cls, techniques: List[str]) -> List[str]:
+        for technique in techniques:
+            if not re.match(r"^T\d{4}(\.\d{3})?$", technique):
+                raise ValueError(f"Invalid MITRE ATT&CK technique ID format: {technique}")
+        return techniques
 
 class SubCategory(BaseModel):
     id: str
     name: str
     description: str
     primary_sources: List[str] = []
-    example_tasks_prefix: str
 
 class Category(BaseModel):
     id: str
@@ -45,6 +46,7 @@ class Taxonomy(BaseModel):
     version: str
     description: str
     date_created: str
+    date_updated: str
     difficulty_distribution: Dict[str, float]
     category_distribution: Dict[str, float]
     categories: List[Category]

@@ -2,11 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
-# Local import assuming run from project root or taxonomy dir
-try:
-    from validate_taxonomy import load_taxonomy
-except ImportError:
-    from taxonomy.validate_taxonomy import load_taxonomy
+from validate_taxonomy import load_taxonomy
 
 console = Console()
 
@@ -52,9 +48,6 @@ TECHNIQUE_TACTIC_MAP = {
 def main():
     try:
         taxonomy_file = Path(__file__).parent / "dfir_taxonomy.yaml"
-        if not taxonomy_file.exists():
-            # Try running from project root
-            taxonomy_file = Path("taxonomy/dfir_taxonomy.yaml")
     except NameError:
         taxonomy_file = Path("taxonomy/dfir_taxonomy.yaml")
 
