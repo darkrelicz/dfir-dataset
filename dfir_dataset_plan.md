@@ -362,14 +362,19 @@ Generate {n} instruction-response pairs as a JSON array:
 #### Category-Specific Instructions (Summaries)
 **Artifact Analysis (incl. Deep Forensics):**
 Focus on interpreting forensic tool output across all depth levels. Generate questions about what specific artifacts mean, what's normal vs suspicious, how to correlate findings across multiple plugins. Include Volatility (pslist, pstree, cmdline, malfind, vadinfo, handles, hivelist, printkey, shimcachemem), EVTX (logon chains, service installs, PowerShell logging), registry (persistence keys, service creation), and filesystem artifacts (prefetch, MFT, ADS, $UsnJrnl). Vary depth from surface-level field interpretation (junior) to multi-artifact correlation and injection detection reasoning (senior).
+
 **TTP Identification:**
 Focus on mapping observed behaviors to ATT&CK techniques. Generate questions that present a scenario and ask the model to identify the technique, explain why, and suggest related techniques that might also be present.
+
 **Triage Decision-Making:**
 Focus on investigation prioritization. Present a set of initial indicators and ask the model to rank next steps, justify priorities, identify evidence gaps, and recommend what artifact to examine next.
+
 **Detection Engineering:**
 Focus on detection rule creation and interpretation. Generate questions about Sigma rule logic, ask for rule translations between query languages, explain detection coverage and gaps.
+
 **Incident Report Generation:**
 Focus on producing analyst-facing summaries. Present raw findings and ask the model to write a professional investigation summary with evidence citations, confidence levels, caveats, and recommended next steps.
+
 ### 3.4 Synthesis Pipeline Configuration
 ```yaml
 # configs/synthesis.yaml
@@ -647,8 +652,6 @@ When the internship ends, deliver the following to your successor:
 | Time overrun on Phase 2 (collection) | Medium | Low | Primary sources are structured and API-accessible — collection is the easiest phase |
 | Time overrun on Phase 3 (synthesis) | Medium | Low | Gemini Flash eliminates API cost/speed concerns. Full run completes in hours, not days. Re-runs are cheap |
 | Deep forensics sub-categories lack source coverage | Low | Low | MITRE ATT&CK T1055.* and Sigma rules cover memory injection well. Gap may exist for advanced registry/MFT — supplement with targeted source collection if needed |
-| ~~API rate limits delay synthesis~~ | ~~Medium~~ | ~~Low~~ | ~~Eliminated — Gemini Flash has generous rate limits~~ |
-| ~~DGX scheduling conflicts~~ | ~~Medium~~ | ~~Low~~ | ~~Eliminated — dedicated DGX access confirmed~~ |
 ---
 ## Week-by-Week Schedule
 | Week | Dates | Phase | Key Activities | Gate |
