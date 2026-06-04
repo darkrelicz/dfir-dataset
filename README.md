@@ -6,11 +6,6 @@ This repository contains the data collection, synthesis, and quality assurance p
 
 The goal is to build a **re-runnable dataset factory** that produces high-quality instruction-response pairs covering key digital forensics and incident response (DFIR) tasks. The resulting dataset will be used to fine-tune a model (e.g., GLM-4.7-Flash) for Shepherd's specialist agents.
 
-## Current Status
-
-We are currently in **Phase 1: Define the DFIR Task Taxonomy**.
-The task taxonomy defines what the fine-tuned model should be able to do. It maps directly to Shepherd's specialist agent architecture.
-
 See `docs/ARCHITECTURE.md` for design decisions.
 
 ## Quick Start

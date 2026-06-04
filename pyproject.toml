@@ -3,11 +3,18 @@ name = "dfir-dataset"
 version = "0.1.0"
 description = "DFIR Task Taxonomy and Dataset for Shepherd fine-tuning"
 requires-python = ">=3.11"
+readme = "README.md" 
 dependencies = [
     "pyyaml",
     "pydantic>=2.0",
     "jsonlines",
-    "rich"
+    "rich",
+    "mitreattack-python>=1.0",
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "lxml",
+    "gitpython>=3.1",
+    "tqdm>=4.60"
 ]
 
 [project.scripts]
@@ -17,13 +24,14 @@ dfir-collect = "scripts.collect_all:main"
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["collectors*", "scripts*", "taxonomy*", "quality*", "evaluation*", "synthesizers*"]
+
 [tool.pytest.ini_options]
 pythonpath = "."
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.mypy]
 strict = true

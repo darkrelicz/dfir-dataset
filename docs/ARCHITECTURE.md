@@ -2,7 +2,15 @@
 
 This document tracks major design decisions for the DFIR dataset pipeline.
 
-## Phase 1: Taxonomy Definition
+### Phase 1: Taxonomy Definition
+
+- **Raw JSONL Base Schema**: Uses `pydantic` schemas for standardizing ingested DFIR formats into a unified `RawDocument`.
+
+### Phase 2: Source Collection Architecture Decisions
+- **`yaml.safe_load` over `pySigma`**: We use raw YAML parsing instead of pySigma because it reduces dependency weight and we only need to extract metadata, not translate rules.
+- **Atomic Red Team Granularity**: We emit one document per *atomic test*, not per technique file. This finer granularity helps with downstream QA synthesis.
+- **RSS + HTML Scrape for CISA Advisories**: CISA does not provide an official API for full advisories, and RSS only contains summaries. We scrape the HTML via `BeautifulSoup` to access the full advisory contents, IOCs, and mitigations.
+- **Git Caching Strategy**: SigmaHQ and Atomic Red Team are cloned locally via shallow clones to `data/raw/.repos/` for reproducibility and faster re-runs.
 
 ### Why YAML for the Taxonomy?
 

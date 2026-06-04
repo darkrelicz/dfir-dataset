@@ -27,3 +27,5 @@ MANIFEST
 .pytest_cache/
 data/
 *.jsonl
+data/raw/.repos/
+data/raw/.cache/
