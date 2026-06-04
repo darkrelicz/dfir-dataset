@@ -244,7 +244,7 @@ The dataset is structured around **5 task categories** — these define what the
 |---|---|---|---|
 | 1 | **Artifact Analysis** | Interpret forensic tool output, identify anomalies, explain what artifacts mean. Covers surface-level triage through deep memory forensics. Includes anti-forensics detection (AF1, AF3) as a sub-topic. | All specialist agents |
 | 2 | **TTP Identification** | Map observed behaviors to MITRE ATT&CK / ATLAS techniques, identify attack chain stages, classify severity. Includes threat intel operationalization (TI1) and AI/LLM threat identification (A1-A4) as sub-topics. | All specialist agents |
-| 3 | **Triage Decision-Making** | Prioritize investigation steps, recommend evidence collection, decide next pivots given initial indicators. Includes supply chain triage (SC1) as a sub-topic. | Orchestrator, all specialist agents |
+| 3 | **Triage & Threat Hunting** | Prioritize investigation steps, recommend evidence collection, decide next pivots given initial indicators. Includes proactive threat hunting: hypothesis generation, baseline deviation analysis, and hunt playbook execution. Includes supply chain triage (SC1) as a sub-topic. | Orchestrator, all specialist agents |
 | 4 | **Detection Engineering** | Write/interpret Sigma rules, explain detection logic, translate between query languages, identify coverage gaps. Includes SIEM query operations (S1, S3) as a sub-topic. | Future detection capability |
 | 5 | **Incident Report Generation** | Produce evidence-cited IR reports, calibrate confidence language, flag overclaims, structure findings. | Report Agent, Reviewer Agent |
 
@@ -259,8 +259,11 @@ Rather than creating new task categories for every domain, the new taxonomy entr
 | Anti-Forensics (AF2, AF4) | Deferred | Requires specialized sources not in collection |
 | Threat Intel (TI1) | **TTP Identification** | IOC enrichment and STIX operationalization are TTP workflows |
 | Threat Intel (TI2) | Deferred | Attribution requires classified/sensitive context |
-| Supply Chain (SC1) | **Triage Decision-Making** | Supply chain compromise triage is a prioritization problem |
+| Supply Chain (SC1) | **Triage & Threat Hunting** | Supply chain compromise triage is a prioritization problem |
 | SIEM (S1, S3) | **Detection Engineering** | Sigma → SPL/KQL translation is core detection engineering |
+
+> [!NOTE]
+> **Threat Hunting sources (future):** The Triage & Threat Hunting category currently relies on prompt instructions to generate TH-specific pairs from existing sources (primarily ATT&CK, Sigma, and CISA). Dedicated TH sources to add in future iterations include: SANS Threat Hunting Summit materials, ThreatHunting-Keywords (`mthcht/ThreatHunting-Keywords`), Hunting ELK (HELK) documentation, SpecterOps BloodHound methodology, and community hunt playbooks (e.g., `ThreatHuntingProject/ThreatHunting`). These would enable richer hypothesis-driven hunting scenarios and baseline analysis training data.
 
 #### Categories Deferred to Successor
 
@@ -795,7 +798,7 @@ dfir-dataset/
 │   ├── prompts/
 │   │   ├── artifact_analysis.md
 │   │   ├── ttp_identification.md
-│   │   ├── triage_decision.md
+│   │   ├── triage_and_hunting.md
 │   │   ├── detection_engineering.md
 │   │   └── report_generation.md
 │   └── formatters/
@@ -1269,6 +1272,53 @@ The source is forensic tool documentation. Focus questions on:
 Use the plugin descriptions, parameters, and output schemas from the source.
 ```
 
+#### 3.3.3 Category-Specific Instructions
+
+These are injected via the `{category_specific_instructions}` variable based on the assigned task category. The four original categories (Artifact Analysis, TTP Identification, Detection Engineering, Incident Report Generation) use straightforward task-focused instructions in their respective prompt template files. Below are the instructions for the two additions.
+
+**Triage & Threat Hunting** (`triage_and_hunting.md`):
+```markdown
+Generate instruction pairs covering BOTH reactive triage AND proactive
+threat hunting.
+
+### Reactive Triage (60% of pairs for this category)
+- Given an initial indicator (alert, IOC, user report), what should the
+  analyst investigate first, second, third?
+- What evidence should be collected and preserved?
+- How should the analyst prioritize competing investigation threads?
+- What are the escalation criteria?
+
+### Proactive Threat Hunting (40% of pairs for this category)
+- Given a technique or threat actor profile, formulate a hunting hypothesis
+  Example: "If an attacker used T1053.005 (Scheduled Task), what artifacts
+  would exist and how would I search for them proactively?"
+- Design hunt queries: what would you search for in logs/SIEM/EDR to detect
+  this technique WITHOUT a prior alert?
+- Baseline analysis: what does NORMAL look like for this artifact/behavior,
+  and what deviations indicate compromise?
+- Hunt playbook steps: systematic approach to validate or refute a hypothesis
+
+### Threat Hunting Pair Examples
+- "How would you proactively hunt for Kerberoasting in an environment with
+  no prior alerts?" → systematic approach using 4769 events, service account
+  enumeration, ticket encryption downgrade detection
+- "What baseline would you establish for PowerShell usage before hunting for
+  malicious scripts?" → normal script paths, common cmdlets, expected users,
+  execution policy settings, then deviation indicators
+- "Given intelligence that APT29 targets your sector, what hunt hypotheses
+  would you prioritize?" → map APT29 TTPs to available telemetry, prioritize
+  by detection coverage gaps
+
+### Calibration
+- Hunting pairs should assume NO prior alert — the analyst is proactively
+  searching based on threat intelligence, technique knowledge, or anomaly
+  detection
+- Include at least one pair per source document that demonstrates the
+  difference between "investigating an alert" (triage) vs "hunting without
+  an alert" (threat hunting)
+```
+---
+
 ### 3.4 Volume Targets
 
 **Core + Tier 1-2 (confirmed scope):**
@@ -1556,6 +1606,6 @@ Includes: source breakdown, generation methodology, task/difficulty distribution
 
 ## Open Questions
 
-1. **Task category confirmation:** Are the 5 categories + sub-topics right for near-term needs?
+1. **Task category confirmation:** Are the 5 categories (including the Triage & Threat Hunting expansion) right for near-term needs?
 2. **ATLAS priority:** Should AI/LLM pairs be weighted higher than their source volume suggests, given Shepherd is itself an LLM application?
 3. **Taxonomy review:** Should any of the 57 categories be split, merged, or renamed for your team's vocabulary?
