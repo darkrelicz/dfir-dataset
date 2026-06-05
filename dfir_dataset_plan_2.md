@@ -647,7 +647,7 @@ Analysis of executed commands, scripts, and encoded payloads. Strong overlap wit
 Sources are organized into tiers. **Core** collectors focus on TTPs, detections, and threat advisories. **Artifact-Focused** collectors fill the gap in artifact-specific forensic knowledge — the "what does this artifact look like, what's normal vs suspicious, where does it live on disk" content that Core sources don't cover well.
 
 > [!IMPORTANT]
-> **Scope decision (confirmed):** This iteration implements **Core + Tier 1 + Tier 2** — all 15 collectors (C1-C7 + AF1-AF8). Tier 3 sources (AF9-AF14) are deferred to the successor.
+> **Scope decision (confirmed):** This iteration implements **Core + Tier 1 + Tier 2** — all 16 collectors (C1-C7 + AF1-AF9). Tier 3 sources (AF10-AF15) are deferred to the successor.
 
 #### Core Collectors (Committed)
 
@@ -694,8 +694,9 @@ These are Git-hosted, YAML/Markdown structured repos that reuse the same parsing
 | AF6 | **HijackLibs** | `wietze/HijackLibs` | ~350+ | DLL hijacking database — documents which applications are vulnerable to DLL search order hijacking/side-loading. Directly supports W7 (DLL analysis) and ATT&CK T1574.x. | BSD ✅ | 1 day |
 | AF7 | **LOLDrivers** | `magicsword-io/LOLDrivers` | ~400+ | Vulnerable and malicious Windows drivers (BYOVD). Covers driver-based kernel attacks — a gap none of the Core or Tier 1 sources touch. | Open ✅ | 1 day |
 | AF8 | **OSSEM Data Dictionaries** | `OTRF/OSSEM-DD` | ~200-300 | Field-level documentation for Windows Security events, Sysmon events, and other security log sources. Each dictionary entry describes a single event ID with all its field names, types, and descriptions. Directly supports W8 (event logs), W10 (scripts/commands), and S1 (SIEM queries). | MIT ✅ | 1 day |
+| AF9 | **Anthropic Cybersecurity Skills** | `mukul975/Anthropic-Cybersecurity-Skills` | ~450-500 (filtered) | 754 structured practitioner workflows across 26 security domains. Each skill contains step-by-step investigation/detection procedures with tool commands, key concepts, and scenarios. Pre-mapped to ATT&CK, ATLAS, D3FEND, NIST CSF, NIST AI RMF. Primary value: fills the Triage & Threat Hunting category gap with ~150 hunt-specific workflow skills. Filtered to skills with body ≥500 tokens to exclude thin boilerplate templates. | Apache 2.0 ✅ | 1 day |
 
-**Tier 2 subtotal: ~1,450-1,550+ documents**
+**Tier 2 subtotal: ~1,900-2,050+ documents**
 
 ---
 
@@ -703,12 +704,12 @@ These are Git-hosted, YAML/Markdown structured repos that reuse the same parsing
 
 | # | Source | Repo / URL | Est. Docs | What It Teaches | License | Effort |
 |---|---|---|---|---|---|---|
-| AF9 | **EVTX-ATTACK-SAMPLES** | `sbousseaden/EVTX-ATTACK-SAMPLES` | ~100+ | Real Windows event log samples from attack simulations, organized by ATT&CK technique. Gold standard for event log artifact analysis. | Open ✅ | 1-2 days |
-| AF10 | **WADComs** | `WADComs/WADComs.github.io` | ~200+ | Windows/AD offensive command reference — enumeration, credential dumping, lateral movement commands. Supports W9 (AD) and W10 (scripts). | Open ✅ | 1 day |
-| AF11 | **MalAPI.io** | `mrd0x/MALAPI` | ~200+ | Maps Windows API calls to ATT&CK techniques — shows which APIs indicate injection, evasion, hooking. Supports W7 (memory forensics). | Open ✅ | 0.5 day |
-| AF12 | **LOTS Project** | `lots-project/lots-project.github.io` | ~150+ | Living Off Trusted Sites — documents legitimate cloud services abused for C2, exfiltration, phishing. Supports N4 (C2) and N5 (exfiltration). | Open ✅ | 0.5 day |
-| AF13 | **Chainsaw Rules** | `WithSecureLabs/chainsaw` | ~100+ | Additional Windows event log analysis rules complementing Sigma/Hayabusa. | GPL 3.0 ✅ | 0.5 day |
-| AF14 | **Sysmon Config References** | `SwiftOnSecurity/sysmon-config` + `olafhartong/sysmon-modular` | ~10-20 | Documented Sysmon configurations explaining what each event ID captures and why. Teaches telemetry design reasoning. | MIT ✅ | 0.5 day |
+| AF10 | **EVTX-ATTACK-SAMPLES** | `sbousseaden/EVTX-ATTACK-SAMPLES` | ~100+ | Real Windows event log samples from attack simulations, organized by ATT&CK technique. Gold standard for event log artifact analysis. | Open ✅ | 1-2 days |
+| AF11 | **WADComs** | `WADComs/WADComs.github.io` | ~200+ | Windows/AD offensive command reference — enumeration, credential dumping, lateral movement commands. Supports W9 (AD) and W10 (scripts). | Open ✅ | 1 day |
+| AF12 | **MalAPI.io** | `mrd0x/MALAPI` | ~200+ | Maps Windows API calls to ATT&CK techniques — shows which APIs indicate injection, evasion, hooking. Supports W7 (memory forensics). | Open ✅ | 0.5 day |
+| AF13 | **LOTS Project** | `lots-project/lots-project.github.io` | ~150+ | Living Off Trusted Sites — documents legitimate cloud services abused for C2, exfiltration, phishing. Supports N4 (C2) and N5 (exfiltration). | Open ✅ | 0.5 day |
+| AF14 | **Chainsaw Rules** | `WithSecureLabs/chainsaw` | ~100+ | Additional Windows event log analysis rules complementing Sigma/Hayabusa. | GPL 3.0 ✅ | 0.5 day |
+| AF15 | **Sysmon Config References** | `SwiftOnSecurity/sysmon-config` + `olafhartong/sysmon-modular` | ~10-20 | Documented Sysmon configurations explaining what each event ID captures and why. Teaches telemetry design reasoning. | MIT ✅ | 0.5 day |
 
 **Tier 3 subtotal: ~760+ documents**
 
@@ -753,11 +754,11 @@ These contain high-value artifact analysis content but require HTML scraping, PD
 |---|---|---|---|---|
 | Core only | C1-C7 | ~6,450 | ~22,570 | ~15,800 |
 | Core + Tier 1 | C1-C7 + AF1-AF4 | ~12,550 | ~41,430 | ~29,000 |
-| **► Core + Tier 1-2 (selected)** | **C1-C7 + AF1-AF8** | **~14,200** | **~46,860** | **~32,800** |
-| Core + Tier 1-3 (maximum) | C1-C7 + AF1-AF14 | ~14,960 | ~49,370 | ~34,560 |
+| **► Core + Tier 1-2 (selected)** | **C1-C7 + AF1-AF9** | **~14,700** | **~49,160** | **~34,410** |
+| Core + Tier 1-3 (maximum) | C1-C7 + AF1-AF15 | ~15,460 | ~51,670 | ~36,170 |
 
 > [!NOTE]
-> **Selected scenario: Core + Tier 1-2.** This yields ~14,200 raw documents and an estimated ~32,800 post-filter instruction pairs. Tier 2 adds ~1,450-1,550 documents for ~4 additional days of collector work — worthwhile for the artifact depth it provides (Velociraptor VQL, DLL hijacking, driver attacks, event log field definitions). Tier 3 is deferred but can be added later with minimal effort using the same `YAMLCollector`/`MarkdownCollector` base classes.
+> **Selected scenario: Core + Tier 1-2.** This yields ~14,700 raw documents and an estimated ~34,410 post-filter instruction pairs. Tier 2 adds ~1,900-2,050 documents for ~5 additional days of collector work — worthwhile for the artifact depth (Velociraptor VQL, DLL hijacking, driver attacks, event log field definitions) and practitioner workflow coverage (Cybersecurity Skills fills the Triage & Threat Hunting category gap). Tier 3 is deferred but can be added later with minimal effort using the same `YAMLCollector`/`MarkdownCollector` base classes.
 
 ### 2.2 Pipeline Architecture
 
@@ -789,7 +790,8 @@ dfir-dataset/
 │   ├── velociraptor_artifacts.py   # AF5: Velociraptor VQL artifacts
 │   ├── hijacklibs.py               # AF6: HijackLibs DLL hijacking DB
 │   ├── loldrivers.py               # AF7: LOLDrivers vulnerable drivers
-│   └── ossem_data_dicts.py         # AF8: OSSEM Data Dictionaries
+│   ├── ossem_data_dicts.py         # AF8: OSSEM Data Dictionaries
+│   └── cybersec_skills.py          # AF9: Anthropic Cybersecurity Skills
 │
 ├── synthesizers/
 │   ├── __init__.py
@@ -849,7 +851,8 @@ dfir-dataset/
 │   │   ├── velociraptor_artifacts/ # AF5
 │   │   ├── hijacklibs/             # AF6
 │   │   ├── loldrivers/             # AF7
-│   │   └── ossem_data_dicts/       # AF8
+│   │   ├── ossem_data_dicts/       # AF8
+│   │   └── cybersec_skills/        # AF9
 │   ├── synthesized/
 │   ├── filtered/
 │   ├── packaged/
@@ -1046,8 +1049,16 @@ Key fields to extract per vendor group:
 - Expected yield: ~200-300 documents
 - **Note:** OSSEM is organized as git submodules (`OSSEM-DD`, `OSSEM-CDM`, `OSSEM-DM`). We only collect from `OSSEM-DD` (Data Dictionaries) — the CDM and DM submodules provide normalization schemas that are useful for reference but don't contain collectible forensic content.
 
+#### AF9: Anthropic Cybersecurity Skills Collector
+- `git clone mukul975/Anthropic-Cybersecurity-Skills` + YAML frontmatter + Markdown body parsing
+- One document per `SKILL.md` file in `skills/` directory
+- **Content-length filter:** Only collect skills with Markdown body ≥ 500 tokens (~2,000 chars). Skills below this threshold are thin boilerplate templates that would produce hallucinated padding during synthesis.
+- Enrichment: skill name, description, domain, subdomain, tags, ATT&CK IDs, ATLAS IDs, D3FEND IDs, NIST CSF categories, workflow steps, tools referenced, scenarios
+- Expected yield: ~450-500 documents (from 754 total, after filtering thin templates)
+- **Note:** This is a single-author repo (not community-curated like SigmaHQ). ATT&CK IDs in frontmatter may contain inaccuracies — the Phase 4 MITRE validator will catch these. Cross-validate frontmatter mappings against the body content during pilot review. Primary value is for the Triage & Threat Hunting category where ~150 skills directly map to structured hunt workflows.
+
 > [!NOTE]
-> **Tier 3 sources (AF9-AF14)** do not need dedicated collector classes initially. If selected, they follow the same `git clone` + YAML/Markdown parsing pattern. They can be added as configuration-driven collectors inheriting from a shared `YAMLCollector` or `MarkdownCollector` base class.
+> **Tier 3 sources (AF10-AF15)** do not need dedicated collector classes initially. If selected, they follow the same `git clone` + YAML/Markdown parsing pattern. They can be added as configuration-driven collectors inheriting from a shared `YAMLCollector` or `MarkdownCollector` base class.
 
 ### Phase 2 Deliverables
 - [ ] `BaseCollector` ABC and common utilities
@@ -1066,9 +1077,10 @@ Key fields to extract per vendor group:
 - [ ] AF6: HijackLibs collector — working and tested
 - [ ] AF7: LOLDrivers collector — working and tested
 - [ ] AF8: OSSEM Data Dictionaries collector — working and tested
-- [ ] `collect_all.py` script that runs all 15 collectors and produces a manifest
+- [ ] AF9: Anthropic Cybersecurity Skills collector — working and tested
+- [ ] `collect_all.py` script that runs all 16 collectors and produces a manifest
 - [ ] Validation: all collectors produce valid JSONL with complete metadata
-- [ ] Raw corpus: ~14,200 documents in `data/raw/` (Core + Tier 1-2)
+- [ ] Raw corpus: ~14,700 documents in `data/raw/` (Core + Tier 1-2)
 
 ---
 
@@ -1124,7 +1136,7 @@ called Shepherd.
 ### Reasoning Quality
 3. Responses MUST follow the Evidence → Analysis → Conclusion structure:
    a) EVIDENCE IDENTIFICATION: Quote or reference specific artifact data
-      (event ID, file path, registry key, tool output) from the source document
+      (e.g. event ID, file path, registry key, tool output) from the source document
    b) ANALYSIS: Explain what the evidence means — normal vs abnormal, and why
    c) CONCLUSION: State findings with explicit confidence (high/medium/low)
       tied back to the evidence cited in step (a)
@@ -1135,7 +1147,7 @@ called Shepherd.
    is INVALID.
 
 ### Grounding Constraint
-5. All forensic details (file paths, registry keys, event IDs, tool output 
+5. All forensic details (e.g. file paths, registry keys, event IDs, tool output 
    fields) MUST be either:
    a) Directly stated in the source document, OR
    b) Well-established forensic facts (standard Windows/Linux artifact paths,
@@ -1272,6 +1284,24 @@ The source is forensic tool documentation. Focus questions on:
 Use the plugin descriptions, parameters, and output schemas from the source.
 ```
 
+**Practitioner Workflows** (Cybersecurity Agent Skills):
+```markdown
+The source is a structured practitioner workflow with step-by-step
+investigation/detection procedures. Focus questions on:
+- Decision-making: why choose this approach over alternatives?
+- Interpretation: what do specific outputs/results mean?
+- Troubleshooting: what if the expected evidence isn't found?
+- Adaptation: how does this workflow change in different environments?
+
+DO NOT generate pairs about technique definitions — use the workflow's
+step-by-step procedure as the primary source material. The technique
+context is available in other sources (ATT&CK, Sigma).
+
+The source may contain tool-specific commands. Generate pairs that
+test understanding of the commands and their output, not just
+copy-paste of the procedure.
+```
+
 #### 3.3.3 Category-Specific Instructions
 
 These are injected via the `{category_specific_instructions}` variable based on the assigned task category. The four original categories (Artifact Analysis, TTP Identification, Detection Engineering, Incident Report Generation) use straightforward task-focused instructions in their respective prompt template files. Below are the instructions for the two additions.
@@ -1340,8 +1370,9 @@ threat hunting.
 | AF6: HijackLibs | ~350 | 1-2 | ~525 | Very thin — 3-5 fields per entry |
 | AF7: LOLDrivers | ~400 | 1-2 | ~600 | Very thin — hash + metadata per entry |
 | AF8: OSSEM Dicts | ~250 | 1-2 | ~375 | Field definitions only |
-| **Core + Tier 1-2 Total** | **~13,090** | | **~35,810** | |
-| **After quality filtering (~70%)** | | | **~25,067** | Target: 20,000-25,000 |
+| AF9: Cybersecurity Skills | ~475 | 3 | ~1,425 | Rich practitioner workflows (filtered ≥500 tokens) |
+| **Core + Tier 1-2 Total** | **~13,565** | | **~37,235** | |
+| **After quality filtering (~70%)** | | | **~26,065** | Target: 20,000-25,000 |
 
 > [!NOTE]
 > **Variable pairs/doc rationale:** Thin sources (KAPE, ForensicArtifacts, HijackLibs, LOLDrivers, OSSEM) get 1-2 pairs/doc because forcing 3+ pairs from a document with only a few structured fields causes the teacher model to pad with invented content — the primary source of hallucinated forensic details in the training data. Rich sources (ATT&CK, CISA advisories) get 4-5 pairs/doc because they contain enough material for multiple legitimate investigation angles.
@@ -1352,7 +1383,8 @@ threat hunting.
    - 25 docs per Core source (C1-C4) + all ATLAS (C6) + ~10 Volatility docs (C5) + ~10 KEV entries (C7)
    - 20 KAPE targets (AF1) + 30 Hayabusa rules (AF2) + 15 LOLBAS/GTFOBins (AF3)
    - 15 ForensicArtifacts (AF4) + 10 Velociraptor (AF5) + 10 HijackLibs (AF6) + 10 LOLDrivers (AF7) + 10 OSSEM (AF8)
-   - **Total: ~300 source documents**
+   - 15 Cybersecurity Skills (AF9) — mix of rich/thin to validate content-length filter
+   - **Total: ~315 source documents**
 2. Run synthesis with Gemini 2.5 Flash (primary) + Claude Sonnet (comparison subset of 50 docs)
 3. Manually review 100% of pilot output (~700-900 pairs)
 4. Score on quality rubric with **specific attention to:**
@@ -1366,10 +1398,10 @@ threat hunting.
 **Gate:** Pilot pass rate ≥ 65% before proceeding to full synthesis.
 
 ### Phase 3 Deliverables
-- [ ] 5 category prompt templates + 7 source-type sub-templates — tested and iterated via pilot
+- [ ] 5 category prompt templates + 8 source-type sub-templates — tested and iterated via pilot
 - [ ] Synthesis pipeline script with batching, retries, rate limits
 - [ ] Pilot results documented (including grounding/reasoning/uncertainty audit)
-- [ ] Full synthesis run: ~35,800 raw instruction pairs (Core + Tier 1-2)
+- [ ] Full synthesis run: ~37,200 raw instruction pairs (Core + Tier 1-2)
 - [ ] Generation manifest per batch
 
 ---
@@ -1549,18 +1581,17 @@ Includes: source breakdown, generation methodology, task/difficulty distribution
 
 | Priority | Task | What It Unlocks |
 |---|---|---|
-| 1 | Add Tier 2 artifact sources (AF4-AF6) if not done | Velociraptor, HijackLibs, LOLDrivers coverage |
-| 2 | Add Tier 3 artifact sources (AF7-AF12) | EVTX samples, WADComs, MalAPI, LOTS, Chainsaw |
-| 3 | Add semi-structured sources (SANS posters, ForensicsWiki, EZ tool docs) | Rich forensic reference content |
-| 4 | Add unstructured blog sources (Mandiant, CrowdStrike, Unit 42) | Real IR case studies, richer scenarios |
-| 5 | Expand to all task categories (add Malware Analysis, etc.) | Full specialist agent coverage |
-| 6 | Add cloud provider docs | Cloud forensics C1-C6 |
-| 7 | Add M365 UAL / Google Workspace docs | File storage F1-F5 |
-| 8 | Add OWASP LLM Top 10, AI incident databases | Deeper AI/LLM coverage A1-A4 |
-| 9 | Add mobile/IoT/OT sources | Mobile M1-M3, IoT/OT OT1-OT2 |
-| 10 | Implement two-pass teacher-verifier synthesis | Higher quality ceiling |
-| 11 | Scale to 50K+ pairs | Better model performance |
-| 12 | Implement CRAFT/RAFT after Shepherd RAG (MVP 4) | Retrieval-augmented training |
+| 1 | Add Tier 3 artifact sources (AF10-AF15) | EVTX samples, WADComs, MalAPI, LOTS, Chainsaw, Sysmon configs |
+| 2 | Add semi-structured sources (SANS posters, ForensicsWiki, EZ tool docs) | Rich forensic reference content |
+| 3 | Add unstructured blog sources (Mandiant, CrowdStrike, Unit 42) | Real IR case studies, richer scenarios |
+| 4 | Expand to all task categories (add Malware Analysis, etc.) | Full specialist agent coverage |
+| 5 | Add cloud provider docs | Cloud forensics C1-C6 |
+| 6 | Add M365 UAL / Google Workspace docs | File storage F1-F5 |
+| 7 | Add OWASP LLM Top 10, AI incident databases | Deeper AI/LLM coverage A1-A4 |
+| 8 | Add mobile/IoT/OT sources | Mobile M1-M3, IoT/OT OT1-OT2 |
+| 9 | Implement two-pass teacher-verifier synthesis | Higher quality ceiling |
+| 10 | Scale to 50K+ pairs | Better model performance |
+| 11 | Implement CRAFT/RAFT after Shepherd RAG (MVP 4) | Retrieval-augmented training |
 
 ---
 
