@@ -2,11 +2,10 @@
 sources:
   mitre_attack:
     type: "stix"
-    stix_url: "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
-    cache_path: "data/raw/.cache/enterprise-attack.json"
+    url: "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
+    file: "enterprise-attack.json"
     output_dir: "data/raw/mitre_attack"
-    include_deprecated: false
-    include_revoked: false
+    include_revoked_deprecated: false
 
   sigma_rules:
     type: "git"

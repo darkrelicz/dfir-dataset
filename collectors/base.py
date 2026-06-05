@@ -14,7 +14,6 @@ __version__ = importlib.metadata.version("dfir-dataset")
 class BaseCollector(ABC):
     """Base class for all source collectors."""
     VERSION: str = __version__
-    SOURCE_URL: str
 
     @abstractmethod
     def collect(self, output_dir: Path) -> int:
