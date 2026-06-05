@@ -1,0 +1,58 @@
+# configs/task_categories.yaml
+# Defines the 5 task categories (what the model learns to DO)
+# Consumed by Phase 3 synthesizer for prompt template selection
+
+categories:
+  artifact_analysis:
+    description: "Interpret forensic tool output, identify anomalies, explain what artifacts mean"
+    prompt_template: "artifact_analysis.md"
+    absorbs: [AF1, AF3, A2, A4]  # Anti-forensics detection, AI app/infra forensics
+    shepherd_alignment: ["Memory Agent", "Windows Event Log Agent"]
+
+  ttp_identification:
+    description: "Map observed behaviors to MITRE ATT&CK / ATLAS techniques, identify attack chain stages"
+    prompt_template: "ttp_identification.md"
+    absorbs: [A1, A3, TI1]  # AI attacks, AI supply chain, threat intel ops
+    shepherd_alignment: ["All specialist agents"]
+
+  triage_and_hunting:
+    description: "Prioritize investigation steps, recommend evidence collection, proactive threat hunting"
+    prompt_template: "triage_and_hunting.md"
+    absorbs: [SC1]  # Supply chain triage
+    shepherd_alignment: ["Orchestrator", "All specialist agents"]
+
+  detection_engineering:
+    description: "Write/interpret Sigma rules, explain detection logic, translate query languages"
+    prompt_template: "detection_engineering.md"
+    absorbs: [S1, S3]  # SIEM queries, detection coverage
+    shepherd_alignment: ["Future detection capability"]
+
+  report_generation:
+    description: "Produce evidence-cited IR reports, calibrate confidence, flag overclaims"
+    prompt_template: "report_generation.md"
+    absorbs: []
+    shepherd_alignment: ["Report Agent", "Reviewer Agent"]
+
+distribution:
+  category_targets:
+    artifact_analysis: 0.30
+    ttp_identification: 0.25
+    triage_and_hunting: 0.18
+    detection_engineering: 0.14
+    report_generation: 0.13
+
+  difficulty_targets:
+    junior: 0.30
+    mid: 0.50
+    senior: 0.20
+
+deferred:
+  # Categories deferred to successor (not generated in this iteration)
+  - { domain: "AF2, AF4", reason: "Requires specialized sources" }
+  - { domain: "TI2", reason: "Attribution requires sensitive context" }
+  - { domain: "M1-M3", reason: "No mobile forensic sources" }
+  - { domain: "OT1-OT2", reason: "Different domain" }
+  - { domain: "V1", reason: "Niche" }
+  - { domain: "CL1-CL2", reason: "Procedural/legal, not technical" }
+  - { domain: "C3-C6", reason: "Limited cloud-specific sources" }
+  - { domain: "F1-F5", reason: "Limited file forensic sources" }

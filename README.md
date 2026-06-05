@@ -21,19 +21,6 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-### Validating the Taxonomy
-
-The taxonomy is defined in `taxonomy/dfir_taxonomy.yaml`. To ensure it meets the schema requirements and distribution targets:
-
-```bash
-python taxonomy/validate_taxonomy.py
-```
-
-To see the MITRE ATT&CK tactic coverage of the example tasks:
-
-```bash
-python taxonomy/gap_analysis.py
-```
 
 ### Running Tests
 
@@ -48,5 +35,6 @@ pytest tests/
 - `quality/`: Phase 4 automated quality scoring
 - `packaging/`: Phase 5 dataset export
 - `evaluation/`: Phase 6 benchmarking
-- `taxonomy/`: Phase 1 task definitions (Source of Truth)
+- `docs/`: Documentation including TAXONOMY.md
+- `configs/`: Pipeline configuration including taxonomy IDs
 - `data/`: Output directory for generated artifacts (ignored by git)

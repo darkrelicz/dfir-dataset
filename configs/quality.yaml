@@ -1,4 +1,92 @@
 # configs/quality.yaml
+taxonomy:
+  # Used by Phase 4 validator to check taxonomy_refs on generated pairs
+  domains:
+    windows:
+      ids: [W1, W2, W3, W4, W5, W6, W7, W8, W9, W10]
+      coverage:
+        strong: [W1, W2, W3, W5, W7, W8, W9, W10]
+        moderate: [W4, W6]
+        weak: []
+    linux:
+      ids: [L1, L2, L3, L4, L5, L6, L7, L8]
+      coverage:
+        strong: [L1, L2, L3]
+        moderate: [L4, L5, L6]
+        weak: [L7, L8]
+    network:
+      ids: [N1, N2, N3, N4, N5, N6]
+      coverage:
+        strong: []
+        moderate: [N2, N4]
+        weak: [N1, N3, N5, N6]
+    siem:
+      ids: [S1, S2, S3]
+      coverage:
+        strong: [S3]
+        moderate: [S1]
+        weak: [S2]
+    cloud:
+      ids: [C1, C2, C3, C4, C5, C6]
+      coverage:
+        strong: []
+        moderate: [C1, C2]
+        weak: [C3, C4, C5, C6]
+    file_storage:
+      ids: [F1, F2, F3, F4, F5]
+      coverage:
+        strong: []
+        moderate: []
+        weak: [F1, F2, F3, F4, F5]
+    ai_llm:
+      ids: [A1, A2, A3, A4]
+      coverage:
+        strong: [A1, A2, A3]
+        moderate: [A4]
+        weak: []
+    mobile:
+      ids: [M1, M2, M3]
+      coverage:
+        strong: []
+        moderate: []
+        weak: [M1, M2, M3]
+    anti_forensics:
+      ids: [AF1, AF2, AF3, AF4]
+      coverage:
+        strong: [AF1, AF3]
+        moderate: []
+        weak: [AF2, AF4]
+    threat_intel:
+      ids: [TI1, TI2]
+      coverage:
+        strong: []
+        moderate: [TI1]
+        weak: [TI2]
+    iot_ot:
+      ids: [OT1, OT2]
+      coverage:
+        strong: []
+        moderate: []
+        weak: [OT1, OT2]
+    virtualization:
+      ids: [V1]
+      coverage:
+        strong: []
+        moderate: []
+        weak: [V1]
+    supply_chain:
+      ids: [SC1]
+      coverage:
+        strong: []
+        moderate: [SC1]
+        weak: []
+    compliance:
+      ids: [CL1, CL2]
+      coverage:
+        strong: []
+        moderate: []
+        weak: [CL1, CL2]
+
 scoring:
   threshold: 3.5
   weights:

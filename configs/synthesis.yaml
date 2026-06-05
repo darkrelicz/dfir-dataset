@@ -11,16 +11,6 @@ generation:
   temperature: 0.7
   max_retries: 2
   batch_size: 20           # Documents per API batch
-  category_distribution:   # Target mix per batch (adjusted for deep forensics)
-    artifact_analysis: 0.30      # Increased from 0.25 to accommodate deep forensics sub-categories
-    ttp_identification: 0.25     # Unchanged
-    triage_decision: 0.18        # Slightly reduced
-    detection_engineering: 0.14  # Slightly reduced
-    report_generation: 0.13     # Slightly reduced
-  difficulty_distribution:
-    junior: 0.30
-    mid: 0.50
-    senior: 0.20
 output:
   format: "jsonl"
   dir: "data/synthesized/"
