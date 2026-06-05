@@ -2,19 +2,45 @@
 sources:
   mitre_attack:
     type: "stix"
+    stix_url: "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
+    cache_path: "data/raw/.cache/enterprise-attack.json"
     output_dir: "data/raw/mitre_attack"
+    include_deprecated: false
+    include_revoked: false
+
   sigma_rules:
     type: "git"
     url: "https://github.com/SigmaHQ/sigma.git"
+    clone_dir: "data/raw/.repos/sigma"
+    rules_subdir: "rules"
     output_dir: "data/raw/sigma_rules"
+    shallow_clone: true
+    min_rule_level: "low"
+
   atomic_red_team:
     type: "git"
     url: "https://github.com/redcanaryco/atomic-red-team.git"
+    clone_dir: "data/raw/.repos/atomic-red-team"
+    atomics_subdir: "atomics"
     output_dir: "data/raw/atomic_red_team"
+    shallow_clone: true
+    platforms: ["windows", "linux", "macos"]
+
   cisa_advisories:
-    type: "scrape"
-    base_url: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    type: "rss_scrape"
+    rss_url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
     output_dir: "data/raw/cisa_advisories"
+    request_delay_seconds: 1.0
+    max_advisories: null
+    user_agent: "dfir-dataset-collector/0.1 (research)"
+
+  cisa_kev:
+    type: "json"
+    json_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    output_dir: "data/raw/cisa_kev"
+    group_by: "vendorProject"
+    min_group_size: 1
+
   # yara_rules: 
   #   type: "git"
   #   url: "https://github.com/Yara-Rules/rules" # autocompleted, to check 
@@ -25,3 +51,7 @@ sources:
   #   output_dir: "data/raw/splunk_security_content"
   # dfir playbooks (open source, SANS, etc.)
   # OSSEM (https://ossemproject.com/dm/intro.html)
+
+settings:
+  manifest_dir: "data/raw"
+  log_level: "INFO"

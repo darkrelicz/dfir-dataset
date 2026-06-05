@@ -1,0 +1,51 @@
+import re
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any
+import importlib.metadata
+
+import jsonlines
+from tqdm import tqdm
+
+from collectors.schemas import RawDocument
+
+try:
+    __version__ = importlib.metadata.version("dfir-dataset")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.1.0"
+
+class BaseCollector(ABC):
+    """Base class for all source collectors."""
+    VERSION: str = __version__
+    SOURCE_URL: str
+    LICENSE: str
+
+    @abstractmethod
+    def collect(self, output_dir: Path) -> int:
+        """Collect documents, write JSONL to output_dir. Returns doc count."""
+
+    @abstractmethod
+    def validate(self, output_dir: Path) -> dict[str, Any]:
+        """Validate collected data. Returns validation report."""
+
+    def manifest(self) -> dict[str, Any]:
+        return {}
+
+    def _write_documents(self, docs: list[RawDocument], output_dir: Path, source_name: str) -> int:
+        """Write validated documents to JSONL with progress bar."""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        file_path = output_dir / f"{source_name}.jsonl"
+        with jsonlines.open(file_path, mode="w") as writer:
+            for doc in tqdm(docs, desc=f"Writing {source_name}"):
+                writer.write(doc.model_dump())
+        return len(docs)
+
+    def _count_words(self, text: str) -> int:
+        """Consistent word counting across collectors."""
+        return len(re.findall(r'\b\w+\b', text))
+
+    def _to_markdown(self, text: str) -> str:
+        """Normalize content to clean markdown."""
+        if not text:
+            return ""
+        return text.strip()
