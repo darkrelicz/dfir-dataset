@@ -6,6 +6,8 @@ This repository contains the data collection, synthesis, and quality assurance p
 
 The goal is to build a **re-runnable dataset factory** that produces high-quality instruction-response pairs covering key digital forensics and incident response (DFIR) tasks. The resulting dataset will be used to fine-tune a model (e.g., GLM-4.7-Flash) for Shepherd's specialist agents.
 
+We are currently in **Phase 2: Collection Pipeline**. The source collection pipeline is fully implemented. You can now ingest DFIR datasets.
+
 See `docs/ARCHITECTURE.md` for design decisions.
 
 ## Quick Start
@@ -33,6 +35,18 @@ To see the MITRE ATT&CK tactic coverage of the example tasks:
 
 ```bash
 python taxonomy/gap_analysis.py
+```
+
+### Collection Instructions
+```bash
+# Run all collectors
+python scripts/collect_all.py
+
+# Run a single collector
+python scripts/collect_all.py --source mitre_attack
+
+# Validate collected data
+python scripts/collect_all.py --dry-run
 ```
 
 ### Running Tests
