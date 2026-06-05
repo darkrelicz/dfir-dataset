@@ -4,10 +4,22 @@ model:
   fallback: "claude-sonnet-4"      # Only if Flash pilot pass rate < 65%
 generation:
   pairs_per_document:
-    mitre_attack: 5        # Rich source, generate more
-    sigma_rules: 3         # Structured but narrow
-    atomic_red_team: 4     # Good for TTP + detection pairs
-    cisa_advisories: 5     # Rich narrative content
+    mitre_attack: 5
+    sigma_rules: 3
+    atomic_red_team: 4
+    cisa_advisories: 5
+    volatility_docs: 4
+    mitre_atlas: 4
+    cisa_kev: 3
+    kape: 2
+    hayabusa_rules: 2
+    lolbas_gtfobins: 3
+    forensicartifacts: 2
+    velociraptor: 3
+    hijacklibs: 1
+    loldrivers: 1
+    ossem_dicts: 1
+    antrophic_cybersecurity_skills: 3
   temperature: 0.7
   max_retries: 2
   batch_size: 20           # Documents per API batch
