@@ -1,13 +1,13 @@
+import importlib.metadata
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
-import importlib.metadata
 
 import jsonlines
 from tqdm import tqdm
 
-from collectors.schemas import RawDocument
+from collectors.schemas import CollectionManifest, RawDocument
 
 __version__ = importlib.metadata.version("dfir-dataset")
 
@@ -15,7 +15,6 @@ class BaseCollector(ABC):
     """Base class for all source collectors."""
     VERSION: str = __version__
     SOURCE_URL: str
-    LICENSE: str
 
     @abstractmethod
     def collect(self, output_dir: Path) -> int:
@@ -25,8 +24,9 @@ class BaseCollector(ABC):
     def validate(self, output_dir: Path) -> dict[str, Any]:
         """Validate collected data. Returns validation report."""
 
-    def manifest(self) -> dict[str, Any]:
-        return {}
+    @abstractmethod
+    def manifest(self) -> CollectionManifest:
+        """Record manifest after each collection. Returns manifest report."""
 
     def _write_documents(self, docs: list[RawDocument], output_dir: Path, source_name: str) -> int:
         """Write validated documents to JSONL with progress bar."""

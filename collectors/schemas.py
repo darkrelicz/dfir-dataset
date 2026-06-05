@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import Any
 from pydantic import BaseModel
 
@@ -7,8 +8,8 @@ class RawDocument(BaseModel):
     source: str                           # e.g. "mitre_attack"
     source_url: str
     title: str
-    date_collected: str                   # ISO date
-    date_published: str | None = None
+    date_collected: date                  
+    date_published: date | None = None
     content_type: str                     # e.g. "technique_definition", "sigma_rule"
     content_markdown: str                 # Full content as markdown
     metadata: dict[str, Any]              # Source-specific metadata
@@ -20,8 +21,7 @@ class CollectionManifest(BaseModel):
     collector: str
     version: str
     source_url: str
-    license: str
-    collected_at: str
+    collected_at: datetime
     document_count: int
     errors: list[str] = []
     warnings: list[str] = []
