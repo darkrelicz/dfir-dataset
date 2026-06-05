@@ -9,10 +9,7 @@ from tqdm import tqdm
 
 from collectors.schemas import RawDocument
 
-try:
-    __version__ = importlib.metadata.version("dfir-dataset")
-except importlib.metadata.PackageNotFoundError:
-    __version__ = "0.1.0"
+__version__ = importlib.metadata.version("dfir-dataset")
 
 class BaseCollector(ABC):
     """Base class for all source collectors."""
