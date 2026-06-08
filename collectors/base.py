@@ -16,7 +16,7 @@ class BaseCollector(ABC):
     VERSION: str = __version__
 
     @abstractmethod
-    def collect(self, output_dir: Path) -> int:
+    def collect(self) -> int:
         """Collect documents, write JSONL to output_dir. Returns doc count."""
 
     @abstractmethod
@@ -33,7 +33,7 @@ class BaseCollector(ABC):
         file_path = output_dir / f"{source_name}.jsonl"
         with jsonlines.open(file_path, mode="w") as writer:
             for doc in tqdm(docs, desc=f"Writing {source_name}"):
-                writer.write(doc.model_dump())
+                writer.write(doc.model_dump(mode="json"))
         return len(docs)
 
     def _count_words(self, text: str) -> int:

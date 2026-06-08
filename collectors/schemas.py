@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from typing import Any
+
 from pydantic import BaseModel
+
 
 class RawDocument(BaseModel):
     """Standardized raw document output by all collectors."""
@@ -9,11 +11,10 @@ class RawDocument(BaseModel):
     source_url: str
     title: str
     date_collected: date                  
-    date_published: date | None = None
+    date_published: datetime | None = None
     content_type: str                     # e.g. "technique_definition", "sigma_rule"
     content_markdown: str                 # Full content as markdown
     metadata: dict[str, Any]              # Source-specific metadata
-    license: str
     word_count: int
 
 class CollectionManifest(BaseModel):

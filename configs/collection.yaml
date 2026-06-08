@@ -4,6 +4,7 @@ sources:
     type: "stix"
     url: "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
     file: "enterprise-attack.json"
+    cache_path: ".cache/enterprise-attack.json"
     output_dir: "data/raw/mitre_attack"
     include_revoked_deprecated: false
 
