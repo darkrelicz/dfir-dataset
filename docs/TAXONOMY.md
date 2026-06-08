@@ -1,7 +1,7 @@
 # DFIR Artifact Taxonomy
 
 ## 1. Overview
-This document serves as a comprehensive human reference for the 57-category artifact taxonomy.
+This document serves as a reference for the 57-category artifact taxonomy.
 It defines the full landscape of forensic artifacts the model should eventually understand.
 This taxonomy is directly related to the 5 task categories, where artifact categories are absorbed as sub-topics.
 
