@@ -62,6 +62,8 @@ class MitreAttackCollector(BaseCollector):
                 stix_id = technique["id"]
                 technique_name = technique.get("name", "Unknown")
 
+                # print(f"\n{technique.get("x_mitre_contributors")}")
+
                 mitre_id = ""
                 for ext_ref in technique["external_references"]:
                     if ext_ref["source_name"] == "mitre-attack":
@@ -92,8 +94,6 @@ class MitreAttackCollector(BaseCollector):
                             parent_mitre_id = parent_ext_ref["external_id"]
                             break
 
-                platforms = technique.get("x_mitre_platforms", [])
-
                 procedures_raw = mitre_data.get_procedure_examples_by_technique(stix_id)
                 procedures = []
                 for p in procedures_raw:
@@ -118,24 +118,28 @@ class MitreAttackCollector(BaseCollector):
                             description = item["description"]
                             mitigations.append(f"**{name}**: {description}")
 
-                # detections 
                 detections_raw = mitre_data.get_detection_strategies_detecting_technique(stix_id)
                 detections = []
                 for d in detections_raw:
-                    # print(f"\n{d}")
-                    det_list = d.get("relationships")
-
-                    if not det_list:
+                    strategy_obj = d.get("object")
+                    if not strategy_obj:
                         continue
+                    
+                    strategy_name = getattr(strategy_obj, "name", "Unknown Strategy")
+                    
+                    analytic_refs = getattr(strategy_obj, "x_mitre_analytic_refs", [])
+                    analytic_descriptions = []
+                    
+                    for ref in analytic_refs:
+                        analytic_obj = mitre_data.get_object_by_stix_id(ref)
+                        if analytic_obj and hasattr(analytic_obj, "description") and analytic_obj.description:
+                            analytic_descriptions.append(analytic_obj.description)
+                    
+                    description = " ".join(analytic_descriptions) if analytic_descriptions else "No description available."
+                    
+                    detections.append(f"**{strategy_name}**: {description}")
 
-                    for item in det_list:
-                        detection_obj = mitre_data.get_object_by_stix_id(item["source_ref"])
-                        if detection_obj:
-                            print(f"\n{detection_obj}")
-                            name = detection_obj.name
-
-                            description = "test"
-                            detections.append(f"**{name}**: {description}")
+                platforms = technique.get("x_mitre_platforms", [])
 
                 markdown_lines = [
                     f"# {mitre_id}: {technique_name}",
@@ -168,16 +172,23 @@ class MitreAttackCollector(BaseCollector):
 
                 markdown_doc = self._to_markdown("\n".join(markdown_lines))
 
+                data_sources_raw = technique.get("external_references", [])
+                data_sources = []
+                for ds in data_sources_raw:
+                    name = ds.get("source_name", "unknown source")
+                    url = ds.get("url", "Unknown URL")
+                    data_sources.append((name, url))
+
                 metadata = {
-                    "data_sources": technique.get("x_mitre_data_sources", []),
+                    "data_sources": data_sources,
                     "parent_technique": parent_mitre_id,
-                    "author": technique.get("x_mitre_contributors", [])
+                    "contributors": technique.get("x_mitre_contributors", [])
                 }
 
                 doc = RawDocument(
                     doc_id=f"mitre-attack-{mitre_id}",
                     source="mitre_attack",
-                    source_url="",
+                    source_url=f"https://attack.mitre.org/techniques/{mitre_id.replace('.', '/')}",
                     title=technique_name,
                     date_collected=date.today(),
                     date_published=technique["created"],
