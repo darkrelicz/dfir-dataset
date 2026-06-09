@@ -223,7 +223,7 @@ class MitreAttackCollector(BaseCollector):
             duration_seconds=self.duration,
         )
 
-    def validate(self, output_dir: Path) -> dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         return {}
 
 

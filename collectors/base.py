@@ -20,7 +20,7 @@ class BaseCollector(ABC):
         """Collect documents, write JSONL to output_dir. Returns doc count."""
 
     @abstractmethod
-    def validate(self, output_dir: Path) -> dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """Validate collected data. Returns validation report."""
 
     @abstractmethod

@@ -27,13 +27,13 @@ pip install -e ".[dev]"
 ### Collection Instructions
 ```bash
 # Run all collectors
-python scripts/collect_all.py
+python -m scripts.collect_all
 
 # Run a single collector
-python scripts/collect_all.py --source mitre_attack
+python -m scripts.collect_all --source mitre_attack
 
 # Validate collected data
-python scripts/collect_all.py --dry-run
+python -m scripts.collect_all --dry-run
 ```
 
 ### Running Tests

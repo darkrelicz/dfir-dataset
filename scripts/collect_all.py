@@ -1,16 +1,12 @@
 import argparse
 import json
-from pathlib import Path
-
 import yaml
+from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
 from collectors.mitre_attack import MitreAttackCollector
-from collectors.sigma_rules import SigmaRulesCollector
-from collectors.atomic_red_team import AtomicRedTeamCollector
-from collectors.cisa_advisories import CISAAdvisoryCollector
-from collectors.cisa_kev import CISAKEVCollector
+
 
 def load_config(config_path: str) -> dict:
     with open(config_path, "r", encoding="utf-8") as f:
@@ -51,10 +47,6 @@ def main():
     
     collector_map = {
         "mitre_attack": (MitreAttackCollector, config["sources"].get("mitre_attack", {})),
-        "sigma_rules": (SigmaRulesCollector, config["sources"].get("sigma_rules", {})),
-        "atomic_red_team": (AtomicRedTeamCollector, config["sources"].get("atomic_red_team", {})),
-        "cisa_advisories": (CISAAdvisoryCollector, config["sources"].get("cisa_advisories", {})),
-        "cisa_kev": (CISAKEVCollector, config["sources"].get("cisa_kev", {})),
     }
 
     if args.source:
@@ -75,14 +67,13 @@ def main():
         cls, src_config = collector_map[source]
         print(f"\n--- Running {source} ---")
         collector = cls(src_config)
-        output_dir = Path(src_config.get("output_dir", f"data/raw/{source}"))
         
-        collector.collect(output_dir)
-        report = collector.validate(output_dir)
+        collector.collect()
+        # report = collector.validate()
         
         manifest_entry = collector.manifest()
-        manifest_entry.update(report)
-        results.append(manifest_entry)
+        # manifest_entry.update(report)
+        results.append(manifest_entry.model_dump(mode="json"))
 
     write_combined_manifest(results, Path(config.get("settings", {}).get("manifest_dir", "data/raw")))
     print_summary_table(results)
