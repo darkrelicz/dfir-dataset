@@ -103,9 +103,39 @@ class MitreAttackCollector(BaseCollector):
                         description = p.get("description")
                         procedures.append(f"**{name}**: {description}")
                     
-                # mitigations
+                mitigations_raw = mitre_data.get_mitigations_mitigating_technique(stix_id)
+                mitigations = []
+                for m in mitigations_raw:
+                    mit_list = m.get("relationships")
+                    
+                    if not mit_list:
+                        continue
+                    
+                    for item in mit_list:
+                        mitigation_obj = mitre_data.get_object_by_stix_id(item["source_ref"])
+                        if mitigation_obj:
+                            name = mitigation_obj.name
+                            description = item["description"]
+                            mitigations.append(f"**{name}**: {description}")
 
-                # detections
+                # detections 
+                detections_raw = mitre_data.get_detection_strategies_detecting_technique(stix_id)
+                detections = []
+                for d in detections_raw:
+                    # print(f"\n{d}")
+                    det_list = d.get("relationships")
+
+                    if not det_list:
+                        continue
+
+                    for item in det_list:
+                        detection_obj = mitre_data.get_object_by_stix_id(item["source_ref"])
+                        if detection_obj:
+                            print(f"\n{detection_obj}")
+                            name = detection_obj.name
+
+                            description = "test"
+                            detections.append(f"**{name}**: {description}")
 
                 markdown_lines = [
                     f"# {mitre_id}: {technique_name}",
@@ -122,6 +152,18 @@ class MitreAttackCollector(BaseCollector):
                     markdown_lines.append("## Procedures")
                     for procedure in procedures:
                         markdown_lines.append(f"- {procedure}")
+                    markdown_lines.append("")
+
+                if mitigations:
+                    markdown_lines.append("## Mitigations")
+                    for mitigation in mitigations:
+                        markdown_lines.append(f"- {mitigation}")
+                    markdown_lines.append("")
+
+                if detections:
+                    markdown_lines.append("## Detections")
+                    for detection in detections:
+                        markdown_lines.append(f"- {detection}")
                     markdown_lines.append("")
 
                 markdown_doc = self._to_markdown("\n".join(markdown_lines))
