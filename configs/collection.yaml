@@ -11,7 +11,7 @@ sources:
   sigma_rules:
     type: "git"
     url: "https://github.com/SigmaHQ/sigma.git"
-    clone_dir: "data/raw/.repos/sigma"
+    clone_path: ".repos/sigma"
     rules_subdir: "rules"
     output_dir: "data/raw/sigma_rules"
     shallow_clone: true

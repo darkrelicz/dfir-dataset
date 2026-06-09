@@ -225,16 +225,3 @@ class MitreAttackCollector(BaseCollector):
 
     def validate(self) -> dict[str, Any]:
         return {}
-
-
-if __name__ == "__main__":
-    import yaml
-
-    with open("configs/collection.yaml", "r") as f:
-        full_config = yaml.safe_load(f)
-
-    mitre_config = full_config["sources"]["mitre_attack"]
-    collector = MitreAttackCollector(config=mitre_config)
-
-    collector.collect()
-    print(collector.manifest())
