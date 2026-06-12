@@ -1,14 +1,17 @@
+from charset_normalizer.api import logger
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
 from typing import Any
 
+import logging
 import requests
 from mitreattack.stix20 import MitreAttackData
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
 
+logger = logging.getLogger(__name__)
 
 class MitreAttackCollector(BaseCollector):
     def __init__(self, config: dict):
@@ -25,7 +28,7 @@ class MitreAttackCollector(BaseCollector):
         self.doc_count = 0
 
     def _download_stix_data(self):
-        target_file_path = self.output_dir / self.cache_path
+        target_file_path = self.cache_path
 
         if target_file_path.exists():
             return
@@ -48,21 +51,20 @@ class MitreAttackCollector(BaseCollector):
             return 0
 
         try:
-            mitre_data = MitreAttackData(str(self.output_dir / self.cache_path))
+            mitre_data = MitreAttackData(str(self.cache_path))
         except Exception as e:
             self.errors.append(f"Failed to load MitreAttackData: {e}")
             self.duration = time() - start_time
             return 0
 
-        docs = []
+        logger.info(f"Loaded enterprise-attack.json to {self.cache_path}")
+        docs: list[RawDocument] = []
 
         techniques = mitre_data.get_techniques(remove_revoked_deprecated=not self.include_revoked_deprecated)
         for technique in techniques:
             try:
                 stix_id = technique["id"]
                 technique_name = technique.get("name", "Unknown")
-
-                # print(f"\n{technique.get("x_mitre_contributors")}")
 
                 mitre_id = ""
                 for ext_ref in technique["external_references"]:
@@ -209,6 +211,7 @@ class MitreAttackCollector(BaseCollector):
 
         self.doc_count = self._write_documents(docs, self.output_dir, "mitre_attack")
         self.duration = time() - start_time
+        logger.info(f"Collected {self.doc_count} MITRE ATT&CK rules in {self.duration:.1f}s")
         return self.doc_count
 
     def manifest(self):
