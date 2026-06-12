@@ -1,17 +1,18 @@
 # configs/collection.yaml
 sources:
+  # ── Core Collectors ──
   mitre_attack:
     type: "stix"
     url: "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
     file: "enterprise-attack.json"
-    cache_path: ".cache/enterprise-attack.json"
+    cache_path: "data/raw/.cache/enterprise-attack.json"
     output_dir: "data/raw/mitre_attack"
     include_revoked_deprecated: false
 
   sigma_rules:
     type: "git"
     url: "https://github.com/SigmaHQ/sigma.git"
-    clone_path: ".repos/sigma"
+    clone_path: "data/raw/.repos/sigma"
     rules_subdir: "rules"
     output_dir: "data/raw/sigma_rules"
     shallow_clone: true
@@ -34,12 +35,94 @@ sources:
     max_advisories: null
     user_agent: "dfir-dataset-collector/0.1 (research)"
 
+  volatility3_docs:
+    type: "git"
+    url: "https://github.com/volatilityfoundation/volatility3.git"
+    clone_path: "data/raw/.repos/volatility3"
+    output_dir: "data/raw/volatility3_docs"
+    shallow_clone: true
+
+  mitre_atlas:
+    type: "stix"
+    url: "https://raw.githubusercontent.com/mitre-atlas/atlas-navigator-data/main/dist/stix-atlas.json"
+    cache_path: "data/raw/.cache/stix-atlas.json"
+    output_dir: "data/raw/mitre_atlas"
+
   cisa_kev:
     type: "json"
     json_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     output_dir: "data/raw/cisa_kev"
     group_by: "vendorProject"
     min_group_size: 1
+
+  # ── Artifact-Focused Tier 1 ──
+  kape_files:
+    type: "git"
+    url: "https://github.com/EricZimmerman/KapeFiles.git"
+    clone_path: "data/raw/.repos/KapeFiles"
+    output_dir: "data/raw/kape_files"
+    shallow_clone: true
+
+  hayabusa_rules:
+    type: "git"
+    url: "https://github.com/Yamato-Security/hayabusa-rules.git"
+    clone_path: "data/raw/.repos/hayabusa-rules"
+    output_dir: "data/raw/hayabusa_rules"
+    shallow_clone: true
+    min_rule_level: "low"
+
+  lolbas_gtfobins:
+    type: "git"
+    lolbas_url: "https://github.com/LOLBAS-Project/LOLBAS.git"
+    gtfobins_url: "https://github.com/GTFOBins/GTFOBins.github.io.git"
+    lolbas_clone_path: "data/raw/.repos/LOLBAS"
+    gtfobins_clone_path: "data/raw/.repos/GTFOBins"
+    output_dir: "data/raw/lolbas_gtfobins"
+    shallow_clone: true
+
+  forensic_artifacts:
+    type: "git"
+    url: "https://github.com/ForensicArtifacts/artifacts.git"
+    clone_path: "data/raw/.repos/forensic-artifacts"
+    output_dir: "data/raw/forensic_artifacts"
+    shallow_clone: true
+
+  # ── Artifact-Focused Tier 2 ──
+  velociraptor_artifacts:
+    type: "git"
+    url: "https://github.com/Velocidex/velociraptor-docs.git"
+    clone_path: "data/raw/.repos/velociraptor-docs"
+    output_dir: "data/raw/velociraptor_artifacts"
+    shallow_clone: true
+
+  hijacklibs:
+    type: "git"
+    url: "https://github.com/wietze/HijackLibs.git"
+    clone_path: "data/raw/.repos/HijackLibs"
+    output_dir: "data/raw/hijacklibs"
+    shallow_clone: true
+
+  loldrivers:
+    type: "git"
+    url: "https://github.com/magicsword-io/LOLDrivers.git"
+    clone_path: "data/raw/.repos/LOLDrivers"
+    output_dir: "data/raw/loldrivers"
+    shallow_clone: true
+
+  ossem_data_dicts:
+    type: "git"
+    url: "https://github.com/OTRF/OSSEM-DD.git"
+    clone_path: "data/raw/.repos/OSSEM-DD"
+    output_dir: "data/raw/ossem_data_dicts"
+    shallow_clone: true
+
+  cybersec_skills:
+    type: "git"
+    url: "https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git"
+    clone_path: "data/raw/.repos/Anthropic-Cybersecurity-Skills"
+    output_dir: "data/raw/cybersec_skills"
+    shallow_clone: true
+    min_body_chars: 2000
 
   # yara_rules: 
   #   type: "git"
