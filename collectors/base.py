@@ -23,10 +23,6 @@ class BaseCollector(ABC):
         """Collect documents, write JSONL to output_dir. Returns doc count."""
 
     @abstractmethod
-    def validate(self) -> dict[str, Any]:
-        """Validate collected data. Returns validation report."""
-
-    @abstractmethod
     def manifest(self) -> CollectionManifest:
         """Record manifest after each collection. Returns manifest report."""
 

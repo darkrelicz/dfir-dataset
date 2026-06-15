@@ -225,6 +225,3 @@ class MitreAttackCollector(BaseCollector):
             warnings=self.warnings,
             duration_seconds=self.duration,
         )
-
-    def validate(self) -> dict[str, Any]:
-        return {}
