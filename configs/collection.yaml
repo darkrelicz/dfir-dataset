@@ -28,12 +28,11 @@ sources:
     platforms: ["windows", "linux", "macos"]
 
   cisa_advisories:
-    type: "rss_scrape"
-    rss_url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+    type: "git"
+    url: "https://github.com/cisagov/CSAF.git"
+    clone_path: "data/raw/.repos/CSAF"
     output_dir: "data/raw/cisa_advisories"
-    request_delay_seconds: 1.0
-    max_advisories: null
-    user_agent: "dfir-dataset-collector/0.1 (research)"
+    shallow_clone: true
 
   volatility3_docs:
     type: "git"
