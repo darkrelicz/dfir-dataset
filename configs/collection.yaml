@@ -42,10 +42,11 @@ sources:
     shallow_clone: true
 
   mitre_atlas:
-    type: "stix"
-    url: "https://raw.githubusercontent.com/mitre-atlas/atlas-navigator-data/main/dist/stix-atlas.json"
-    cache_path: "data/raw/.cache/stix-atlas.json"
+    type: "git"
+    url: "https://github.com/mitre-atlas/atlas-data.git"
+    clone_path: "data/raw/.repos/atlas-data"
     output_dir: "data/raw/mitre_atlas"
+    shallow_clone: true
 
   cisa_kev:
     type: "json"

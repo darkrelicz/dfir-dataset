@@ -36,11 +36,6 @@ python -m scripts.collect_all --source mitre_attack
 python -m scripts.collect_all --dry-run
 ```
 
-### Running Tests
-
-```bash
-pytest tests/
-```
 
 ## Directory Structure
 

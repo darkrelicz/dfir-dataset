@@ -1,11 +1,10 @@
-from charset_normalizer.api import logger
+import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
-from typing import Any
 
-import logging
 import requests
+from charset_normalizer.api import logger
 from mitreattack.stix20 import MitreAttackData
 
 from collectors.base import BaseCollector, CollectionManifest
