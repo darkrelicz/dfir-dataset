@@ -8,8 +8,7 @@ import logging
 import sys
 import types
 from collections import defaultdict
-from datetime import date, datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
 from typing import Any
@@ -21,7 +20,6 @@ from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
 
 logger = logging.getLogger(__name__)
-
 
 class MitreAtlasCollector(BaseCollector):
     """Collect MITRE ATLAS data from atlas-data."""
@@ -72,7 +70,7 @@ class MitreAtlasCollector(BaseCollector):
         path = Path(rel_path).as_posix()
         base_url = self.url[:-4] if self.url.endswith(".git") else self.url
         return f"{base_url}/blob/{source_commit}/{path}"
-
+    
     def _select_latest_v6_yaml(self) -> Path | None:
         """Select the newest v6 ATLAS YAML from dist/manifest.yaml."""
         dist_dir = self.clone_path / "dist"
@@ -99,10 +97,6 @@ class MitreAtlasCollector(BaseCollector):
 
         self.errors.append("Could not locate latest v6 ATLAS YAML in atlas-data/dist")
         return None
-
-    def _date_to_datetime(self, value: date) -> datetime:
-        """Convert validated ATLAS date values to timezone-aware datetimes."""
-        return datetime.combine(value, datetime.min.time(), tzinfo=timezone.utc)
 
     def _enum_value(self, value: Any) -> Any:
         """Return enum values as strings for markdown and JSON metadata."""
@@ -353,7 +347,7 @@ class MitreAtlasCollector(BaseCollector):
             source_url=f"https://atlas.mitre.org/techniques/{atlas_id}",
             title=name,
             date_collected=date.today(),
-            date_published=self._date_to_datetime(obj.created_date),
+            date_published=obj.created_date,
             content_type="technique_definition",
             content_markdown=markdown,
             metadata=metadata,
@@ -423,7 +417,7 @@ class MitreAtlasCollector(BaseCollector):
             source_url=f"https://atlas.mitre.org/mitigations/{atlas_id}",
             title=f"ATLAS Mitigation: {name}",
             date_collected=date.today(),
-            date_published=self._date_to_datetime(obj.created_date),
+            date_published=obj.created_date,
             content_type="mitigation",
             content_markdown=markdown,
             metadata=metadata,
@@ -521,7 +515,7 @@ class MitreAtlasCollector(BaseCollector):
             source_url=f"https://atlas.mitre.org/studies/{case_id}",
             title=f"ATLAS Case Study: {name}",
             date_collected=date.today(),
-            date_published=self._date_to_datetime(obj.date),
+            date_published=obj.date,
             content_type="case_study",
             content_markdown=markdown,
             metadata=metadata,
