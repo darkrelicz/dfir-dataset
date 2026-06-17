@@ -5,12 +5,11 @@ Clones the cisagov/CSAF repository which contains machine-readable CSAF
 advisories. One document per advisory JSON file.
 """
 import json
+import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
 from typing import Any
-
-import logging
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
@@ -192,7 +191,7 @@ class CISAAdvisoriesCollector(BaseCollector):
                 raw_date = tracking.get("initial_release_date", "")
                 if raw_date:
                     try:
-                        date_published = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                        date_published = self._parse_datetime(raw_date)
                     except (ValueError, TypeError):
                         pass
 

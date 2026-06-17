@@ -2,6 +2,7 @@ import importlib.metadata
 import logging
 import re
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -58,3 +59,6 @@ class BaseCollector(ABC):
         if not text:
             return ""
         return text.strip()
+    
+    def _parse_datetime(self, value: str) -> datetime:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
