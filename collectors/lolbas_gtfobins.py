@@ -5,10 +5,10 @@ Two repositories, one collector class with a unified output schema.
 - GTFOBins: YAML files describing Linux binaries in _gtfobins/ directory
 """
 import logging
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
-from typing import Any
 from urllib.parse import quote
 
 import yaml
@@ -19,6 +19,7 @@ from collectors.schemas import RawDocument
 logger = logging.getLogger(__name__)
 
 class LOLBASGTFOBinsCollector(BaseCollector):
+    MAX_MARKDOWN_FULL_PATHS = 20
 
     LOLBAS_URL_CATEGORIES = {
         "OSBinaries": "Binaries",
@@ -43,160 +44,166 @@ class LOLBASGTFOBinsCollector(BaseCollector):
         self.doc_count = 0
 
     def _lolbas_source_url(self, file_path: Path) -> str:
-        """Build the rendered LOLBAS site URL for a YAML entry."""
         category = self.LOLBAS_URL_CATEGORIES.get(file_path.parent.name)
         if category is None:
-            name = file_path.stem
-            category = "Libraries" if name.lower().endswith(".dll") else "Binaries"
+            category = (
+                "Libraries"
+                if file_path.stem.lower().endswith(".dll")
+                else "Binaries"
+            )
         return (
             "https://lolbas-project.github.io/lolbas/"
             f"{category}/{quote(file_path.stem, safe='')}"
         )
 
-    def _ordered_unique(self, values: list[str]) -> list[str]:
-        """Deduplicate strings while preserving first-seen order."""
-        seen = set()
-        unique = []
-        for value in values:
-            if value in seen:
-                continue
-            seen.add(value)
-            unique.append(value)
-        return unique
+    def _unique(self, values: list[str]) -> list[str]:
+        return list(dict.fromkeys(value for value in values if value))
 
-    def _extract_lolbas_paths(self, full_path: list) -> list[str]:
-        """Extract path strings from LOLBAS Full_Path entries."""
-        paths = []
-        for item in full_path:
-            if isinstance(item, dict):
-                path = item.get("Path", "")
-            else:
-                path = item
-            if path:
-                paths.append(str(path))
-        return paths
+    def _slug(self, value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
     def _parse_lolbas_entry(self, file_path: Path) -> RawDocument | None:
         """Parse a single LOLBAS YAML entry."""
         try:
-            text = file_path.read_text(encoding="utf-8", errors="replace")
-            data = yaml.safe_load(text)
-            if not data or not isinstance(data, dict):
+            data = yaml.safe_load(
+                file_path.read_text(encoding="utf-8", errors="replace")
+            )
+            if not data:
                 return None
 
             name = data.get("Name", file_path.stem)
-            description = data.get("Description", "")
-            created = data.get("Created", "")
-
             commands = data.get("Commands", []) or []
-            full_path = data.get("Full_Path", []) or []
-            code_sample = data.get("Code_Sample", []) or []
-            detection_list = data.get("Detection", []) or []
+            detections = data.get("Detection", []) or []
             resources = data.get("Resources", []) or []
-            acknowledgements = data.get("Acknowledgement", []) or []
+            aliases = [
+                str(item.get("Alias") if isinstance(item, dict) else item)
+                for item in data.get("Aliases", []) or []
+            ]
+            full_paths = [
+                str(item.get("Path") if isinstance(item, dict) else item)
+                for item in data.get("Full_Path", []) or []
+            ]
 
             lines = [
                 f"# LOLBAS: {name}",
                 "",
-                f"**Platform**: Windows",
-                f"**Description**: {description}",
+                "**Platform**: Windows",
+                f"**Description**: {data.get('Description', '')}",
             ]
+            if data.get("Author"):
+                lines.append(f"**Author**: {data['Author']}")
+            if aliases:
+                lines.append(f"**Aliases**: {', '.join(aliases)}")
+            lines.append("")
 
-            if full_path:
+            if full_paths:
                 lines.append("## Full Paths")
-                for fp in full_path:
-                    if isinstance(fp, dict):
-                        lines.append(f"- `{fp.get('Path', '')}`")
+                for path in full_paths[:self.MAX_MARKDOWN_FULL_PATHS]:
+                    lines.append(f"- `{path}`")
+                omitted = len(full_paths) - self.MAX_MARKDOWN_FULL_PATHS
+                if omitted > 0:
+                    lines.append(
+                        f"- ... {omitted} additional paths omitted; "
+                        "see metadata.full_paths"
+                    )
+                lines.append("")
+
+            mitre_ids = []
+            categories = []
+            command_tags = []
+
+            lines.extend(["## Abuse Functions", ""])
+            for cmd in commands:
+                category = cmd.get("Category", "")
+                command = cmd.get("Command", "")
+                description = cmd.get("Description", "")
+                tags = []
+                for tag in cmd.get("Tags", []) or []:
+                    if isinstance(tag, dict):
+                        tags.extend(f"{key}: {value}" for key, value in tag.items())
                     else:
-                        lines.append(f"- `{fp}`")
+                        tags.append(str(tag))
+
+                categories.append(category)
+                command_tags.extend(tags)
+                if cmd.get("MitreID"):
+                    mitre_ids.append(str(cmd["MitreID"]))
+
+                language = "powershell" if "powershell" in command.lower() else "cmd"
+                lines.append(f"### {category}: {description}")
+                if command:
+                    lines.extend([f"```{language}", command.strip(), "```"])
+                if cmd.get("Usecase"):
+                    lines.append(f"- **Use Case**: {cmd['Usecase']}")
+                if cmd.get("Privileges"):
+                    lines.append(f"- **Privileges**: {cmd['Privileges']}")
+                if cmd.get("MitreID"):
+                    lines.append(f"- **MITRE ATT&CK**: {cmd['MitreID']}")
+                if cmd.get("OperatingSystem"):
+                    lines.append(f"- **OS**: {cmd['OperatingSystem']}")
+                if tags:
+                    lines.append(f"- **Tags**: {', '.join(tags)}")
                 lines.append("")
 
-            if commands:
-                lines.append("## Abuse Functions")
-                lines.append("")
-                for cmd in commands:
-                    if not isinstance(cmd, dict):
-                        continue
-                    cmd_desc = cmd.get("Description", "")
-                    command = cmd.get("Command", "")
-                    usecase = cmd.get("Usecase", "")
-                    category = cmd.get("Category", "")
-                    privileges = cmd.get("Privileges", "")
-                    mitre_id = cmd.get("MitreID", "")
-                    operating_system = cmd.get("OperatingSystem", "")
-
-                    lines.append(f"### {category}: {cmd_desc[:80]}")
-                    if command:
-                        lines.append(f"```\n{command}\n```")
-                    if usecase:
-                        lines.append(f"- **Use Case**: {usecase}")
-                    if privileges:
-                        lines.append(f"- **Privileges**: {privileges}")
-                    if mitre_id:
-                        lines.append(f"- **MITRE ATT&CK**: {mitre_id}")
-                    if operating_system:
-                        lines.append(f"- **OS**: {operating_system}")
-                    lines.append("")
-
-            if detection_list:
+            if detections:
                 lines.append("## Detection")
-                for det in detection_list:
-                    if isinstance(det, dict):
-                        for key, val in det.items():
-                            lines.append(f"- **{key}**: {val}")
+                for detection in detections:
+                    if isinstance(detection, dict):
+                        for key, value in detection.items():
+                            lines.append(f"- **{key}**: {value}")
                     else:
-                        lines.append(f"- {det}")
+                        lines.append(f"- {detection}")
                 lines.append("")
 
             if resources:
                 lines.append("## Resources")
-                for res in resources:
-                    if isinstance(res, dict):
-                        lines.append(f"- {res.get('Link', res.get('URL', str(res)))}")
-                    else:
-                        lines.append(f"- {res}")
+                for resource in resources:
+                    link = (
+                        resource.get("Link", resource)
+                        if isinstance(resource, dict)
+                        else resource
+                    )
+                    lines.append(f"- {link}")
                 lines.append("")
 
+            detection_types = []
+            for detection in detections:
+                if isinstance(detection, dict):
+                    detection_types.extend(detection.keys())
+
             markdown = self._to_markdown("\n".join(lines))
-
-            # Extract MITRE IDs from commands
-            mitre_ids = []
-            categories = set()
-            for cmd in commands:
-                if isinstance(cmd, dict):
-                    mid = cmd.get("MitreID", "")
-                    if mid:
-                        mitre_ids.append(str(mid))
-                    cat = cmd.get("Category", "")
-                    if cat:
-                        categories.add(cat)
-            mitre_ids = self._ordered_unique(mitre_ids)
-
-            metadata: dict[str, Any] = {
-                "binary_name": name,
-                "platform": "windows",
-                "lolbas_type": "lolbas",
-                "lolbas_category": file_path.parent.name,
-                "categories": sorted(categories),
-                "mitre_attack_ids": mitre_ids,
-                "command_count": len(commands),
-                "full_paths": self._extract_lolbas_paths(full_path),
-                "detections": detection_list,
-                "resources": resources,
-                "code_samples": code_sample,
-                "acknowledgements": acknowledgements,
-            }
+            created = data.get("Created", "")
 
             return RawDocument(
-                doc_id=f"lolbas-{name.lower().replace('.', '-')}",
+                doc_id=f"lolbas-{self._slug(name)}",
                 source="lolbas_gtfobins",
                 source_url=self._lolbas_source_url(file_path),
                 title=f"LOLBAS: {name}",
                 date_collected=date.today(),
                 date_published=created,
-                content_type="abuse_database",
+                content_type="lolbas_windows_lolbin",
                 content_markdown=markdown,
-                metadata=metadata,
+                metadata={
+                    "binary_name": name,
+                    "platform": "windows",
+                    "lolbas_type": "lolbas",
+                    "lolbas_category": file_path.parent.name,
+                    "author": str(data.get("Author", "")),
+                    "created": str(created) if created else "",
+                    "aliases": aliases,
+                    "categories": sorted(self._unique(categories)),
+                    "mitre_attack_ids": self._unique(mitre_ids),
+                    "command_tags": self._unique(command_tags),
+                    "command_count": len(commands),
+                    "full_paths": full_paths,
+                    "detection_types": self._unique(
+                        [str(item) for item in detection_types]
+                    ),
+                    "detections": detections,
+                    "resources": resources,
+                    "code_samples": data.get("Code_Sample", []) or [],
+                    "acknowledgements": data.get("Acknowledgement", []) or [],
+                },
                 word_count=self._count_words(markdown),
             )
 
@@ -209,65 +216,170 @@ class LOLBASGTFOBinsCollector(BaseCollector):
     def _parse_gtfobins_entry(self, file_path: Path) -> RawDocument | None:
         """Parse a single GTFOBins YAML entry."""
         try:
-            text = file_path.read_text(encoding="utf-8", errors="replace")
-            data = yaml.safe_load(text)
-            if not data or not isinstance(data, dict):
+            data = yaml.safe_load(
+                file_path.read_text(encoding="utf-8", errors="replace")
+            )
+            if not data:
                 return None
 
             binary_name = file_path.stem
             functions = data.get("functions", {}) or {}
+            alias_target = data.get("alias", "")
+            source_url = f"https://gtfobins.github.io/gtfobins/{quote(binary_name, safe='')}/"
+
+            if alias_target and not functions:
+                markdown = self._to_markdown(
+                    "\n".join(
+                        [
+                            f"# GTFOBins Alias: {binary_name}",
+                            "",
+                            "**Platform**: Linux",
+                            f"**Alias Target**: {alias_target}",
+                            "",
+                            f"`{binary_name}` is an alias of `{alias_target}` "
+                            "in GTFOBins.",
+                        ]
+                    )
+                )
+                return RawDocument(
+                    doc_id=f"gtfobins-{self._slug(binary_name)}",
+                    source="lolbas_gtfobins",
+                    source_url=source_url,
+                    title=f"GTFOBins Alias: {binary_name}",
+                    date_collected=date.today(),
+                    date_published=None,
+                    content_type="gtfobins_linux_alias",
+                    content_markdown=markdown,
+                    metadata={
+                        "binary_name": binary_name,
+                        "platform": "linux",
+                        "lolbas_type": "gtfobins",
+                        "alias_target": str(alias_target),
+                        "functions": [],
+                        "function_count": 0,
+                        "entry_count": 0,
+                    },
+                    word_count=self._count_words(markdown),
+                )
 
             if not functions:
                 return None
 
-            lines = [
-                f"# GTFOBins: {binary_name}",
-                "",
-                f"**Platform**: Linux",
-                "",
-            ]
+            lines = [f"# GTFOBins: {binary_name}", "", "**Platform**: Linux"]
+            if data.get("comment"):
+                lines.append(f"**Note**: {data['comment']}")
+            lines.append("")
 
-            for func_name, func_entries in functions.items():
-                lines.append(f"## {func_name}")
-                lines.append("")
-                if not isinstance(func_entries, list):
-                    continue
-                for entry in func_entries:
-                    if not isinstance(entry, dict):
-                        continue
-                    description = entry.get("description", "")
-                    code = entry.get("code", "")
+            contexts = []
+            inherited_from = []
+            senders = []
+            receivers = []
+            listeners = []
+            connectors = []
+            versions = []
+            comments = []
+            has_tty = False
+            binary_false_count = 0
+            entry_count = 0
 
-                    if description:
-                        lines.append(description)
-                    if code:
-                        lines.append("```")
-                        lines.append(str(code).strip())
-                        lines.append("```")
+            for func_name, entries in functions.items():
+                lines.extend([f"## {func_name}", ""])
+                for entry in entries or []:
+                    entry_count += 1
+                    entry_contexts = entry.get("contexts", {}) or {}
+                    contexts.extend(entry_contexts.keys())
+
+                    if entry.get("comment"):
+                        comments.append(str(entry["comment"]))
+                        lines.extend([str(entry["comment"]), ""])
+                    if entry.get("code"):
+                        lines.extend(["```bash", str(entry["code"]).strip(), "```"])
+                    if entry.get("from"):
+                        inherited_from.append(str(entry["from"]))
+                        lines.append(f"- **Inherits From**: {entry['from']}")
+                    if "binary" in entry:
+                        lines.append(f"- **Requires Binary**: {entry['binary']}")
+                        if entry["binary"] is False:
+                            binary_false_count += 1
+                    if entry.get("version"):
+                        versions.append(str(entry["version"]))
+                        lines.append(f"- **Version**: {entry['version']}")
+                    if entry.get("tty"):
+                        has_tty = True
+                        lines.append("- **TTY Required**: true")
+
+                    for label, key, bucket in [
+                        ("Sender", "sender", senders),
+                        ("Receiver", "receiver", receivers),
+                        ("Listener", "listener", listeners),
+                        ("Connector", "connector", connectors),
+                    ]:
+                        value = entry.get(key)
+                        if value:
+                            name = (
+                                "custom-code" if isinstance(value, dict) else str(value)
+                            )
+                            bucket.append(name)
+                            lines.append(f"- **{label}**: {name}")
+
+                    if entry_contexts:
+                        lines.append(f"- **Contexts**: {', '.join(entry_contexts)}")
+                        for context_name, context_data in entry_contexts.items():
+                            if not context_data:
+                                continue
+                            lines.append(f"#### {context_name} context")
+                            if context_data.get("code"):
+                                lines.extend(
+                                    [
+                                        "```bash",
+                                        str(context_data["code"]).strip(),
+                                        "```",
+                                    ]
+                                )
+                            if context_data.get("list"):
+                                values = ", ".join(
+                                    str(item) for item in context_data["list"]
+                                )
+                                lines.append(f"- **Values**: {values}")
+                            if "shell" in context_data:
+                                lines.append(
+                                    f"- **Spawns Shell**: {context_data['shell']}"
+                                )
+                            if context_data.get("comment"):
+                                lines.append(f"- **Note**: {context_data['comment']}")
                     lines.append("")
 
             markdown = self._to_markdown("\n".join(lines))
-
             function_names = sorted(functions.keys())
 
-            metadata: dict[str, Any] = {
-                "binary_name": binary_name,
-                "platform": "linux",
-                "lolbas_type": "gtfobins",
-                "functions": function_names,
-                "function_count": len(function_names),
-            }
-
             return RawDocument(
-                doc_id=f"gtfobins-{binary_name.lower()}",
+                doc_id=f"gtfobins-{self._slug(binary_name)}",
                 source="lolbas_gtfobins",
-                source_url=f"https://gtfobins.github.io/gtfobins/{binary_name}/",
+                source_url=source_url,
                 title=f"GTFOBins: {binary_name}",
                 date_collected=date.today(),
                 date_published=None,
-                content_type="abuse_database",
+                content_type="gtfobins_linux_abuse_function",
                 content_markdown=markdown,
-                metadata=metadata,
+                metadata={
+                    "binary_name": binary_name,
+                    "platform": "linux",
+                    "lolbas_type": "gtfobins",
+                    "functions": function_names,
+                    "function_count": len(function_names),
+                    "alias_target": str(alias_target or ""),
+                    "entry_count": entry_count,
+                    "contexts": self._unique([str(item) for item in contexts]),
+                    "inherited_from": self._unique(inherited_from),
+                    "senders": self._unique(senders),
+                    "receivers": self._unique(receivers),
+                    "listeners": self._unique(listeners),
+                    "connectors": self._unique(connectors),
+                    "versions": self._unique(versions),
+                    "has_tty": has_tty,
+                    "binary_false_count": binary_false_count,
+                    "top_level_comment": str(data.get("comment", "")),
+                },
                 word_count=self._count_words(markdown),
             )
 
@@ -283,46 +395,34 @@ class LOLBASGTFOBinsCollector(BaseCollector):
         lolbas_count = 0
         gtfobins_count = 0
 
-        # Clone and parse LOLBAS
         try:
             self._clone_repo(
                 self.lolbas_url,
                 self.lolbas_clone_path,
                 shallow=self.shallow_clone,
             )
-            lolbas_yml_dir = self.lolbas_clone_path / "yml"
-            if lolbas_yml_dir.exists():
-                for yml_file in sorted(lolbas_yml_dir.rglob("*.yml")):
-                    doc = self._parse_lolbas_entry(yml_file)
-                    if doc:
-                        docs.append(doc)
-                        lolbas_count += 1
-                logger.info(f"Parsed {lolbas_count} LOLBAS entries")
-            else:
-                self.warnings.append(
-                    f"LOLBAS yml directory not found: {lolbas_yml_dir}"
-                )
+            for yml_file in sorted((self.lolbas_clone_path / "yml").rglob("*.yml")):
+                doc = self._parse_lolbas_entry(yml_file)
+                if doc:
+                    docs.append(doc)
+                    lolbas_count += 1
+            logger.info(f"Parsed {lolbas_count} LOLBAS entries")
         except Exception as e:
             self.errors.append(f"Failed to clone/parse LOLBAS repo: {e}")
 
-        # Clone and parse GTFOBins
         try:
             self._clone_repo(
                 self.gtfobins_url,
                 self.gtfobins_clone_path,
                 shallow=self.shallow_clone,
             )
-            gtfobins_dir = self.gtfobins_clone_path / "_gtfobins"
-            if gtfobins_dir.exists():
-                for bin_file in sorted(gtfobins_dir.iterdir()):
-                    if bin_file.is_file() and not bin_file.name.startswith("."):
-                        doc = self._parse_gtfobins_entry(bin_file)
-                        if doc:
-                            docs.append(doc)
-                            gtfobins_count += 1
-                logger.info(f"Parsed {gtfobins_count} GTFOBins entries")
-            else:
-                self.warnings.append(f"GTFOBins directory not found: {gtfobins_dir}")
+            for bin_file in sorted((self.gtfobins_clone_path / "_gtfobins").iterdir()):
+                if bin_file.is_file() and not bin_file.name.startswith("."):
+                    doc = self._parse_gtfobins_entry(bin_file)
+                    if doc:
+                        docs.append(doc)
+                        gtfobins_count += 1
+            logger.info(f"Parsed {gtfobins_count} GTFOBins entries")
         except Exception as e:
             self.errors.append(f"Failed to clone/parse GTFOBins repo: {e}")
 
