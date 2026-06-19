@@ -6,8 +6,6 @@ This repository contains the data collection, synthesis, and quality assurance p
 
 The goal is to build a **re-runnable dataset factory** that produces high-quality instruction-response pairs covering key digital forensics and incident response (DFIR) tasks. The resulting dataset will be used to fine-tune a model (e.g., GLM-4.7-Flash) for Shepherd's specialist agents.
 
-We are currently in **Phase 2: Collection Pipeline**. The source collection pipeline is fully implemented. You can now ingest DFIR datasets.
-
 See `docs/ARCHITECTURE.md` for design decisions.
 
 ## Quick Start
