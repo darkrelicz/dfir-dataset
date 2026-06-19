@@ -5,6 +5,7 @@ description = "DFIR Task Taxonomy and Dataset for Shepherd fine-tuning"
 requires-python = ">=3.11"
 readme = "README.md" 
 dependencies = [
+    "artifacts>=20260421",
     "pyyaml",
     "pydantic>=2.0",
     "jsonlines",

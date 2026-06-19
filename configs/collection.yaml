@@ -133,7 +133,6 @@ sources:
   #   url: "https://github.com/splunk/security_content.git" # autocompleted, to check
   #   output_dir: "data/raw/splunk_security_content"
   # dfir playbooks (open source, SANS, etc.)
-  # OSSEM (https://ossemproject.com/dm/intro.html)
 
 settings:
   manifest_dir: "data/raw"
