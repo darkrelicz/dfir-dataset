@@ -1,9 +1,11 @@
 """AF5: Velociraptor Artifact Exchange Collector.
 
-Clones the Velocidex/velociraptor-docs repository and parses artifact
-YAML files containing VQL queries and descriptions.
+Clones the Velocidex/velociraptor-docs repository and parses generated
+artifact reference Markdown pages containing VQL queries and descriptions.
 """
+import re
 from datetime import date, datetime, timezone
+from html import unescape
 from pathlib import Path
 from time import time
 from typing import Any
@@ -13,10 +15,13 @@ import yaml
 from collectors.base import BaseCollector, CollectionManifest, logger
 from collectors.schemas import RawDocument
 
+ARTIFACT_BLOCK_RE = re.compile(
+    r'<pre><code class="language-yaml">\n?(.*?)</code></pre>',
+    re.DOTALL,
+)
+
 
 class VelociraptorArtifactsCollector(BaseCollector):
-
-    SOURCE_URL = "https://github.com/Velocidex/velociraptor-docs.git"
 
     def __init__(self, config: dict):
         self.config = config
@@ -32,93 +37,153 @@ class VelociraptorArtifactsCollector(BaseCollector):
 
     def _determine_os(self, artifact_name: str, precondition: str = "") -> str:
         """Determine OS from artifact name or precondition."""
-        name_lower = artifact_name.lower()
-        precond_lower = precondition.lower()
-        combined = f"{name_lower} {precond_lower}"
+        combined = f"{artifact_name} {precondition}".lower()
 
         if "windows" in combined:
             return "Windows"
-        elif "linux" in combined:
+        if "linux" in combined:
             return "Linux"
-        elif "mac" in combined or "darwin" in combined:
+        if "mac" in combined or "darwin" in combined:
             return "macOS"
         return "Cross-platform"
 
-    def _build_markdown(self, artifact: dict) -> str:
-        """Build markdown for a Velociraptor artifact definition."""
-        name = artifact.get("name", "Unknown")
-        description = artifact.get("description", "")
-        author = artifact.get("author", "")
-        artifact_type = artifact.get("type", "")
-        precondition = artifact.get("precondition", "")
-        parameters = artifact.get("parameters", []) or []
-        sources = artifact.get("sources", []) or []
-        reference = artifact.get("reference", []) or []
+    def _parse_frontmatter(self, content: str) -> tuple[dict[str, Any], str]:
+        """Parse YAML frontmatter and return the remaining Markdown body."""
+        match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", content, re.DOTALL)
+        if not match:
+            return {}, content
 
-        os_platform = self._determine_os(name, str(precondition))
+        frontmatter = yaml.safe_load(match.group(1)) or {}
+        if not isinstance(frontmatter, dict):
+            frontmatter = {}
+        return frontmatter, match.group(2)
+
+    def _parse_artifact_yaml(self, body: str) -> dict[str, Any]:
+        """Parse the embedded artifact YAML block from a Markdown page."""
+        match = ARTIFACT_BLOCK_RE.search(body)
+        if not match:
+            return {}
+
+        artifact = yaml.safe_load(unescape(match.group(1))) or {}
+        if not isinstance(artifact, dict):
+            return {}
+        return artifact
+
+    def _normalize_body(self, body: str) -> str:
+        """Convert the embedded HTML YAML block into fenced Markdown."""
+
+        def replace(match: re.Match) -> str:
+            code = unescape(match.group(1)).strip()
+            return f"```yaml\n{code}\n```"
+
+        return ARTIFACT_BLOCK_RE.sub(replace, body).strip()
+
+    def _as_text(self, value: Any) -> str:
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value)
+        return str(value or "")
+
+    def _slugify(self, value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+    def _as_list(self, value: Any) -> list[str]:
+        if not value:
+            return []
+        if not isinstance(value, list):
+            value = [value]
+        return [str(item) for item in value if item]
+
+    def _names_from_items(self, items: list[Any], default_prefix: str) -> list[str]:
+        names = []
+        for index, item in enumerate(items, start=1):
+            if isinstance(item, dict):
+                names.append(str(item.get("name") or f"{default_prefix} {index}"))
+            else:
+                names.append(str(item))
+        return names
+
+    def _query_parts(self, artifact: dict[str, Any]) -> list[str]:
+        sources = artifact.get("sources", []) or []
+        query_parts = [
+            artifact.get("precondition", ""),
+            artifact.get("export", ""),
+        ]
+
+        for source in sources:
+            if not isinstance(source, dict):
+                continue
+            query_parts.append(source.get("precondition", ""))
+            for key in ("query", "queries"):
+                value = source.get(key)
+                if isinstance(value, list):
+                    query_parts.extend(str(item) for item in value)
+                elif value:
+                    query_parts.append(str(value))
+
+        return [str(part) for part in query_parts if part]
+
+    def _has_vql(self, artifact: dict[str, Any]) -> bool:
+        query_text = "\n".join(self._query_parts(artifact))
+        return bool(re.search(r"\b(SELECT|LET)\b", query_text, re.I))
+
+    def _content_type(
+        self,
+        artifact: dict[str, Any],
+        tags: list[str],
+        has_vql: bool,
+    ) -> str:
+        artifact_type = self._as_text(artifact.get("type")).upper()
+        tag_set = {tag.lower() for tag in tags}
+
+        if artifact_type == "NOTEBOOK" or "notebook" in tag_set:
+            return "velociraptor_notebook"
+        if artifact.get("reports"):
+            return "velociraptor_report_template"
+        if artifact_type in {"CLIENT_EVENT", "SERVER_EVENT"}:
+            return "velociraptor_event_artifact"
+        if artifact_type == "INTERNAL":
+            return "velociraptor_internal_artifact"
+        if artifact_type == "SERVER" or "server artifact" in tag_set:
+            return "velociraptor_server_artifact"
+        if artifact_type == "CLIENT" or "client artifact" in tag_set:
+            return "velociraptor_client_artifact"
+        if has_vql:
+            return "velociraptor_vql_artifact"
+        return "velociraptor_artifact"
+
+    def _artifact_family(self, artifact_name: str) -> str:
+        parts = artifact_name.split(".")
+        return ".".join(parts[:2]) if len(parts) > 1 else artifact_name
+
+    def _references(self, artifact: dict[str, Any]) -> list[str]:
+        return [
+            *self._as_list(artifact.get("reference")),
+            *self._as_list(artifact.get("references")),
+        ]
+
+    def _build_markdown(
+        self,
+        artifact: dict[str, Any],
+        body: str,
+        md_file: Path,
+        os_platform: str,
+    ) -> str:
+        """Build normalized markdown from a Velociraptor artifact page."""
+        artifact_type = self._as_text(artifact.get("type"))
+        author = self._as_text(artifact.get("author"))
 
         lines = [
-            f"# Velociraptor Artifact: {name}",
+            f"# Velociraptor Artifact: {artifact['name']}",
             "",
             f"**Platform**: {os_platform}",
+            f"**Source File**: `{md_file.name}`",
         ]
         if artifact_type:
             lines.append(f"**Type**: {artifact_type}")
         if author:
             lines.append(f"**Author**: {author}")
-        lines.append("")
 
-        if description:
-            lines.append("## Description")
-            lines.append(str(description).strip())
-            lines.append("")
-
-        if precondition:
-            lines.append("## Precondition")
-            lines.append("```sql")
-            lines.append(str(precondition).strip())
-            lines.append("```")
-            lines.append("")
-
-        if parameters:
-            lines.append("## Parameters")
-            lines.append("| Name | Type | Default | Description |")
-            lines.append("|---|---|---|---|")
-            for param in parameters:
-                if not isinstance(param, dict):
-                    continue
-                pname = param.get("name", "")
-                ptype = param.get("type", "string")
-                pdefault = str(param.get("default", "")).replace("\n", " ").replace("|", "\\|")[:50]
-                pdesc = str(param.get("description", "")).replace("\n", " ").replace("|", "\\|")
-                lines.append(f"| `{pname}` | {ptype} | `{pdefault}` | {pdesc} |")
-            lines.append("")
-
-        if sources:
-            lines.append("## Sources")
-            lines.append("")
-            for i, source in enumerate(sources):
-                if not isinstance(source, dict):
-                    continue
-                sname = source.get("name", f"Source {i + 1}")
-                query = source.get("query", "")
-
-                lines.append(f"### {sname}")
-                if query:
-                    lines.append("```sql")
-                    lines.append(str(query).strip())
-                    lines.append("```")
-                lines.append("")
-
-        if reference:
-            lines.append("## References")
-            if isinstance(reference, list):
-                for ref in reference:
-                    lines.append(f"- {ref}")
-            else:
-                lines.append(f"- {reference}")
-            lines.append("")
-
+        lines.extend(["", "## Artifact Reference", "", body])
         return self._to_markdown("\n".join(lines))
 
     def collect(self) -> int:
@@ -131,78 +196,105 @@ class VelociraptorArtifactsCollector(BaseCollector):
             self.duration = time() - start_time
             return 0
 
-        # Artifact exchange definitions are typically in content/exchange/artifacts/
-        # or content/artifact_references/pages/
-        search_dirs = [
-            self.clone_path / "content" / "exchange" / "artifacts",
-            self.clone_path / "content" / "artifact_references" / "pages",
-            self.clone_path / "content" / "exchange",
-        ]
+        artifact_path = self.clone_path / "content" / "artifact_references" / "pages"
+        md_files = sorted(artifact_path.rglob("*.md"))
+        logger.info(f"Found {len(md_files)} Velociraptor artifact Markdown pages")
 
         docs: list[RawDocument] = []
-        seen_names: set[str] = set()
 
-        # Also look for YAML files with artifact definitions anywhere
-        for search_dir in search_dirs:
-            if not search_dir.exists():
-                continue
+        for md_file in md_files:
+            try:
+                text = md_file.read_text(encoding="utf-8", errors="replace")
+                frontmatter, body = self._parse_frontmatter(text)
+                artifact = self._parse_artifact_yaml(body)
 
-            for yaml_file in sorted(search_dir.rglob("*.yaml")):
-                try:
-                    text = yaml_file.read_text(encoding="utf-8", errors="replace")
-                    for artifact in yaml.safe_load_all(text):
-                        if not artifact or not isinstance(artifact, dict):
-                            continue
-                        if "name" not in artifact:
-                            continue
+                if not artifact.get("name"):
+                    self.warnings.append(f"No embedded artifact YAML in {md_file}")
+                    continue
 
-                        name = artifact["name"]
-                        if name in seen_names:
-                            continue
-                        seen_names.add(name)
+                artifact_name = artifact["name"]
+                normalized_body = self._normalize_body(body)
+                os_platform = self._determine_os(
+                    artifact_name,
+                    artifact.get("precondition", ""),
+                )
+                markdown = self._build_markdown(
+                    artifact,
+                    normalized_body,
+                    md_file,
+                    os_platform,
+                )
 
-                        markdown = self._build_markdown(artifact)
-                        os_platform = self._determine_os(name, str(artifact.get("precondition", "")))
+                page_path = (
+                    md_file.relative_to(artifact_path)
+                    .with_suffix("")
+                    .as_posix()
+                )
+                source_url = (
+                    "https://docs.velociraptor.app/artifact_references/pages/"
+                    f"{page_path.lower()}/"
+                )
+                parameters = artifact.get("parameters", []) or []
+                sources = artifact.get("sources", []) or []
+                tags = frontmatter.get("tags", []) or []
+                has_vql = self._has_vql(artifact)
+                tool_names = self._names_from_items(
+                    artifact.get("tools", []) or [],
+                    "Tool",
+                )
 
-                        # Extract VQL query content
-                        vql_queries = []
-                        for src in artifact.get("sources", []) or []:
-                            if isinstance(src, dict) and src.get("query"):
-                                vql_queries.append(src["query"])
+                metadata: dict[str, Any] = {
+                    "artifact_name": artifact_name,
+                    "artifact_family": self._artifact_family(artifact_name),
+                    "os_platform": os_platform,
+                    "artifact_type": self._as_text(artifact.get("type")),
+                    "author": self._as_text(artifact.get("author")),
+                    "tags": tags,
+                    "parameter_count": len(parameters),
+                    "parameter_names": self._names_from_items(parameters, "Parameter"),
+                    "source_count": len(sources),
+                    "source_names": self._names_from_items(sources, "Source"),
+                    "has_vql": has_vql,
+                    "required_permissions": self._as_list(
+                        artifact.get("required_permissions")
+                    ),
+                    "implied_permissions": self._as_list(
+                        artifact.get("implied_permissions")
+                    ),
+                    "references": self._references(artifact),
+                    "tools": tool_names,
+                    "relative_path": md_file.relative_to(self.clone_path).as_posix(),
+                }
 
-                        metadata: dict[str, Any] = {
-                            "artifact_name": name,
-                            "os_platform": os_platform,
-                            "artifact_type": artifact.get("type", ""),
-                            "author": artifact.get("author", ""),
-                            "parameter_count": len(artifact.get("parameters", []) or []),
-                            "source_count": len(artifact.get("sources", []) or []),
-                            "has_vql": bool(vql_queries),
-                        }
+                doc = RawDocument(
+                    doc_id=f"velociraptor-{self._slugify(page_path)}",
+                    source="velociraptor_artifacts",
+                    source_url=source_url,
+                    title=f"Velociraptor: {artifact_name}",
+                    date_collected=date.today(),
+                    date_published=None,
+                    content_type=self._content_type(artifact, tags, has_vql),
+                    content_markdown=markdown,
+                    metadata=metadata,
+                    word_count=self._count_words(markdown),
+                )
+                docs.append(doc)
 
-                        name_slug = name.lower().replace(".", "-").replace("/", "-")
-                        doc = RawDocument(
-                            doc_id=f"velociraptor-{name_slug}",
-                            source="velociraptor_artifacts",
-                            source_url=f"https://docs.velociraptor.app/artifact_references/pages/{name.replace('.', '/')}/",
-                            title=f"Velociraptor: {name}",
-                            date_collected=date.today(),
-                            date_published=None,
-                            content_type="vql_artifact",
-                            content_markdown=markdown,
-                            metadata=metadata,
-                            word_count=self._count_words(markdown),
-                        )
-                        docs.append(doc)
+            except yaml.YAMLError as e:
+                self.warnings.append(f"YAML parse error in {md_file}: {e}")
+            except Exception as e:
+                self.warnings.append(f"Error processing {md_file}: {e}")
 
-                except yaml.YAMLError as e:
-                    self.warnings.append(f"YAML parse error in {yaml_file}: {e}")
-                except Exception as e:
-                    self.warnings.append(f"Error processing {yaml_file}: {e}")
-
-        self.doc_count = self._write_documents(docs, self.output_dir, "velociraptor_artifacts")
+        self.doc_count = self._write_documents(
+            docs,
+            self.output_dir,
+            "velociraptor_artifacts",
+        )
         self.duration = time() - start_time
-        logger.info(f"Collected {self.doc_count} Velociraptor artifacts in {self.duration:.1f}s")
+        logger.info(
+            f"Collected {self.doc_count} Velociraptor artifacts in "
+            f"{self.duration:.1f}s"
+        )
         return self.doc_count
 
     def manifest(self) -> CollectionManifest:
@@ -216,4 +308,3 @@ class VelociraptorArtifactsCollector(BaseCollector):
             warnings=self.warnings,
             duration_seconds=self.duration,
         )
-
