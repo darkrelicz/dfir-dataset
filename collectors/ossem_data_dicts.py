@@ -3,6 +3,8 @@
 Clones the OTRF/OSSEM-DD repository and parses YAML event dictionary
 files containing field-level documentation for security events.
 """
+import logging
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
@@ -10,13 +12,13 @@ from typing import Any
 
 import yaml
 
-from collectors.base import BaseCollector, CollectionManifest, logger
+from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+
+logger = logging.getLogger(__name__)
 
 
 class OSSEMDataDictsCollector(BaseCollector):
-
-    SOURCE_URL = "https://github.com/OTRF/OSSEM-DD.git"
 
     def __init__(self, config: dict):
         self.config = config
@@ -24,58 +26,172 @@ class OSSEMDataDictsCollector(BaseCollector):
         self.output_dir = Path(config["output_dir"])
         self.clone_path = Path(config["clone_path"])
         self.shallow_clone = config.get("shallow_clone", True)
+        self.include_paths = config.get("include_paths", [])
+        self.exclude_paths = config.get(
+            "exclude_paths",
+            [
+                "windows/etw-providers",
+                "windows/osquery",
+                "linux/osquery",
+                "macos/osquery",
+                "freebsd/osquery",
+            ],
+        )
 
         self.errors: list[str] = []
         self.warnings: list[str] = []
         self.duration = 0.0
         self.doc_count = 0
 
-    def _determine_platform(self, file_path: Path) -> str:
-        """Determine platform from file path."""
-        path_str = str(file_path).lower()
-        if "/windows/" in path_str or "\\windows\\" in path_str:
-            return "Windows"
-        elif "/linux/" in path_str or "\\linux\\" in path_str:
-            return "Linux"
-        elif "/macos/" in path_str or "\\macos\\" in path_str:
-            return "macOS"
-        elif "/zeek/" in path_str or "\\zeek\\" in path_str:
-            return "Zeek"
-        return "Cross-platform"
+    def _path_matches(self, rel_path: str, prefixes: list[str]) -> bool:
+        return any(
+            rel_path == prefix.strip("/")
+            or rel_path.startswith(f"{prefix.strip('/')}/")
+            for prefix in prefixes
+        )
 
-    def _determine_log_source(self, file_path: Path) -> str:
-        """Determine log source from file path."""
-        parts = file_path.parts
-        # Look for directory names like 'security', 'sysmon', 'system'
-        known_sources = {"security", "sysmon", "system", "powershell", "application",
-                         "wmi", "dns", "firewall", "defender", "applocker", "bits"}
-        for part in parts:
-            if part.lower() in known_sources:
-                return part.capitalize()
-        return ""
+    def _is_excluded(self, file_path: Path) -> bool:
+        rel_path = file_path.relative_to(self.clone_path).as_posix()
+        if self._path_matches(rel_path, self.include_paths):
+            return False
+        return self._path_matches(rel_path, self.exclude_paths)
 
-    def _build_markdown(self, data: dict, file_path: Path, platform: str) -> str:
+    def _slug(self, value: str) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+        return slug or "entry"
+
+    def _table_cell(self, value: Any) -> str:
+        text = str(value or "").replace("\n", " ").replace("|", "\\|").strip()
+        return text
+
+    def _extract_fields(self, event_fields: list) -> list[dict[str, Any]]:
+        fields = []
+        for field in event_fields:
+            if not isinstance(field, dict):
+                continue
+
+            field_name = field.get("name") or field.get("standard_name") or ""
+            if not field_name:
+                continue
+
+            field_metadata: dict[str, Any] = {
+                "name": str(field_name),
+                "type": field.get("type", ""),
+                "description": field.get("description", ""),
+                "sample_value": field.get("sample_value", ""),
+            }
+
+            standard_name = field.get("standard_name")
+            if standard_name and standard_name != "TBD":
+                field_metadata["standard_name"] = standard_name
+
+            standard_type = field.get("standard_type")
+            if standard_type and standard_type != "TBD":
+                field_metadata["standard_type"] = standard_type
+
+            fields.append(field_metadata)
+        return fields
+
+    def _extract_references(self, references: list) -> list[dict[str, str]]:
+        extracted: list[dict[str, str]] = []
+        for reference in references:
+            if isinstance(reference, dict):
+                text = str(
+                    reference.get("text")
+                    or reference.get("name")
+                    or reference.get("link")
+                    or reference.get("url")
+                    or ""
+                ).strip()
+                link = str(reference.get("link") or reference.get("url") or "").strip()
+            else:
+                text = str(reference).strip()
+                link = ""
+
+            if text or link:
+                extracted.append({"text": text or link, "link": link})
+        return extracted
+
+    def _extract_event_samples(self, event_samples: Any) -> list[dict[str, str]]:
+        if isinstance(event_samples, dict):
+            event_samples = [event_samples]
+        if not isinstance(event_samples, list):
+            return []
+
+        samples: list[dict[str, str]] = []
+        for event_sample in event_samples:
+            if not isinstance(event_sample, dict):
+                continue
+
+            sample = str(event_sample.get("sample", "")).strip()
+            if not sample:
+                continue
+
+            sample_format = str(event_sample.get("format") or "sample").strip()
+            if sample_format.lower() == "friedly view":
+                sample_format = "friendly view"
+
+            samples.append({"format": sample_format, "sample": sample})
+        return samples
+
+    def _version_key(self, value: Any) -> tuple[int, ...]:
+        parts = re.findall(r"\d+", str(value or ""))
+        return tuple(int(part) for part in parts) if parts else (0,)
+
+    def _event_group_key(
+        self,
+        data: dict,
+        source_path: str,
+    ) -> tuple[str, str, str]:
+        event_id = str(data.get("event_id", "")).strip()
+        if not event_id:
+            return ("source_path", source_path, "")
+
+        return (
+            str(data.get("platform", "")).strip(),
+            str(data.get("log_source", "")).strip(),
+            event_id,
+        )
+
+    def _candidate_score(
+        self,
+        data: dict,
+        fields: list[dict[str, Any]],
+        source_path: str,
+    ) -> tuple[tuple[int, ...], int, int, str]:
+        described_fields = sum(1 for field in fields if field.get("description"))
+        return (
+            self._version_key(data.get("event_version")),
+            described_fields,
+            len(fields),
+            source_path,
+        )
+
+    def _build_markdown(
+        self,
+        data: dict,
+        fields: list[dict[str, Any]],
+        references: list[dict[str, str]],
+        event_samples: list[dict[str, str]],
+    ) -> str:
         """Build markdown for an OSSEM event dictionary entry."""
-        title = data.get("title", "")
+        event_name = data.get("name", "")
         description = data.get("description", "")
-        event_code = data.get("event_code", "")
+        event_id = data.get("event_id", "")
         event_version = data.get("event_version", "")
-        log_source = data.get("log_source", "") or self._determine_log_source(file_path)
-        event_fields = data.get("event_fields", []) or []
-        references = data.get("references", []) or []
+        platform = data.get("platform", "")
+        log_source = data.get("log_source", "")
         tags = data.get("tags", []) or []
 
-        display_title = title or f"Event {event_code}" if event_code else file_path.stem
-
         lines = [
-            f"# OSSEM: {display_title}",
+            f"# OSSEM: {event_name or event_id}",
             "",
             f"**Platform**: {platform}",
         ]
         if log_source:
             lines.append(f"**Log Source**: {log_source}")
-        if event_code:
-            lines.append(f"**Event Code**: {event_code}")
+        if event_id:
+            lines.append(f"**Event ID**: {event_id}")
         if event_version:
             lines.append(f"**Event Version**: {event_version}")
         lines.append("")
@@ -85,22 +201,42 @@ class OSSEMDataDictsCollector(BaseCollector):
             lines.append(str(description).strip())
             lines.append("")
 
-        if event_fields:
+        if fields:
             lines.append("## Event Fields")
             lines.append("")
-            lines.append("| Field Name | Type | Description | Sample Value |")
-            lines.append("|---|---|---|---|")
+            lines.append(
+                "| Field Name | Standard Name | Type | Description | Sample Value |"
+            )
+            lines.append("|---|---|---|---|---|")
 
-            for field in event_fields:
-                if not isinstance(field, dict):
-                    continue
-                fname = field.get("standard_name", field.get("name", ""))
-                ftype = field.get("type", "")
-                fdesc = str(field.get("description", "")).replace("\n", " ").replace("|", "\\|")
-                fsample = str(field.get("sample_value", "")).replace("\n", " ").replace("|", "\\|")[:50]
-
-                lines.append(f"| `{fname}` | {ftype} | {fdesc} | `{fsample}` |")
+            for field in fields:
+                name = self._table_cell(field.get("name"))
+                standard_name = self._table_cell(field.get("standard_name"))
+                standard_name = f"`{standard_name}`" if standard_name else "-"
+                field_type = self._table_cell(field.get("type"))
+                description = self._table_cell(field.get("description"))
+                sample = self._table_cell(field.get("sample_value"))
+                lines.append(
+                    f"| `{name}` | {standard_name} | {field_type} | "
+                    f"{description} | `{sample}` |"
+                )
             lines.append("")
+
+        if event_samples:
+            lines.append("## Event Samples")
+            lines.append("")
+            for event_sample in event_samples:
+                sample_format = event_sample["format"]
+                display_format = (
+                    "XML" if sample_format.lower() == "xml" else sample_format.title()
+                )
+                language = "xml" if sample_format.lower() == "xml" else "text"
+
+                lines.append(f"### {display_format}")
+                lines.append(f"```{language}")
+                lines.append(event_sample["sample"])
+                lines.append("```")
+                lines.append("")
 
         if tags:
             lines.append("## Tags")
@@ -111,10 +247,10 @@ class OSSEMDataDictsCollector(BaseCollector):
         if references:
             lines.append("## References")
             for ref in references:
-                if isinstance(ref, dict):
-                    lines.append(f"- [{ref.get('name', 'Link')}]({ref.get('url', '')})")
+                if ref.get("link"):
+                    lines.append(f"- [{ref['text']}]({ref['link']})")
                 else:
-                    lines.append(f"- {ref}")
+                    lines.append(f"- {ref['text']}")
             lines.append("")
 
         return self._to_markdown("\n".join(lines))
@@ -129,15 +265,13 @@ class OSSEMDataDictsCollector(BaseCollector):
             self.duration = time() - start_time
             return 0
 
-        docs: list[RawDocument] = []
+        candidates: dict[tuple[str, str, str], dict[str, Any]] = {}
 
-        # OSSEM-DD uses .yml files organized by platform/source
         yml_files = sorted(self.clone_path.rglob("*.yml"))
         logger.info(f"Found {len(yml_files)} OSSEM-DD YAML files")
 
         for yml_file in yml_files:
-            # Skip non-dictionary files
-            if any(skip in str(yml_file) for skip in [".github", "scripts", "templates"]):
+            if self._is_excluded(yml_file):
                 continue
 
             try:
@@ -146,60 +280,100 @@ class OSSEMDataDictsCollector(BaseCollector):
                 if not data or not isinstance(data, dict):
                     continue
 
-                # Must have event_fields or be a meaningful dictionary entry
                 event_fields = data.get("event_fields", [])
                 if not event_fields:
                     continue
 
-                platform = data.get("platform", "") or self._determine_platform(yml_file)
-                event_code = data.get("event_code", "")
-                title = data.get("title", "")
-                log_source = data.get("log_source", "") or self._determine_log_source(yml_file)
+                fields = self._extract_fields(event_fields)
+                if not fields:
+                    continue
 
-                markdown = self._build_markdown(data, yml_file, platform)
-
-                # Extract field names for metadata
-                field_names = []
-                for field in event_fields:
-                    if isinstance(field, dict):
-                        fname = field.get("standard_name", field.get("name", ""))
-                        if fname:
-                            field_names.append(fname)
-
-                display_id = f"{platform.lower()}-{log_source.lower()}-{event_code}" if event_code else yml_file.stem
-                display_id = display_id.replace(" ", "-").lower()
-
-                metadata: dict[str, Any] = {
-                    "event_code": str(event_code),
-                    "platform": platform,
-                    "log_source": log_source,
-                    "field_count": len(event_fields),
-                    "field_names": field_names[:30],  # Cap for size
-                    "tags": data.get("tags", []) or [],
-                }
-
-                doc = RawDocument(
-                    doc_id=f"ossem-{display_id}",
-                    source="ossem_data_dicts",
-                    source_url=f"https://github.com/OTRF/OSSEM-DD/blob/main/{yml_file.relative_to(self.clone_path)}",
-                    title=title or f"OSSEM: Event {event_code} ({platform})",
-                    date_collected=date.today(),
-                    date_published=None,
-                    content_type="event_dictionary",
-                    content_markdown=markdown,
-                    metadata=metadata,
-                    word_count=self._count_words(markdown),
+                references = self._extract_references(data.get("references", []) or [])
+                event_samples = self._extract_event_samples(
+                    data.get("event_sample", []) or []
                 )
-                docs.append(doc)
+                relative_path = yml_file.relative_to(self.clone_path)
+                source_path = relative_path.as_posix()
+                group_key = self._event_group_key(data, source_path)
+                score = self._candidate_score(data, fields, source_path)
+                current = candidates.get(group_key)
+
+                if current is None or score > current["score"]:
+                    candidates[group_key] = {
+                        "data": data,
+                        "fields": fields,
+                        "references": references,
+                        "event_samples": event_samples,
+                        "path": yml_file,
+                        "relative_path": relative_path,
+                        "source_path": source_path,
+                        "score": score,
+                    }
 
             except yaml.YAMLError as e:
                 self.warnings.append(f"YAML parse error in {yml_file}: {e}")
             except Exception as e:
                 self.warnings.append(f"Error processing {yml_file}: {e}")
 
+        docs: list[RawDocument] = []
+        for candidate in sorted(
+            candidates.values(),
+            key=lambda item: item["source_path"],
+        ):
+            data = candidate["data"]
+            fields = candidate["fields"]
+            references = candidate["references"]
+            event_samples = candidate["event_samples"]
+            yml_file = candidate["path"]
+            relative_path = candidate["relative_path"]
+            source_path = candidate["source_path"]
+            display_id = self._slug(str(relative_path.with_suffix("")))
+            event_id = str(data.get("event_id", ""))
+            event_name = data.get("name", "") or yml_file.stem
+            platform = data.get("platform", "")
+            log_source = data.get("log_source", "")
+
+            markdown = self._build_markdown(
+                data,
+                fields,
+                references,
+                event_samples,
+            )
+
+            metadata: dict[str, Any] = {
+                "event_id": event_id,
+                "event_name": event_name,
+                "event_version": data.get("event_version", ""),
+                "platform": platform,
+                "log_source": log_source,
+                "field_count": len(fields),
+                "field_names": [field["name"] for field in fields],
+                "fields": fields,
+                "references": references,
+                "source_path": source_path,
+                "tags": data.get("tags", []) or [],
+            }
+
+            doc = RawDocument(
+                doc_id=f"ossem-{display_id}",
+                source="ossem_data_dicts",
+                source_url=f"https://github.com/OTRF/OSSEM-DD/blob/main/{source_path}",
+                title=f"OSSEM: {event_name}",
+                date_collected=date.today(),
+                date_published=None,
+                content_type="event_dictionary",
+                content_markdown=markdown,
+                metadata=metadata,
+                word_count=self._count_words(markdown),
+            )
+            docs.append(doc)
+
         self.doc_count = self._write_documents(docs, self.output_dir, "ossem_data_dicts")
         self.duration = time() - start_time
-        logger.info(f"Collected {self.doc_count} OSSEM data dictionary entries in {self.duration:.1f}s")
+        logger.info(
+            f"Collected {self.doc_count} OSSEM data dictionary entries "
+            f"in {self.duration:.1f}s"
+        )
         return self.doc_count
 
     def manifest(self) -> CollectionManifest:
@@ -213,4 +387,3 @@ class OSSEMDataDictsCollector(BaseCollector):
             warnings=self.warnings,
             duration_seconds=self.duration,
         )
-

@@ -115,6 +115,15 @@ sources:
     clone_path: "data/raw/.repos/OSSEM-DD"
     output_dir: "data/raw/ossem_data_dicts"
     shallow_clone: true
+    include_paths:
+      - "windows/etw-providers/Microsoft-Windows-Security-Auditing"
+      - "windows/etw-providers/Microsoft-Windows-PowerShell"
+    exclude_paths:
+      - "windows/etw-providers"
+      - "windows/osquery"
+      - "linux/osquery"
+      - "macos/osquery"
+      - "freebsd/osquery"
 
   cybersec_skills:
     type: "git"
