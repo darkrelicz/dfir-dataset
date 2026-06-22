@@ -4,6 +4,7 @@ Clones the mukul975/Anthropic-Cybersecurity-Skills repository and parses
 SKILL.md files with YAML frontmatter + Markdown body. Applies content-length
 filter to exclude thin boilerplate templates.
 """
+import logging
 import re
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -12,13 +13,13 @@ from typing import Any
 
 import yaml
 
-from collectors.base import BaseCollector, CollectionManifest, logger
+from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+
+logger = logging.getLogger(__name__)
 
 
 class CybersecSkillsCollector(BaseCollector):
-
-    SOURCE_URL = "https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git"
 
     def __init__(self, config: dict):
         self.config = config
@@ -26,7 +27,7 @@ class CybersecSkillsCollector(BaseCollector):
         self.output_dir = Path(config["output_dir"])
         self.clone_path = Path(config["clone_path"])
         self.shallow_clone = config.get("shallow_clone", True)
-        self.min_body_chars = config.get("min_body_chars", 2000)  # ~500 tokens
+        self.min_body_tokens = config.get("min_body_tokens", 500)
 
         self.errors: list[str] = []
         self.warnings: list[str] = []
@@ -40,8 +41,7 @@ class CybersecSkillsCollector(BaseCollector):
         Returns:
             (frontmatter_dict, body_markdown)
         """
-        # Match frontmatter between --- markers
-        match = re.match(r'^---\s*\n(.*?)\n---\s*\n(.*)', content, re.DOTALL)
+        match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)", content, re.DOTALL)
         if not match:
             return {}, content
 
@@ -57,21 +57,113 @@ class CybersecSkillsCollector(BaseCollector):
 
         return frontmatter, body
 
+    def _as_list(self, value: Any) -> list[str]:
+        if value in ("", None):
+            return []
+        if isinstance(value, list):
+            return [str(item) for item in value if item not in ("", None)]
+        return [str(value)]
+
+    def _count_body_tokens(self, body: str) -> int:
+        return len(re.findall(r"\S+", body))
+
+    def _slug(self, value: str) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+        return slug or "skill"
+
+    def _extract_framework_mappings(
+        self,
+        frontmatter: dict,
+    ) -> dict[str, Any]:
+        return {
+            "mitre_attack_ids": self._as_list(frontmatter.get("mitre_attack")),
+            "mitre_atlas_ids": self._as_list(frontmatter.get("atlas_techniques")),
+            "d3fend_techniques": self._as_list(
+                frontmatter.get("d3fend_techniques")
+            ),
+            "nist_csf": self._as_list(frontmatter.get("nist_csf")),
+            "nist_ai_rmf": self._as_list(frontmatter.get("nist_ai_rmf")),
+            "mitre_f3": frontmatter.get("mitre_f3") or {},
+        }
+
+    def _extract_heading_values(self, body: str, pattern: str) -> list[str]:
+        values = []
+        for match in re.finditer(pattern, body, re.IGNORECASE | re.MULTILINE):
+            heading = match.group(0).lstrip("#").strip()
+            values.append(re.sub(r"\s+", " ", heading))
+        return values
+
+    def _extract_tools_referenced(self, body: str) -> list[str]:
+        tools: set[str] = set()
+        shell_languages = {
+            "bash",
+            "cmd",
+            "console",
+            "powershell",
+            "ps1",
+            "sh",
+            "shell",
+            "terminal",
+            "zsh",
+        }
+        ignored = {
+            "cd",
+            "cat",
+            "class",
+            "echo",
+            "else",
+            "except",
+            "fi",
+            "for",
+            "from",
+            "if",
+            "import",
+            "print",
+            "return",
+            "then",
+            "try",
+            "while",
+            "with",
+        }
+
+        for language, code_block in re.findall(
+            r"```([^\n`]*)\n(.*?)```",
+            body,
+            re.DOTALL,
+        ):
+            language_parts = language.strip().lower().split(maxsplit=1)
+            language = language_parts[0] if language_parts else ""
+            if language not in shell_languages:
+                continue
+
+            for line in code_block.splitlines():
+                line = line.strip()
+                if not line or line.startswith(("#", "//")):
+                    continue
+
+                line = re.sub(r"^(?:\$|>|PS>)\s*", "", line)
+                line = re.sub(r"^(?:sudo|time|env)\s+", "", line)
+                if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", line):
+                    continue
+
+                match = re.match(r"([A-Za-z][A-Za-z0-9_.+-]*)", line)
+                if not match:
+                    continue
+
+                command = match.group(1).lower()
+                if command not in ignored and not command.startswith("-"):
+                    tools.add(command)
+
+        return sorted(tools)
+
     def _build_markdown(self, frontmatter: dict, body: str) -> str:
         """Build enriched markdown from frontmatter and body."""
         name = frontmatter.get("name", "Unknown Skill")
         description = frontmatter.get("description", "")
         domain = frontmatter.get("domain", "")
         subdomain = frontmatter.get("subdomain", "")
-        version = frontmatter.get("version", "")
         tags = frontmatter.get("tags", []) or []
-
-        # Framework mappings
-        mitre_attack = frontmatter.get("mitre_attack", []) or []
-        mitre_atlas = frontmatter.get("mitre_atlas", []) or []
-        d3fend = frontmatter.get("d3fend", []) or []
-        nist_csf = frontmatter.get("nist_csf", []) or []
-        nist_ai_rmf = frontmatter.get("nist_ai_rmf", []) or []
+        mappings = self._extract_framework_mappings(frontmatter)
 
         lines = [
             f"# {name}",
@@ -90,25 +182,34 @@ class CybersecSkillsCollector(BaseCollector):
             lines.append(str(description).strip())
             lines.append("")
 
-        # Framework mappings section
-        mappings = []
-        if mitre_attack:
-            mappings.append(f"- **MITRE ATT&CK**: {', '.join(str(t) for t in mitre_attack)}")
-        if mitre_atlas:
-            mappings.append(f"- **MITRE ATLAS**: {', '.join(str(t) for t in mitre_atlas)}")
-        if d3fend:
-            mappings.append(f"- **D3FEND**: {', '.join(str(t) for t in d3fend)}")
-        if nist_csf:
-            mappings.append(f"- **NIST CSF**: {', '.join(str(t) for t in nist_csf)}")
-        if nist_ai_rmf:
-            mappings.append(f"- **NIST AI RMF**: {', '.join(str(t) for t in nist_ai_rmf)}")
+        mapping_lines = []
+        if mappings["mitre_attack_ids"]:
+            mapping_lines.append(
+                "- **MITRE ATT&CK**: "
+                f"{', '.join(mappings['mitre_attack_ids'])}"
+            )
+        if mappings["mitre_atlas_ids"]:
+            mapping_lines.append(
+                "- **MITRE ATLAS**: "
+                f"{', '.join(mappings['mitre_atlas_ids'])}"
+            )
+        if mappings["d3fend_techniques"]:
+            mapping_lines.append(
+                "- **D3FEND**: "
+                f"{', '.join(mappings['d3fend_techniques'])}"
+            )
+        if mappings["nist_csf"]:
+            mapping_lines.append(f"- **NIST CSF**: {', '.join(mappings['nist_csf'])}")
+        if mappings["nist_ai_rmf"]:
+            mapping_lines.append(
+                f"- **NIST AI RMF**: {', '.join(mappings['nist_ai_rmf'])}"
+            )
 
-        if mappings:
+        if mapping_lines:
             lines.append("## Framework Mappings")
-            lines.extend(mappings)
+            lines.extend(mapping_lines)
             lines.append("")
 
-        # Append the full body
         lines.append("## Skill Content")
         lines.append("")
         lines.append(body.strip())
@@ -125,16 +226,11 @@ class CybersecSkillsCollector(BaseCollector):
             self.duration = time() - start_time
             return 0
 
-        # SKILL.md files are in skills/ directory, organized by domain/subdomain
         skills_dir = self.clone_path / "skills"
         if not skills_dir.exists():
-            # Try alternate paths
-            skills_dir = self.clone_path
-            for alt in ["skills", "content/skills"]:
-                alt_dir = self.clone_path / alt
-                if alt_dir.exists():
-                    skills_dir = alt_dir
-                    break
+            self.errors.append(f"Skills directory not found: {skills_dir}")
+            self.duration = time() - start_time
+            return 0
 
         docs: list[RawDocument] = []
         self.filtered_count = 0
@@ -151,8 +247,9 @@ class CybersecSkillsCollector(BaseCollector):
                     self.warnings.append(f"No frontmatter found in {skill_file}")
                     continue
 
-                # Content-length filter
-                if len(body.strip()) < self.min_body_chars:
+                body_text = body.strip()
+                body_tokens = self._count_body_tokens(body_text)
+                if body_tokens < self.min_body_tokens:
                     self.filtered_count += 1
                     continue
 
@@ -161,34 +258,47 @@ class CybersecSkillsCollector(BaseCollector):
                 subdomain = frontmatter.get("subdomain", "")
 
                 markdown = self._build_markdown(frontmatter, body)
-
-                # Extract framework IDs
-                mitre_attack = frontmatter.get("mitre_attack", []) or []
-                mitre_atlas = frontmatter.get("mitre_atlas", []) or []
-                d3fend = frontmatter.get("d3fend", []) or []
-                nist_csf = frontmatter.get("nist_csf", []) or []
-
-                # Generate slug from skill name
-                name_slug = str(name).lower().replace(" ", "-")
-                name_slug = re.sub(r'[^a-z0-9-]', '', name_slug)[:60]
+                mappings = self._extract_framework_mappings(frontmatter)
+                relative_path = skill_file.relative_to(self.clone_path).as_posix()
+                name_slug = self._slug(str(name))
 
                 metadata: dict[str, Any] = {
                     "skill_name": name,
+                    "description": frontmatter.get("description", ""),
                     "domain": domain,
                     "subdomain": subdomain,
                     "tags": frontmatter.get("tags", []) or [],
-                    "mitre_attack_ids": [str(t) for t in mitre_attack],
-                    "mitre_atlas_ids": [str(t) for t in mitre_atlas],
-                    "d3fend_ids": [str(t) for t in d3fend],
-                    "nist_csf": [str(t) for t in nist_csf],
+                    "mitre_attack_ids": mappings["mitre_attack_ids"],
+                    "mitre_atlas_ids": mappings["mitre_atlas_ids"],
+                    "d3fend_techniques": mappings["d3fend_techniques"],
+                    "nist_csf": mappings["nist_csf"],
+                    "nist_ai_rmf": mappings["nist_ai_rmf"],
+                    "mitre_f3": mappings["mitre_f3"],
                     "version": frontmatter.get("version", ""),
-                    "body_chars": len(body.strip()),
+                    "author": frontmatter.get("author", ""),
+                    "license": frontmatter.get("license", ""),
+                    "body_chars": len(body_text),
+                    "body_tokens": body_tokens,
+                    "workflow_steps": self._extract_heading_values(
+                        body,
+                        r"^#{2,6}\s+Step\s+\d+\s*[:.\-\u2014]?\s*.+$",
+                    ),
+                    "scenarios": self._extract_heading_values(
+                        body,
+                        r"^#{2,6}\s+Scenario(?:\s+\d+)?\s*[:.\-\u2014]?\s*.+$",
+                    ),
+                    "tools_referenced": self._extract_tools_referenced(body),
+                    "source_path": relative_path,
                 }
 
                 doc = RawDocument(
                     doc_id=f"cybersec-skill-{name_slug}",
                     source="cybersec_skills",
-                    source_url=f"https://github.com/mukul975/Anthropic-Cybersecurity-Skills/blob/main/{skill_file.relative_to(self.clone_path)}",
+                    source_url=(
+                        "https://github.com/mukul975/"
+                        "Anthropic-Cybersecurity-Skills/blob/main/"
+                        f"{relative_path}"
+                    ),
                     title=f"Skill: {name}",
                     date_collected=date.today(),
                     date_published=None,
@@ -203,14 +313,24 @@ class CybersecSkillsCollector(BaseCollector):
                 self.warnings.append(f"Error processing {skill_file}: {e}")
 
         if self.filtered_count:
-            logger.info(f"Filtered {self.filtered_count} skills below {self.min_body_chars} char threshold")
+            logger.info(
+                f"Filtered {self.filtered_count} skills below "
+                f"{self.min_body_tokens} tokens"
+            )
 
         self.doc_count = self._write_documents(docs, self.output_dir, "cybersec_skills")
         self.duration = time() - start_time
-        logger.info(f"Collected {self.doc_count} cybersecurity skills in {self.duration:.1f}s")
+        logger.info(
+            f"Collected {self.doc_count} cybersecurity skills "
+            f"in {self.duration:.1f}s"
+        )
         return self.doc_count
 
     def manifest(self) -> CollectionManifest:
+        filter_warning = (
+            f"Filtered {self.filtered_count} thin skills "
+            f"(< {self.min_body_tokens} tokens)"
+        )
         return CollectionManifest(
             collector=self.__class__.__name__,
             version=self.VERSION,
@@ -218,7 +338,6 @@ class CybersecSkillsCollector(BaseCollector):
             collected_at=datetime.now(timezone.utc),
             document_count=self.doc_count,
             errors=self.errors,
-            warnings=[*self.warnings, f"Filtered {self.filtered_count} thin skills (< {self.min_body_chars} chars)"],
+            warnings=[*self.warnings, filter_warning],
             duration_seconds=self.duration,
         )
-

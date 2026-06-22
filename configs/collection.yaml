@@ -131,7 +131,7 @@ sources:
     clone_path: "data/raw/.repos/Anthropic-Cybersecurity-Skills"
     output_dir: "data/raw/cybersec_skills"
     shallow_clone: true
-    min_body_chars: 2000
+    min_body_tokens: 500
 
   # yara_rules: 
   #   type: "git"
