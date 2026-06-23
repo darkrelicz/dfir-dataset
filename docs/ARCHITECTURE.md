@@ -1,27 +1,70 @@
-# Architecture & Design Decisions
+# Architecture
 
-This document tracks major design decisions for the DFIR dataset pipeline.
+## Current Project Type
 
-### Phase 1: Taxonomy Definition
+This repository is a Python dataset pipeline, not a website application. No frontend framework, browser routing layer, CSS system, or UI component tree is currently present.
 
-- **Raw JSONL Base Schema**: Uses `pydantic` schemas for standardizing ingested DFIR formats into a unified `RawDocument`.
+## Runtime And Frameworks
 
-### Phase 2: Source Collection Architecture Decisions
-- **`yaml.safe_load` over `pySigma`**: We use raw YAML parsing instead of pySigma because it reduces dependency weight and we only need to extract metadata, not translate rules.
-- **Atomic Red Team Granularity**: We emit one document per *atomic test*, not per technique file. This finer granularity helps with downstream QA synthesis.
-- **RSS + HTML Scrape for CISA Advisories**: CISA does not provide an official API for full advisories, and RSS only contains summaries. We scrape the HTML via `BeautifulSoup` to access the full advisory contents, IOCs, and mitigations.
-- **Git Caching Strategy**: SigmaHQ and Atomic Red Team are cloned locally via shallow clones to `data/raw/.repos/` for reproducibility and faster re-runs.
+- Language: Python 3.11+
+- Packaging: `pyproject.toml` with setuptools
+- CLI entrypoint: `dfir-collect = scripts.collect_all:main`
+- Core libraries: `pydantic`, `pyyaml`, `jsonlines`, `requests`, `beautifulsoup4`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`
+- Tests are configured for `pytest`, but no `tests/` tree is currently present.
 
-### Taxonomy Design
+## Pipeline Layout
 
-We moved away from a single monolithic file and separated concerns:
-- **`docs/TAXONOMY.md`**: A comprehensive human reference for the artifact categories.
-- **`configs/quality.yaml`**: Contains valid domain IDs and coverage mappings for programmatic validation in Phase 4.
-- **`configs/task_categories.yaml`**: Defines the 5 core tasks for the Phase 3 synthesizer to select prompt templates.
+- `collectors/`: Phase 2 source collectors. Each collector normalizes one source into the shared `RawDocument` schema.
+- `scripts/collect_all.py`: CLI orchestrator for running one or all collectors and writing `data/raw/collection_manifest.json`.
+- `configs/collection.yaml`: Source URLs, clone/cache paths, output directories, and collector-specific options.
+- `configs/task_categories.yaml`: Five task categories used by the future instruction-pair synthesizer.
+- `configs/synthesis.yaml`: Planned Phase 3 model and generation settings.
+- `configs/quality.yaml`: Programmatic taxonomy IDs, coverage levels, scoring weights, and dedup settings.
+- `configs/packaging.yaml`: Planned packaging configuration.
+- `docs/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
+- `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
 
-This separation ensures machine-readable components are strictly config-oriented, while deep contextual documentation lives in markdown.
+Planned but not yet implemented packages from the project plan: `synthesizers/`, `quality/`, `packaging/`, and `evaluation/`.
 
-### Directory Layout
+## Data Contracts
 
-The directory structure follows a pipeline pattern (`collectors/` -> `synthesizers/` -> `quality/` -> `packaging/`). 
-Documentation including the taxonomy reference lives in `docs/`, and pipeline configuration including task categories lives in `configs/`.
+Collectors emit JSONL records conforming to `collectors.schemas.RawDocument`:
+
+- `doc_id`, `source`, `source_url`, `title`
+- `date_collected`, optional `date_published`
+- `content_type`, `content_markdown`, `metadata`, `word_count`
+
+Collection runs emit `CollectionManifest` entries containing collector name, version, source URL, collection time, document count, warnings, errors, and duration.
+
+## Current Generated State
+
+Direct JSONL counts currently show all 16 selected Core + Tier 1-2 sources producing raw documents:
+
+- `mitre_attack`: 697
+- `sigma_rules`: 3109
+- `atomic_red_team`: 1804
+- `cisa_advisories`: 3829
+- `volatility3_docs`: 194
+- `mitre_atlas`: 262
+- `cisa_kev`: 268
+- `kape_files`: 811
+- `hayabusa_rules`: 4836
+- `lolbas_gtfobins`: 720
+- `forensic_artifacts`: 731
+- `velociraptor_artifacts`: 437
+- `hijacklibs`: 590
+- `loldrivers`: 653
+- `ossem_data_dicts`: 699
+- `cybersec_skills`: 615
+
+Total raw JSONL rows: 20,255.
+
+Note: `data/raw/collection_manifest.json` currently reflects only the last single-source run (`MitreAtlasCollector`). Run the full collector orchestrator again before using the manifest as a complete collection audit.
+
+## Planned Downstream Architecture
+
+Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses Gemini 2.5 Flash as the primary teacher model, Claude Sonnet as a fallback/comparison subset, five task-category prompt templates, and source-type-specific prompt instructions.
+
+Phase 4 quality assurance should validate structure, ATT&CK/ATLAS IDs, taxonomy refs, tool names, near-duplicates, source balance, difficulty balance, and the 57-category taxonomy heatmap.
+
+Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd.

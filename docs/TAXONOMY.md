@@ -162,7 +162,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 ## 3. Coverage Mapping
 ### 1.3 Artifact Taxonomy Coverage Mapping
 
-This maps which of the 57 artifact categories the current dataset iteration will cover, based on source availability across all 6 collectors.
+This maps which of the 57 artifact categories the current dataset iteration will cover, based on source availability across the selected 16 collectors (Core + Tier 1-2).
 
 #### Strong Coverage (Primary focus — instruction pairs explicitly generated)
 
