@@ -4,6 +4,7 @@ Clones the wietze/HijackLibs repository and parses YAML files describing
 DLL hijacking opportunities.
 """
 import logging
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
@@ -37,6 +38,10 @@ class HijackLibsCollector(BaseCollector):
         if isinstance(value, list):
             return value
         return [value]
+
+    def _slug(self, value: str) -> str:
+        """Make a stable document-id component from a HijackLibs path."""
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
     def _append_detail_map(self, lines: list[str], title: str, value: Any) -> None:
         items = self._as_list(value)
@@ -218,10 +223,12 @@ class HijackLibsCollector(BaseCollector):
 
                 markdown = self._build_markdown(data, yml_file)
                 metadata = self._extract_metadata(data)
-                rel_path = str(yml_file.relative_to(yml_dir)).replace(".yml", ".html")
+                rel_file = yml_file.relative_to(yml_dir)
+                rel_stem = rel_file.with_suffix("").as_posix()
+                rel_path = rel_file.with_suffix(".html").as_posix()
 
                 doc = RawDocument(
-                    doc_id=f"hijacklib-{name.lower().replace('.', '-')}",
+                    doc_id=f"hijacklib-{self._slug(rel_stem)}",
                     source="hijacklibs",
                     source_url=f"https://hijacklibs.net/entries/{rel_path}",
                     title=f"HijackLibs: {name}",
