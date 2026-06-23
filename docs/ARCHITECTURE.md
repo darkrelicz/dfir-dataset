@@ -38,7 +38,7 @@ Collection runs emit `CollectionManifest` entries containing collector name, ver
 
 ## Current Generated State
 
-Direct JSONL counts currently show all 16 selected Core + Tier 1-2 sources producing raw documents:
+The current manifest and direct JSONL counts show all 16 selected Core + Tier 1-2 sources producing raw documents:
 
 - `mitre_attack`: 697
 - `sigma_rules`: 3109
@@ -59,12 +59,10 @@ Direct JSONL counts currently show all 16 selected Core + Tier 1-2 sources produ
 
 Total raw JSONL rows: 20,255.
 
-Note: `data/raw/collection_manifest.json` currently reflects only the last single-source run (`MitreAtlasCollector`). Run the full collector orchestrator again before using the manifest as a complete collection audit.
-
 ## Planned Downstream Architecture
 
-Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses Gemini 2.5 Flash as the primary teacher model, Claude Sonnet as a fallback/comparison subset, five task-category prompt templates, and source-type-specific prompt instructions.
+Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses Gemini 2.5 Flash as the primary teacher model, Claude Sonnet as a fallback/comparison subset, five task-category prompt templates, and source-type-specific prompt instructions. Canonical synthesized responses use `<reasoning>` blocks with linked evidence, analysis, conclusion, and caveat IDs.
 
-Phase 4 quality assurance should validate structure, ATT&CK/ATLAS IDs, taxonomy refs, tool names, near-duplicates, source balance, difficulty balance, and the 57-category taxonomy heatmap.
+Phase 4 quality assurance should validate structure, ATT&CK/ATLAS IDs, taxonomy refs, tool names, `<reasoning>` link integrity, near-duplicates, source balance, difficulty balance, and the 57-category taxonomy heatmap.
 
-Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd.
+Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. The canonical export keeps `<reasoning>`; a model-specific GLM export may convert it to `<think>` only if needed. Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd.

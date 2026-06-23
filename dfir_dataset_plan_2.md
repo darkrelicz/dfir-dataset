@@ -1134,20 +1134,31 @@ called Shepherd.
 2. Vary difficulty: 30% junior, 50% mid, 20% senior
 
 ### Reasoning Quality
-3. Responses MUST follow the Evidence → Analysis → Conclusion structure:
-   a) EVIDENCE IDENTIFICATION: Quote or reference specific artifact data
-      (e.g. event ID, file path, registry key, tool output) from the source document
-   b) ANALYSIS: Explain what the evidence means — normal vs abnormal, and why
-   c) CONCLUSION: State findings with explicit confidence (high/medium/low)
-      tied back to the evidence cited in step (a)
-   d) CAVEATS: What additional evidence would strengthen or weaken this conclusion
-   
-4. The reasoning in <think> tags MUST reference specific evidence from the
-   source document. Reasoning that reaches conclusions without citing evidence
-   is INVALID.
+3. Responses MUST begin with a canonical `<reasoning>` block followed by a
+   practitioner-ready final answer. The `<reasoning>` block is not private
+   scratchpad text; it is an auditable, source-grounded rationale.
+
+4. The `<reasoning>` block MUST use explicit linked reasoning IDs:
+   - `E1`, `E2`, ... for evidence. Quote or reference specific artifact data
+     from the source document, such as event IDs, file paths, registry keys,
+     commands, rule fields, tool output fields, CVEs, or IOCs.
+   - `A1 [uses E1]`, `A2 [uses E1,E2]`, ... for analysis. Explain what the
+     referenced evidence means: normal vs abnormal, suspicious vs benign,
+     and why.
+   - `C1 [uses E1,A1]`, ... for conclusions. State findings with explicit
+     confidence (high/medium/low), and cite the evidence/analysis IDs that
+     support the finding.
+   - `CV1 [applies_to C1]`, ... for caveats. State what additional evidence
+     would strengthen, weaken, or disprove the conclusion.
+
+5. Every conclusion MUST cite at least one evidence ID and one analysis ID.
+   Every caveat MUST apply to a specific conclusion. The final answer MUST NOT
+   introduce findings that are absent from the linked conclusions.
+
+6. Reasoning that reaches conclusions without citing evidence IDs is INVALID.
 
 ### Grounding Constraint
-5. All forensic details (e.g. file paths, registry keys, event IDs, tool output 
+7. All forensic details (e.g. file paths, registry keys, event IDs, tool output 
    fields) MUST be either:
    a) Directly stated in the source document, OR
    b) Well-established forensic facts (standard Windows/Linux artifact paths,
@@ -1161,14 +1172,14 @@ called Shepherd.
    knowledge.
 
 ### Technique Mapping
-6. Map behaviors to MITRE ATT&CK or ATLAS technique IDs
-7. For ambiguous technique mappings where evidence is not conclusive, use
+8. Map behaviors to MITRE ATT&CK or ATLAS technique IDs
+9. For ambiguous technique mappings where evidence is not conclusive, use
    the suffix '?' to indicate a candidate technique requiring corroboration:
    e.g., "mitre_techniques": ["T1055?", "T1574.002"]
 
 ### Uncertainty Calibration
-8. NEVER declare compromise without corroborating evidence
-9. At least 20% of generated pairs MUST demonstrate uncertainty or ambiguity.
+10. NEVER declare compromise without corroborating evidence
+11. At least 20% of generated pairs MUST demonstrate uncertainty or ambiguity.
    Examples of well-calibrated uncertainty:
    - "This COULD indicate T1055 process injection, but the same pattern
      also appears in legitimate .NET JIT compilation. Check for unsigned
@@ -1190,7 +1201,7 @@ called Shepherd.
 [
   {
     "instruction": "...",
-    "response": "<think>\n[Evidence → Analysis → Conclusion reasoning]\n</think>\n\n[Practitioner-ready final answer]",
+    "response": "<reasoning>\nE1: [source-grounded evidence]\nA1 [uses E1]: [analysis of evidence]\nC1 [uses E1,A1] Confidence: medium. [conclusion]\nCV1 [applies_to C1]: [caveat or corroboration need]\n</reasoning>\n\n[Practitioner-ready final answer]",
     "category": "{category_name}",
     "difficulty": "junior|mid|senior",
     "confidence": "high|medium|low",
@@ -1205,7 +1216,7 @@ called Shepherd.
 ```
 
 > [!NOTE]
-> **Key change from original template:** The separate `thinking` and `response` fields are merged into a single `response` field using `<think>` tags. This prevents reasoning-response drift where the thinking section contains plausible reasoning that the response doesn't actually follow. The `confidence` and `grounding` metadata fields support downstream quality filtering.
+> **Key change from original template:** The separate `thinking` and `response` fields are merged into a single `response` field using canonical `<reasoning>` tags. The reasoning is an auditable linked rationale, not hidden chain-of-thought. ID references (`E1`, `A1`, `C1`, `CV1`) prevent reasoning-response drift by making every conclusion traceable to evidence and analysis. A packaging exporter MAY convert `<reasoning>` to `<think>` only for a model-specific training view if GLM-4.7-Flash benefits from that exact tag.
 
 #### 3.3.2 Source-Type-Specific Instructions
 
@@ -1389,7 +1400,7 @@ threat hunting.
 3. Manually review 100% of pilot output (~700-900 pairs)
 4. Score on quality rubric with **specific attention to:**
    - [ ] **Grounding check:** Do responses cite evidence from the source doc, or fabricate details?
-   - [ ] **Reasoning coherence:** Does the `<think>` reasoning actually lead to the stated conclusion?
+   - [ ] **Reasoning coherence:** Does the `<reasoning>` trace use valid evidence/analysis/conclusion/caveat links, and does the final answer follow the linked conclusions?
    - [ ] **Uncertainty calibration:** Are ≥20% of pairs appropriately uncertain/ambiguous?
    - [ ] **Thin-source quality:** Are pairs from KAPE/ForensicArtifacts/HijackLibs realistic, or padded?
 5. **Cross-source dedup check:** verify Sigma vs Hayabusa pairs don't produce near-duplicates
@@ -1413,7 +1424,7 @@ threat hunting.
 | Criterion | Weight | Automated? |
 |---|---|---|
 | **Factual Accuracy** | 25% | Partial (validate ATT&CK + ATLAS IDs, tool names) |
-| **Reasoning Quality** | 25% | Yes (reasoning markers, step count) |
+| **Reasoning Quality** | 25% | Yes (linked reasoning markers, reference integrity, step count) |
 | **Operational Relevance** | 20% | Heuristic (tool/artifact references) |
 | **Specificity** | 15% | Yes (response length, named entities) |
 | **Completeness** | 15% | Yes (required field checks) |
@@ -1426,6 +1437,7 @@ threat hunting.
 - **Tool Name Validator:** Validates against allowlist of known DFIR tools
 - **Structural Validator:** JSON schema compliance, required fields, valid labels
 - **Taxonomy Validator:** Validates `taxonomy_refs` against the 57-category taxonomy
+- **Reasoning Link Validator:** Validates `<reasoning>` structure, evidence ID references, conclusion support, caveat links, and final-answer consistency
 
 ### 4.3 Distribution Audit
 
@@ -1469,7 +1481,7 @@ After filtering, verify:
     },
     {
       "role": "assistant",
-      "content": "<think>\n{reasoning}\n</think>\n\n{response}"
+      "content": "<reasoning>\n{linked_reasoning}\n</reasoning>\n\n{response}"
     }
   ],
   "metadata": {
@@ -1481,10 +1493,15 @@ After filtering, verify:
     "taxonomy_refs": ["W7", "W10"],
     "source_doc_id": "mitre-attack-T1059.001",
     "source": "mitre_attack",
+    "reasoning_format": "canonical_reasoning_v1",
     "quality_score": 4.2
   }
 }
 ```
+
+Canonical packaged data uses `<reasoning>`. A model-specific exporter may create
+a GLM training view that maps `<reasoning>` to `<think>`, but the canonical
+dataset keeps `<reasoning>` for auditability and validator compatibility.
 
 ### 5.2 Train/Validation/Test Split
 
@@ -1501,9 +1518,10 @@ After filtering, verify:
 Includes: source breakdown, generation methodology, task/difficulty distributions, ATT&CK tactic coverage, ATLAS technique coverage, **57-category taxonomy heatmap**, known limitations, ethical considerations, reproduction instructions.
 
 ### Phase 5 Deliverables
-- [ ] Chat-formatted JSONL (train/val/test)
+- [ ] Chat-formatted JSONL (train/val/test) with canonical `<reasoning>`
+- [ ] Optional GLM-specific export view if `<think>` tags are required by the training recipe
 - [ ] Dataset card with taxonomy coverage heatmap
-- [ ] HuggingFace Hub upload (private)
+- [ ] Local dataset package on DGX Sparks filesystem
 - [ ] Version tag: `v1.0.0`
 
 ---

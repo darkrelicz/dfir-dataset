@@ -19,7 +19,7 @@ generation:
     hijacklibs: 1
     loldrivers: 1
     ossem_data_dicts: 1
-    cybersecurity_skills: 3
+    cybersec_skills: 3
   temperature: 0.7
   max_retries: 2
   batch_size: 20           # Documents per API batch

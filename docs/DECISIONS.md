@@ -43,8 +43,10 @@
 - Synthesis should preserve source provenance and write generation manifests for auditability.
 - Gemini 2.5 Flash is the selected primary teacher model. Claude Sonnet is fallback/comparison only if pilot quality is below threshold.
 - The planned pilot gate is at least 65% pass rate before full synthesis.
-- Prompting should require source-grounded evidence, confidence labels, explicit caveats, and uncertainty calibration.
-- The plan currently packages reasoning inside the assistant response using `<think>` tags; if this is changed later, update synthesis prompts, packaging docs, and this decision log together.
+- Canonical synthesized responses use `<reasoning>`, not `<think>`.
+- The `<reasoning>` block is an auditable rationale with linked IDs: evidence (`E1`), analysis (`A1 [uses E1]`), conclusions (`C1 [uses E1,A1]`), and caveats (`CV1 [applies_to C1]`).
+- Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
+- A model-specific packaging exporter may convert `<reasoning>` to `<think>` for GLM training only if the training recipe requires that exact tag. The canonical synthesized and packaged dataset remains `<reasoning>`.
 
 ## Training And Hosting
 
