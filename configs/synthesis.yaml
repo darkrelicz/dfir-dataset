@@ -8,18 +8,18 @@ generation:
     sigma_rules: 3
     atomic_red_team: 4
     cisa_advisories: 5
-    volatility_docs: 4
+    volatility3_docs: 4
     mitre_atlas: 4
     cisa_kev: 3
-    kape: 2
+    kape_files: 2
     hayabusa_rules: 2
     lolbas_gtfobins: 3
-    forensicartifacts: 2
-    velociraptor: 3
+    forensic_artifacts: 2
+    velociraptor_artifacts: 3
     hijacklibs: 1
     loldrivers: 1
-    ossem_dicts: 1
-    antrophic_cybersecurity_skills: 3
+    ossem_data_dicts: 1
+    cybersecurity_skills: 3
   temperature: 0.7
   max_retries: 2
   batch_size: 20           # Documents per API batch
