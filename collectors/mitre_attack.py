@@ -192,7 +192,7 @@ class MitreAttackCollector(BaseCollector):
                     source_url=f"https://attack.mitre.org/techniques/{mitre_id.replace('.', '/')}",
                     title=technique_name,
                     date_collected=date.today(),
-                    date_published=self._parse_datetime(technique["created"]),
+                    date_published=technique["created"],
                     content_type="technique_definition",
                     content_markdown=markdown_doc,
                     metadata=metadata,
