@@ -1,7 +1,11 @@
 # configs/synthesis.yaml
 model:
-  primary: "gemini-2.5-flash"      # Sole model — sufficient quality at ~$9 total
-  fallback: "claude-sonnet-4"      # Only if Flash pilot pass rate < 65%
+  provider: "google_genai"         # Direct Gemini API; do not route via OpenRouter
+  api: "interactions"
+  api_key_env: "GEMINI_API_KEY"
+  primary: "gemini-2.5-flash"      # Primary teacher model for Phase 3
+  fallback: null                   # Comparison models must run as separate, explicit jobs
+  thinking_level: "low"
 generation:
   pairs_per_document:
     mitre_attack: 5
@@ -23,6 +27,7 @@ generation:
   temperature: 0.7
   max_retries: 2
   batch_size: 20           # Documents per API batch
+  max_source_chars: 24000  # Trim very large source docs for prompt stability
 output:
   format: "jsonl"
   dir: "data/synthesized/"

@@ -9,10 +9,10 @@ dependencies = [
     "pyyaml",
     "pydantic>=2.0",
     "jsonlines",
+    "google-genai",
     "rich",
     "mitreattack-python>=1.0",
     "requests>=2.31",
-    "beautifulsoup4>=4.12",
     "lxml",
     "gitpython>=3.1",
     "tqdm>=4.60"
@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 dfir-collect = "scripts.collect_all:main"
+dfir-synthesize = "scripts.synthesize:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]

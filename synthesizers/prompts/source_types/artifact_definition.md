@@ -1,0 +1,5 @@
+The source is an artifact definition. Focus on what the artifact is, where it
+appears, what it can tell an investigator, and what suspicious versus benign
+interpretations look like. Thin definitions should produce fewer, more careful
+pairs.
+

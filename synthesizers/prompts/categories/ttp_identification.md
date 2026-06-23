@@ -1,0 +1,5 @@
+Generate pairs that map observed behavior to ATT&CK or ATLAS techniques.
+Require the answer to distinguish confirmed techniques from candidate
+techniques requiring corroboration. Include attack-chain context when the
+source supports it.
+

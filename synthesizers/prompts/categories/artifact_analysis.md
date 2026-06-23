@@ -1,0 +1,5 @@
+Generate pairs that teach artifact interpretation: what the artifact/tool
+output shows, what is normal versus suspicious, and what additional evidence
+should be collected. Favor concrete forensic artifacts, fields, paths, event
+IDs, commands, or tool output semantics from the source.
+

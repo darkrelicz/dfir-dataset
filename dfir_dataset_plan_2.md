@@ -1360,6 +1360,41 @@ threat hunting.
 ```
 ---
 
+#### 3.3.4 Phase 3 Inline Rejection Gates
+
+Do not rely on Phase 4 to catch obvious generation failures. Phase 3 must
+reject bad model output before writing it to `data/synthesized/`.
+
+Reject a generation batch if any of the following are true:
+
+- Model output is not strict JSON or not a JSON array.
+- Number of generated pairs differs from the requested `pairs_requested`.
+- Any pair fails the `InstructionPair` schema.
+- `source_doc_id`, `source`, `category`, or `difficulty` does not match the
+  prompt/source document.
+- `<reasoning>` is missing, has empty evidence/analysis lines, has conclusions
+  without evidence and analysis IDs, or has caveats that do not apply to a
+  conclusion.
+- Final answer text after `</reasoning>` is empty.
+- `taxonomy_refs` include IDs outside the 57-category taxonomy.
+- MITRE ATT&CK or ATLAS IDs have invalid formats.
+- Concrete indicators (CVEs, hashes, IPs, or domains) appear in the generated
+  pair but not in the source document.
+
+Pair counts are also source-richness aware:
+
+```python
+if doc.word_count < 250:
+    pairs = 1
+elif doc.content_type in {"artifact_definition", "event_dictionary", "abuse_database"}:
+    pairs = min(configured_pairs, 2)
+else:
+    pairs = configured_pairs
+```
+
+This is a Phase 3 cleanliness gate. Phase 4 still performs deeper quality
+scoring, deduplication, distribution audits, and manual spot checks.
+
 ### 3.4 Volume Targets
 
 **Core + Tier 1-2 (confirmed scope):**
@@ -1410,6 +1445,7 @@ threat hunting.
 
 ### Phase 3 Deliverables
 - [ ] 5 category prompt templates + 8 source-type sub-templates — tested and iterated via pilot
+- [ ] Inline rejection gates for invalid JSON, source mismatch, bad reasoning links, invalid taxonomy refs, invented indicators, and pair-count violations
 - [ ] Synthesis pipeline script with batching, retries, rate limits
 - [ ] Pilot results documented (including grounding/reasoning/uncertainty audit)
 - [ ] Full synthesis run: ~37,200 raw instruction pairs (Core + Tier 1-2)

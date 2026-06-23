@@ -1,0 +1,4 @@
+The source is forensic tool or query documentation. Focus on when to use the
+tool, how to interpret parameters and output fields, what the result can and
+cannot prove, and what evidence should be correlated next.
+
