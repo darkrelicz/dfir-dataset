@@ -1,5 +1,13 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+PROFILE_CONFIG_PATH = (
+    Path(__file__).resolve().parents[1] / "configs" / "source_profiles.yaml"
+)
 
 
 @dataclass(frozen=True)
@@ -19,260 +27,68 @@ class ContentTypeProfile:
     thin_source: bool = False
 
 
-SOURCE_PROFILES: dict[str, SourceProfile] = {
-    "mitre_attack": SourceProfile(
-        source="mitre_attack",
-        source_type="ttp_description",
-        prompt_template="ttp_description.md",
-        categories=(
-            "ttp_identification",
-            "triage_and_hunting",
-            "detection_engineering",
-            "report_generation",
-            "artifact_analysis",
-        ),
-    ),
-    "sigma_rules": SourceProfile(
-        source="sigma_rules",
-        source_type="detection_rule",
-        prompt_template="detection_rule.md",
-        categories=(
-            "detection_engineering",
-            "ttp_identification",
-            "triage_and_hunting",
-            "report_generation",
-        ),
-    ),
-    "atomic_red_team": SourceProfile(
-        source="atomic_red_team",
-        source_type="ttp_description",
-        prompt_template="ttp_description.md",
-        categories=(
-            "ttp_identification",
-            "triage_and_hunting",
-            "detection_engineering",
-            "artifact_analysis",
-        ),
-    ),
-    "cisa_advisories": SourceProfile(
-        source="cisa_advisories",
-        source_type="threat_advisory",
-        prompt_template="threat_advisory.md",
-        categories=(
-            "triage_and_hunting",
-            "report_generation",
-            "ttp_identification",
-            "detection_engineering",
-        ),
-    ),
-    "volatility3_docs": SourceProfile(
-        source="volatility3_docs",
-        source_type="tool_documentation",
-        prompt_template="tool_documentation.md",
-        categories=("artifact_analysis", "triage_and_hunting", "report_generation"),
-    ),
-    "mitre_atlas": SourceProfile(
-        source="mitre_atlas",
-        source_type="ttp_description",
-        prompt_template="ttp_description.md",
-        categories=(
-            "ttp_identification",
-            "artifact_analysis",
-            "triage_and_hunting",
-            "report_generation",
-        ),
-    ),
-    "cisa_kev": SourceProfile(
-        source="cisa_kev",
-        source_type="vulnerability_catalog",
-        prompt_template="vulnerability_catalog.md",
-        categories=("triage_and_hunting", "report_generation", "ttp_identification"),
-    ),
-    "kape_files": SourceProfile(
-        source="kape_files",
-        source_type="artifact_definition",
-        prompt_template="artifact_definition.md",
-        categories=("artifact_analysis", "triage_and_hunting"),
-        thin_source=True,
-    ),
-    "hayabusa_rules": SourceProfile(
-        source="hayabusa_rules",
-        source_type="detection_rule",
-        prompt_template="detection_rule.md",
-        categories=("detection_engineering", "artifact_analysis", "triage_and_hunting"),
-    ),
-    "lolbas_gtfobins": SourceProfile(
-        source="lolbas_gtfobins",
-        source_type="abuse_database",
-        prompt_template="abuse_database.md",
-        categories=("artifact_analysis", "detection_engineering", "ttp_identification"),
-    ),
-    "forensic_artifacts": SourceProfile(
-        source="forensic_artifacts",
-        source_type="artifact_definition",
-        prompt_template="artifact_definition.md",
-        categories=("artifact_analysis", "triage_and_hunting"),
-        thin_source=True,
-    ),
-    "velociraptor_artifacts": SourceProfile(
-        source="velociraptor_artifacts",
-        source_type="tool_documentation",
-        prompt_template="tool_documentation.md",
-        categories=("artifact_analysis", "triage_and_hunting", "detection_engineering"),
-    ),
-    "hijacklibs": SourceProfile(
-        source="hijacklibs",
-        source_type="abuse_database",
-        prompt_template="abuse_database.md",
-        categories=("artifact_analysis", "detection_engineering", "ttp_identification"),
-        thin_source=True,
-    ),
-    "loldrivers": SourceProfile(
-        source="loldrivers",
-        source_type="abuse_database",
-        prompt_template="abuse_database.md",
-        categories=("artifact_analysis", "ttp_identification", "detection_engineering"),
-        thin_source=True,
-    ),
-    "ossem_data_dicts": SourceProfile(
-        source="ossem_data_dicts",
-        source_type="artifact_definition",
-        prompt_template="artifact_definition.md",
-        categories=("artifact_analysis", "detection_engineering"),
-        thin_source=True,
-    ),
-    "cybersec_skills": SourceProfile(
-        source="cybersec_skills",
-        source_type="practitioner_workflow",
-        prompt_template="practitioner_workflow.md",
-        categories=("triage_and_hunting", "artifact_analysis", "detection_engineering"),
-    ),
-}
+def _load_profile_config(path: Path = PROFILE_CONFIG_PATH) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"Profile config must be a mapping: {path}")
+    return data
 
 
-CONTENT_TYPE_PROFILES: dict[str, ContentTypeProfile] = {
-    "abuse_database": ContentTypeProfile(
-        content_type="abuse_database",
-        max_pairs=2,
-        thin_source=True,
-    ),
-    "artifact_definition": ContentTypeProfile(
-        content_type="artifact_definition",
-        max_pairs=2,
-        thin_source=True,
-    ),
-    "atomic_test": ContentTypeProfile(
-        content_type="atomic_test",
-        prompt_template="atomic_test.md",
-    ),
-    "case_study": ContentTypeProfile(
-        content_type="case_study",
-        prompt_template="case_study.md",
-        max_pairs=3,
-    ),
-    "event_dictionary": ContentTypeProfile(
-        content_type="event_dictionary",
-        prompt_template="event_dictionary.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "gtfobins_linux_abuse_function": ContentTypeProfile(
-        content_type="gtfobins_linux_abuse_function",
-        prompt_template="gtfobins_linux_abuse_function.md",
-        max_pairs=2,
-    ),
-    "gtfobins_linux_alias": ContentTypeProfile(
-        content_type="gtfobins_linux_alias",
-        prompt_template="gtfobins_linux_alias.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "hayabusa_rule": ContentTypeProfile(
-        content_type="hayabusa_rule",
-        prompt_template="hayabusa_rule.md",
-    ),
-    "lolbas_windows_lolbin": ContentTypeProfile(
-        content_type="lolbas_windows_lolbin",
-        prompt_template="lolbas_windows_lolbin.md",
-        max_pairs=2,
-    ),
-    "mitigation": ContentTypeProfile(
-        content_type="mitigation",
-        prompt_template="mitigation.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "tool_module": ContentTypeProfile(
-        content_type="tool_module",
-        prompt_template="tool_module.md",
-        max_pairs=2,
-        thin_source=True,
-    ),
-    "tool_plugin": ContentTypeProfile(
-        content_type="tool_plugin",
-        prompt_template="tool_plugin.md",
-    ),
-    "velociraptor_client_artifact": ContentTypeProfile(
-        content_type="velociraptor_client_artifact",
-        prompt_template="velociraptor_artifact.md",
-    ),
-    "velociraptor_artifact": ContentTypeProfile(
-        content_type="velociraptor_artifact",
-        prompt_template="velociraptor_artifact.md",
-    ),
-    "velociraptor_event_artifact": ContentTypeProfile(
-        content_type="velociraptor_event_artifact",
-        prompt_template="velociraptor_artifact.md",
-    ),
-    "velociraptor_internal_artifact": ContentTypeProfile(
-        content_type="velociraptor_internal_artifact",
-        prompt_template="velociraptor_artifact.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "velociraptor_notebook": ContentTypeProfile(
-        content_type="velociraptor_notebook",
-        prompt_template="velociraptor_artifact.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "velociraptor_report_template": ContentTypeProfile(
-        content_type="velociraptor_report_template",
-        prompt_template="velociraptor_artifact.md",
-        max_pairs=1,
-        thin_source=True,
-    ),
-    "velociraptor_server_artifact": ContentTypeProfile(
-        content_type="velociraptor_server_artifact",
-        prompt_template="velociraptor_artifact.md",
-    ),
-    "velociraptor_vql_artifact": ContentTypeProfile(
-        content_type="velociraptor_vql_artifact",
-        prompt_template="velociraptor_artifact.md",
-    ),
-}
+def _build_source_profiles(config: dict[str, Any]) -> dict[str, SourceProfile]:
+    profiles: dict[str, SourceProfile] = {}
+    for source, raw_profile in config.items():
+        if not isinstance(raw_profile, dict):
+            raise ValueError(f"Source profile for {source} must be a mapping")
+
+        try:
+            source_type = str(raw_profile["source_type"])
+            prompt_template = str(raw_profile["prompt_template"])
+            categories = tuple(str(value) for value in raw_profile["categories"])
+        except KeyError as exc:
+            raise ValueError(f"Source profile for {source} is missing {exc}") from exc
+
+        if not categories:
+            raise ValueError(f"Source profile for {source} must define categories")
+
+        profiles[source] = SourceProfile(
+            source=source,
+            source_type=source_type,
+            prompt_template=prompt_template,
+            categories=categories,
+            thin_source=bool(raw_profile.get("thin_source", False)),
+        )
+    return profiles
 
 
-# Pilot defaults follow the plan, but ATLAS is capped because the current
-# collector yields 262 docs rather than the original ~65 estimate.
-DEFAULT_PILOT_TARGETS: dict[str, int] = {
-    "mitre_attack": 25,
-    "sigma_rules": 25,
-    "atomic_red_team": 25,
-    "cisa_advisories": 25,
-    "volatility3_docs": 10,
-    "mitre_atlas": 30,
-    "cisa_kev": 10,
-    "kape_files": 20,
-    "hayabusa_rules": 30,
-    "lolbas_gtfobins": 15,
-    "forensic_artifacts": 15,
-    "velociraptor_artifacts": 10,
-    "hijacklibs": 10,
-    "loldrivers": 10,
-    "ossem_data_dicts": 10,
-    "cybersec_skills": 15,
-}
+def _build_content_type_profiles(
+    config: dict[str, Any],
+) -> dict[str, ContentTypeProfile]:
+    profiles: dict[str, ContentTypeProfile] = {}
+    for content_type, raw_profile in config.items():
+        if not isinstance(raw_profile, dict):
+            raise ValueError(f"Content-type profile for {content_type} must be a mapping")
+
+        max_pairs = raw_profile.get("max_pairs")
+        profiles[content_type] = ContentTypeProfile(
+            content_type=content_type,
+            prompt_template=raw_profile.get("prompt_template"),
+            max_pairs=int(max_pairs) if max_pairs is not None else None,
+            thin_source=bool(raw_profile.get("thin_source", False)),
+        )
+    return profiles
+
+
+def _build_pilot_targets(config: dict[str, Any]) -> dict[str, int]:
+    return {str(source): int(limit) for source, limit in config.items()}
+
+
+_PROFILE_CONFIG = _load_profile_config()
+SOURCE_PROFILES = _build_source_profiles(_PROFILE_CONFIG.get("source_profiles", {}))
+CONTENT_TYPE_PROFILES = _build_content_type_profiles(
+    _PROFILE_CONFIG.get("content_type_profiles", {})
+)
+DEFAULT_PILOT_TARGETS = _build_pilot_targets(_PROFILE_CONFIG.get("pilot_targets", {}))
 
 
 def profile_for_source(source: str) -> SourceProfile:

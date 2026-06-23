@@ -30,6 +30,7 @@
 - `docs/TAXONOMY.md` is the human-readable 57-category DFIR artifact taxonomy.
 - `configs/quality.yaml` is the machine-readable taxonomy validation and coverage map.
 - `configs/task_categories.yaml` defines the five model behavior categories used for synthesis.
+- `configs/source_profiles.yaml` defines Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 
 ## Product Shape
 
@@ -54,6 +55,7 @@
 - A model-specific packaging exporter may convert `<reasoning>` to `<think>` for GLM training only if the training recipe requires that exact tag. The canonical synthesized and packaged dataset remains `<reasoning>`.
 - Pair counts are source-richness aware: documents under 250 words generate one pair, and thin content types such as artifact definitions, event dictionaries, and abuse database entries are capped to avoid padded hallucinations.
 - Prompting uses a two-layer source model: broad `source_type` instructions from the collector source plus selective exact `content_type` overrides from each raw document.
+- Source and content-type prompt policy should live in config, not hard-coded Python mappings.
 - Do not create a separate prompt file for every raw `content_type` by default. Add content-type templates only when the generation behavior differs materially from the broad source type.
 
 ## Training And Hosting

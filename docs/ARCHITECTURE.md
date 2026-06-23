@@ -19,6 +19,7 @@ This repository is a Python dataset pipeline, not a website application. No fron
 - `configs/collection.yaml`: Source URLs, clone/cache paths, output directories, and collector-specific options.
 - `configs/task_categories.yaml`: Five task categories used by the future instruction-pair synthesizer.
 - `configs/synthesis.yaml`: Planned Phase 3 model and generation settings.
+- `configs/source_profiles.yaml`: Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 - `configs/quality.yaml`: Programmatic taxonomy IDs, coverage levels, scoring weights, and dedup settings.
 - `configs/packaging.yaml`: Planned packaging configuration.
 - `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt rendering, pilot sampling, schemas, and validation helpers.
@@ -65,7 +66,7 @@ Total raw JSONL rows: 20,312. Raw corpus validation currently passes.
 
 Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses the direct Gemini API through the Google GenAI SDK, with Gemini 2.5 Flash as the primary teacher model, five task-category prompt templates, source-type-specific prompt instructions, and selective content-type prompt overrides. Any Claude or alternate-model comparison must run as a separate, explicitly labeled job rather than an automatic fallback. Canonical synthesized responses use `<reasoning>` blocks with linked evidence, analysis, conclusion, and caveat IDs.
 
-Current Phase 3 scaffold includes deterministic source profiles, content-type profiles, source-type prompt templates, content-type prompt overrides, task-category prompt templates, raw corpus validation, pilot sampling, prompt-size trimming via `max_source_chars`, generated-pair rejection gates, and dry-run prompt rendering. Model clients, retry/rate-limit handling, and batch manifests for real generation are still pending.
+Current Phase 3 scaffold includes deterministic source profiles, content-type profiles, source-type prompt templates, content-type prompt overrides, task-category prompt templates, raw corpus validation, pilot sampling, prompt-size trimming via `max_source_chars`, generated-pair rejection gates, and dry-run prompt rendering. Source profile policy is data-driven in `configs/source_profiles.yaml`, while `synthesizers/source_profiles.py` loads and validates that config. Model clients, retry/rate-limit handling, and batch manifests for real generation are still pending.
 
 Prompt construction uses two layers: coarse `source_type` guidance derived from the collector `source`, then optional exact `content_type` guidance derived from each raw document. This keeps broad behavior stable while adding specialized handling for labels such as `atomic_test`, `lolbas_windows_lolbin`, `gtfobins_linux_abuse_function`, `hayabusa_rule`, `event_dictionary`, `tool_module`, `tool_plugin`, and Velociraptor artifact variants.
 

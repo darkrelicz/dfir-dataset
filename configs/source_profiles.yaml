@@ -1,0 +1,237 @@
+# Source and content-type policy for Phase 3 prompt generation.
+# Keep this data-driven so prompt policy can change without editing Python.
+
+source_profiles:
+  mitre_attack:
+    source_type: ttp_description
+    prompt_template: ttp_description.md
+    categories:
+      - ttp_identification
+      - triage_and_hunting
+      - detection_engineering
+      - report_generation
+      - artifact_analysis
+
+  sigma_rules:
+    source_type: detection_rule
+    prompt_template: detection_rule.md
+    categories:
+      - detection_engineering
+      - ttp_identification
+      - triage_and_hunting
+      - report_generation
+
+  atomic_red_team:
+    source_type: ttp_description
+    prompt_template: ttp_description.md
+    categories:
+      - ttp_identification
+      - triage_and_hunting
+      - detection_engineering
+      - artifact_analysis
+
+  cisa_advisories:
+    source_type: threat_advisory
+    prompt_template: threat_advisory.md
+    categories:
+      - triage_and_hunting
+      - report_generation
+      - ttp_identification
+      - detection_engineering
+
+  volatility3_docs:
+    source_type: tool_documentation
+    prompt_template: tool_documentation.md
+    categories:
+      - artifact_analysis
+      - triage_and_hunting
+      - report_generation
+
+  mitre_atlas:
+    source_type: ttp_description
+    prompt_template: ttp_description.md
+    categories:
+      - ttp_identification
+      - artifact_analysis
+      - triage_and_hunting
+      - report_generation
+
+  cisa_kev:
+    source_type: vulnerability_catalog
+    prompt_template: vulnerability_catalog.md
+    categories:
+      - triage_and_hunting
+      - report_generation
+      - ttp_identification
+
+  kape_files:
+    source_type: artifact_definition
+    prompt_template: artifact_definition.md
+    categories:
+      - artifact_analysis
+      - triage_and_hunting
+    thin_source: true
+
+  hayabusa_rules:
+    source_type: detection_rule
+    prompt_template: detection_rule.md
+    categories:
+      - detection_engineering
+      - artifact_analysis
+      - triage_and_hunting
+
+  lolbas_gtfobins:
+    source_type: abuse_database
+    prompt_template: abuse_database.md
+    categories:
+      - artifact_analysis
+      - detection_engineering
+      - ttp_identification
+
+  forensic_artifacts:
+    source_type: artifact_definition
+    prompt_template: artifact_definition.md
+    categories:
+      - artifact_analysis
+      - triage_and_hunting
+    thin_source: true
+
+  velociraptor_artifacts:
+    source_type: tool_documentation
+    prompt_template: tool_documentation.md
+    categories:
+      - artifact_analysis
+      - triage_and_hunting
+      - detection_engineering
+
+  hijacklibs:
+    source_type: abuse_database
+    prompt_template: abuse_database.md
+    categories:
+      - artifact_analysis
+      - detection_engineering
+      - ttp_identification
+    thin_source: true
+
+  loldrivers:
+    source_type: abuse_database
+    prompt_template: abuse_database.md
+    categories:
+      - artifact_analysis
+      - ttp_identification
+      - detection_engineering
+    thin_source: true
+
+  ossem_data_dicts:
+    source_type: artifact_definition
+    prompt_template: artifact_definition.md
+    categories:
+      - artifact_analysis
+      - detection_engineering
+    thin_source: true
+
+  cybersec_skills:
+    source_type: practitioner_workflow
+    prompt_template: practitioner_workflow.md
+    categories:
+      - triage_and_hunting
+      - artifact_analysis
+      - detection_engineering
+
+content_type_profiles:
+  abuse_database:
+    max_pairs: 2
+    thin_source: true
+
+  artifact_definition:
+    max_pairs: 2
+    thin_source: true
+
+  atomic_test:
+    prompt_template: atomic_test.md
+
+  case_study:
+    prompt_template: case_study.md
+    max_pairs: 3
+
+  event_dictionary:
+    prompt_template: event_dictionary.md
+    max_pairs: 1
+    thin_source: true
+
+  gtfobins_linux_abuse_function:
+    prompt_template: gtfobins_linux_abuse_function.md
+    max_pairs: 2
+
+  gtfobins_linux_alias:
+    prompt_template: gtfobins_linux_alias.md
+    max_pairs: 1
+    thin_source: true
+
+  hayabusa_rule:
+    prompt_template: hayabusa_rule.md
+
+  lolbas_windows_lolbin:
+    prompt_template: lolbas_windows_lolbin.md
+    max_pairs: 2
+
+  mitigation:
+    prompt_template: mitigation.md
+    max_pairs: 1
+    thin_source: true
+
+  tool_module:
+    prompt_template: tool_module.md
+    max_pairs: 2
+    thin_source: true
+
+  tool_plugin:
+    prompt_template: tool_plugin.md
+
+  velociraptor_artifact:
+    prompt_template: velociraptor_artifact.md
+
+  velociraptor_client_artifact:
+    prompt_template: velociraptor_artifact.md
+
+  velociraptor_event_artifact:
+    prompt_template: velociraptor_artifact.md
+
+  velociraptor_internal_artifact:
+    prompt_template: velociraptor_artifact.md
+    max_pairs: 1
+    thin_source: true
+
+  velociraptor_notebook:
+    prompt_template: velociraptor_artifact.md
+    max_pairs: 1
+    thin_source: true
+
+  velociraptor_report_template:
+    prompt_template: velociraptor_artifact.md
+    max_pairs: 1
+    thin_source: true
+
+  velociraptor_server_artifact:
+    prompt_template: velociraptor_artifact.md
+
+  velociraptor_vql_artifact:
+    prompt_template: velociraptor_artifact.md
+
+pilot_targets:
+  mitre_attack: 25
+  sigma_rules: 25
+  atomic_red_team: 25
+  cisa_advisories: 25
+  volatility3_docs: 10
+  mitre_atlas: 30
+  cisa_kev: 10
+  kape_files: 20
+  hayabusa_rules: 30
+  lolbas_gtfobins: 15
+  forensic_artifacts: 15
+  velociraptor_artifacts: 10
+  hijacklibs: 10
+  loldrivers: 10
+  ossem_data_dicts: 10
+  cybersec_skills: 15
