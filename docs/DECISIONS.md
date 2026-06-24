@@ -22,7 +22,6 @@
 - Git-backed sources use local shallow clones under `data/raw/.repos/` for reproducibility and faster reruns.
 - Sigma rules are parsed with `yaml.safe_load` instead of pySigma because the pipeline currently needs metadata extraction rather than rule translation.
 - Atomic Red Team emits one raw document per atomic test, not one document per technique file.
-- CISA advisory collection uses RSS/HTML scraping because summaries alone are insufficient for DFIR training examples.
 - Cybersecurity Skills entries are filtered by body length to avoid thin workflow templates becoming hallucinated synthesis examples.
 
 ## Taxonomy And Config Separation
@@ -34,8 +33,7 @@
 
 ## Product Shape
 
-- This repository is currently a Python data pipeline, not a website.
-- No frontend framework, route structure, styling system, or component library has been selected.
+- This repository is a Python data pipeline.
 
 ## Phase 3 Guardrails
 
@@ -46,9 +44,10 @@
 - Inline rejection covers invalid JSON, wrong source IDs, too many or too few pairs, broken `<reasoning>` links, empty evidence, invalid taxonomy refs, malformed ATT&CK/ATLAS IDs, and invented concrete indicators.
 - Gemini 2.5 Flash is the selected primary teacher model.
 - Phase 3 generation uses the direct Gemini API via the Google GenAI SDK and `GEMINI_API_KEY`.
+- Local API secrets live in `.env`, which is ignored by git. Do not commit real API keys.
 - OpenRouter is not used for canonical instruction generation because Gemini 2.5 Flash is not available through OpenRouter's distillable-model path.
 - Claude Sonnet or any alternate teacher model must run as a separate, explicitly labeled comparison job rather than an automatic fallback, so generated data provenance stays clean.
-- The planned pilot gate is at least 65% pass rate before full synthesis.
+- The planned pilot gate is at least 75% pass rate before full synthesis.
 - Canonical synthesized responses use `<reasoning>`, not `<think>`.
 - The `<reasoning>` block is an auditable rationale with linked IDs: evidence (`E1`), analysis (`A1 [uses E1]`), conclusions (`C1 [uses E1,A1]`), and caveats (`CV1 [applies_to C1]`).
 - Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
@@ -57,6 +56,12 @@
 - Prompting uses a two-layer source model: broad `source_type` instructions from the collector source plus selective exact `content_type` overrides from each raw document.
 - Source and content-type prompt policy should live in config, not hard-coded Python mappings.
 - Do not create a separate prompt file for every raw `content_type` by default. Add content-type templates only when the generation behavior differs materially from the broad source type.
+- The first Gemini generation runner is sequential and resumable. Prefer a reviewed one-prompt smoke test and pilot run before adding concurrency.
+- The Gemini runner has a rejection-rate circuit breaker. By default, after 20 current-run attempted prompts, generation stops if rejected prompts are at least 20%.
+- Phase 3 full generation must not begin until the Gemini pilot has acceptable validator pass rate and acceptable manual quality.
+- `accepted.jsonl` from Phase 3 is only candidate synthesis output. It must pass Phase 4 quality validation before packaging or training.
+- Phase 4 quality validation should be primarily deterministic and heuristic, with AI-assisted judging and manual review used for fuzzy quality issues such as weak reasoning or unsupported claims.
+- Phase 5 packaging consumes Phase 4 filtered output, not raw Phase 3 `accepted.jsonl`.
 
 ## Training And Hosting
 

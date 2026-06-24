@@ -29,7 +29,11 @@ Title: $title
 
 4. Each response MUST begin with a canonical `<reasoning>` block followed by a
    practitioner-ready final answer.
-5. The `<reasoning>` block must use linked IDs:
+5. The `<reasoning>` block must use newline-separated linked IDs. The opening
+   `<reasoning>` tag, every `E*`, `A*`, `C*`, and `CV*` line, and the closing
+   `</reasoning>` tag MUST each be on its own line. Do not place two reasoning
+   IDs on the same line.
+6. The linked IDs are:
    - `E1`, `E2`, ... for source-grounded evidence. Quote or reference specific artifact data
      from the source document, such as event IDs, file paths, registry keys,
      commands, rule fields, tool output fields, CVEs, or IOCs.
@@ -41,24 +45,24 @@ Title: $title
      support the finding.
    - `CV1 [applies_to C1]`, ... for caveats or corroboration needs. State what additional evidence
      would strengthen, weaken, or disprove the conclusion.
-6. Every conclusion must cite at least one evidence ID and one analysis ID.
-7. Every caveat must apply to a specific conclusion.
-8. The final answer must not introduce findings absent from the linked
+7. Every conclusion must cite at least one evidence ID and one analysis ID.
+8. Every caveat must apply to a specific conclusion.
+9. The final answer must not introduce findings absent from the linked
    conclusions.
 
 ### Grounding Constraint
 
-9. Forensic details must be directly present in the source document or
+10. Forensic details must be directly present in the source document or
    well-established forensic knowledge. Mark non-source claims with
    `[GENERAL KNOWLEDGE]`.
-10. Never invent file paths, hashes, IP addresses, hostnames, usernames, event
+11. Never invent file paths, hashes, IP addresses, hostnames, usernames, event
     records, CVEs, IOCs, or tool output not present in the source.
-11. Never declare compromise without corroborating evidence.
+12. Never declare compromise without corroborating evidence.
 
 ### Technique Mapping
 
-12. Map behaviors to MITRE ATT&CK or ATLAS technique IDs when supported.
-13. Use a `?` suffix for candidate mappings that require corroboration.
+13. Map behaviors to MITRE ATT&CK or ATLAS technique IDs when supported.
+14. Use a `?` suffix for candidate mappings that require corroboration.
 
 ## Task Category Instructions
 
@@ -95,4 +99,18 @@ Return only a JSON array. Each item must have this shape:
   "grounding": "source_only|source_plus_general",
   "reasoning_format": "canonical_reasoning_v1"
 }
+```
+
+The `response` string MUST render like this when decoded:
+
+```text
+<reasoning>
+E1: Source-grounded evidence.
+E2: Additional source-grounded evidence.
+A1 [uses E1]: Analysis of the evidence.
+C1 [uses E1,A1] Confidence: medium. Conclusion.
+CV1 [applies_to C1]: Caveat or corroboration need.
+</reasoning>
+
+Final practitioner-ready answer.
 ```

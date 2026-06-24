@@ -6,7 +6,7 @@ Build a re-runnable DFIR dataset factory for Shepherd, a local/on-premise digita
 
 ## Context
 
-This is Project 1 of the summer internship plan. The intended handoff is a documented, reproducible dataset factory that a successor can rerun and extend for real Shepherd operations.
+The intended handoff is a documented, reproducible dataset factory that a successor can rerun and extend for real Shepherd operations.
 
 The fine-tuning target in the plan is LoRA SFT via Unsloth on DGX Sparks using GLM-4.7-Flash as the base model. CRAFT/RAFT is deferred until Shepherd has a RAG layer.
 
@@ -25,9 +25,16 @@ The selected dataset scope is Core + Tier 1 + Tier 2: all 16 collectors from the
 - Phase 5: planned local dataset packaging.
 - Phase 6: planned fine-tuning validation and Shepherd integration.
 
-## Current Project Type
+## Remaining Workflow
 
-Despite occasional references to a website, the current codebase is not a website project. There is no detected web framework, frontend router, styling system, page layout, or reusable UI component library.
+Phase 3 proceeds in two gates: first run and manually review a small Gemini pilot, then run full instruction-pair generation only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data.
+
+Phase 4 consumes Phase 3 `accepted.jsonl` and applies deterministic validators, heuristic quality scores, deduplication, balance checks, and targeted manual or AI-assisted review. Its output should be a filtered dataset plus review/rejection manifests.
+
+Phase 5 consumes the Phase 4 filtered dataset, splits by `source_doc_id`, and packages the examples into GLM-friendly chat/SFT JSONL. The canonical data keeps `<reasoning>`; a model-specific export may convert to `<think>` only if required.
+
+Phase 6 runs baseline evaluation, LoRA SFT on GLM-4.7-Flash, post-training evaluation, and Shepherd integration only if the tuned model improves over baseline.
+
 
 ## Intended Users
 
