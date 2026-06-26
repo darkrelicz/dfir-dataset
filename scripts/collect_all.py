@@ -1,7 +1,5 @@
 import argparse
-import json
 import logging
-import yaml
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -22,16 +20,14 @@ from collectors.hijacklibs import HijackLibsCollector
 from collectors.loldrivers import LOLDriversCollector
 from collectors.ossem_data_dicts import OSSEMDataDictsCollector
 from collectors.cybersec_skills import CybersecSkillsCollector
+from utils.io import load_yaml, write_json
 
 
 def load_config(config_path: str) -> dict:
-    with open(config_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    return load_yaml(config_path, default={})
 
 def write_combined_manifest(results: list[dict], manifest_dir: Path):
-    manifest_dir.mkdir(parents=True, exist_ok=True)
-    with open(manifest_dir / "collection_manifest.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2)
+    write_json(manifest_dir / "collection_manifest.json", results)
 
 def print_summary_table(results: list[dict]):
     console = Console()
