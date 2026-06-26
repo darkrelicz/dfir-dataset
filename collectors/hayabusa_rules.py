@@ -8,12 +8,13 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
 from typing import Any
-from urllib.parse import quote
 
 import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import as_list, meets_order_threshold, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,7 @@ class HayabusaRulesCollector(BaseCollector):
 
     def _meets_level_threshold(self, level: str) -> bool:
         """Check if rule level meets the minimum threshold."""
-        min_idx = (
-            self.LEVEL_ORDER.index(self.min_rule_level)
-            if self.min_rule_level in self.LEVEL_ORDER
-            else 0
-        )
-        rule_idx = self.LEVEL_ORDER.index(level) if level in self.LEVEL_ORDER else -1
-        return rule_idx >= min_idx
+        return meets_order_threshold(level, self.min_rule_level, self.LEVEL_ORDER)
 
     def _text_to_yaml_str(self, text: Any) -> str:
         """Safely serialize text block to YAML string."""
@@ -60,9 +55,8 @@ class HayabusaRulesCollector(BaseCollector):
 
     def _source_url(self, rule_path: Path) -> str:
         """Build a GitHub URL for a Hayabusa source rule."""
-        base_url = self.url[:-4] if self.url.endswith(".git") else self.url
-        rel_path = rule_path.relative_to(self.clone_path).as_posix()
-        return f"{base_url}/blob/main/{quote(rel_path, safe='/')}"
+        rel_path = rule_path.relative_to(self.clone_path)
+        return github_blob_url(self.url, "main", rel_path)
 
     def _parse_rule_file(self, rule_path: Path) -> list[dict]:
         """Parse one Hayabusa file, including correlation files with multiple docs."""
@@ -93,16 +87,6 @@ class HayabusaRulesCollector(BaseCollector):
                 continue
             rules.append(rule)
         return rules
-
-    def _as_list(self, value: Any) -> list:
-        """Normalize optional scalar/list YAML fields."""
-        if value is None:
-            return []
-        if isinstance(value, list):
-            return value
-        if isinstance(value, tuple | set):
-            return list(value)
-        return [value]
 
     def _build_markdown(self, rule: dict) -> str:
         """Build markdown content from a Hayabusa rule dict."""
@@ -155,7 +139,7 @@ class HayabusaRulesCollector(BaseCollector):
             lines.append("")
 
         # Tags
-        tags = self._as_list(rule.get("tags"))
+        tags = as_list(rule.get("tags"))
         if tags:
             lines.append("## Tags")
             for tag in tags:
@@ -163,7 +147,7 @@ class HayabusaRulesCollector(BaseCollector):
             lines.append("")
 
         # False positives
-        fps = self._as_list(rule.get("falsepositives"))
+        fps = as_list(rule.get("falsepositives"))
         if fps:
             lines.append("## False Positives")
             for fp in fps:
@@ -188,7 +172,7 @@ class HayabusaRulesCollector(BaseCollector):
             lines.append("")
 
         # References
-        refs = self._as_list(rule.get("references"))
+        refs = as_list(rule.get("references"))
         if refs:
             lines.append("## References")
             for ref in refs:
@@ -196,7 +180,7 @@ class HayabusaRulesCollector(BaseCollector):
             lines.append("")
 
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -251,7 +235,7 @@ class HayabusaRulesCollector(BaseCollector):
         seen_doc_ids.add(doc_id)
 
         title = rule.get("title", "Untitled Rule")
-        tags = self._as_list(rule.get("tags"))
+        tags = as_list(rule.get("tags"))
 
         logsource = rule.get("logsource", {}) or {}
         modified = rule.get("modified", "")
@@ -266,8 +250,8 @@ class HayabusaRulesCollector(BaseCollector):
             "logsource_category": logsource.get("category", ""),
             "logsource_service": logsource.get("service", ""),
             "tags": tags,
-            "falsepositives": self._as_list(rule.get("falsepositives")),
-            "references": self._as_list(rule.get("references")),
+            "falsepositives": as_list(rule.get("falsepositives")),
+            "references": as_list(rule.get("references")),
             "author": rule.get("author", ""),
             "modified": str(modified) if modified else "",
             "ruletype": rule.get("ruletype", ""),
@@ -284,7 +268,7 @@ class HayabusaRulesCollector(BaseCollector):
             content_type="hayabusa_rule",
             content_markdown=markdown,
             metadata=metadata,
-            word_count=self._count_words(markdown),
+            word_count=count_words(markdown),
         )
         docs.append(doc)
 

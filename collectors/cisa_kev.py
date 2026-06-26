@@ -14,6 +14,7 @@ import requests
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class CISAKEVCollector(BaseCollector):
             lines.append(f"- **Description**: {description}")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -154,7 +155,7 @@ class CISAKEVCollector(BaseCollector):
                     content_type="vulnerability_catalog",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

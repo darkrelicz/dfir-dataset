@@ -1,6 +1,5 @@
 import importlib.metadata
 import logging
-import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -49,16 +48,6 @@ class BaseCollector(ABC):
             for doc in tqdm(docs, desc=f"Writing {source_name}"):
                 writer.write(doc.model_dump(mode="json"))
         return len(docs)
-
-    def _count_words(self, text: str) -> int:
-        """Consistent word counting across collectors."""
-        return len(re.findall(r'\b\w+\b', text))
-
-    def _to_markdown(self, text: str) -> str:
-        """Normalize content to clean markdown."""
-        if not text:
-            return ""
-        return text.strip()
     
     def _parse_datetime(self, value: str) -> datetime:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))

@@ -7,7 +7,6 @@ import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
-from urllib.parse import quote
 
 from artifacts import errors, source_type
 from artifacts.artifact import ArtifactDefinition
@@ -15,6 +14,8 @@ from artifacts.reader import YamlArtifactsReader
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +36,8 @@ class ForensicArtifactsCollector(BaseCollector):
 
     def _source_url(self, yaml_file: Path) -> str:
         """Build a GitHub URL for a ForensicArtifacts source file."""
-        base_url = self.url[:-4] if self.url.endswith(".git") else self.url
-        rel_path = yaml_file.relative_to(self.clone_path).as_posix()
-        return f"{base_url}/blob/main/{quote(rel_path, safe='/')}"
+        rel_path = yaml_file.relative_to(self.clone_path)
+        return github_blob_url(self.url, "main", rel_path)
 
     def _build_markdown(self, artifact: ArtifactDefinition) -> str:
         """Build markdown for a single forensic artifact definition."""
@@ -105,7 +105,7 @@ class ForensicArtifactsCollector(BaseCollector):
             lines.extend(f"- {url}" for url in artifact.urls)
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def _extract_metadata(self, artifact: ArtifactDefinition) -> dict:
         """Extract the metadata used by downstream dataset processing."""
@@ -177,7 +177,7 @@ class ForensicArtifactsCollector(BaseCollector):
                         content_type="artifact_definition",
                         content_markdown=markdown,
                         metadata=self._extract_metadata(artifact),
-                        word_count=self._count_words(markdown),
+                        word_count=count_words(markdown),
                     )
                     docs.append(doc)
             except errors.FormatError as e:

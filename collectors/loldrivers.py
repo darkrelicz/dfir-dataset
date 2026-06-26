@@ -13,6 +13,7 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.text import as_list, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -31,17 +32,10 @@ class LOLDriversCollector(BaseCollector):
         self.duration = 0.0
         self.doc_count = 0
 
-    def _as_list(self, value: Any) -> list[Any]:
-        if value in (None, "", []):
-            return []
-        if isinstance(value, list):
-            return [item for item in value if item not in (None, "", [])]
-        return [value]
-
     def _extract_cves(self, data: dict) -> list[str]:
         cves = []
         for key in ("CVE", "CVEs"):
-            for cve in self._as_list(data.get(key)):
+            for cve in as_list(data.get(key)):
                 cve = str(cve).strip()
                 if cve:
                     cves.append(cve)
@@ -275,7 +269,7 @@ class LOLDriversCollector(BaseCollector):
                 lines.append(f"- {res}")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -351,7 +345,7 @@ class LOLDriversCollector(BaseCollector):
                     content_type="abuse_database",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

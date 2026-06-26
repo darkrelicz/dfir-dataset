@@ -13,11 +13,11 @@ from pathlib import Path
 from time import time
 from typing import Any
 
-import git
-import yaml
-
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import current_commit, github_blob_url
+from utils.io import load_yaml
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,6 @@ class MitreAtlasCollector(BaseCollector):
         self.warnings: list[str] = []
         self.duration = 0.0
         self.doc_count = 0
-
-    def _read_yaml(self, path: Path) -> Any:
-        """Read a YAML file."""
-        with path.open("r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
 
     def _load_atlas_parser(self):
         """Load AtlasExport without importing atlas-data's API/database stack."""
@@ -59,17 +54,16 @@ class MitreAtlasCollector(BaseCollector):
 
     def _get_source_commit(self) -> str:
         """Return the cloned repository commit, falling back to main."""
-        try:
-            return git.Repo(self.clone_path).head.commit.hexsha
-        except Exception as e:
-            self.warnings.append(f"Could not determine ATLAS source commit: {e}")
-            return "main"
+        return current_commit(
+            self.clone_path,
+            "main",
+            label="ATLAS source",
+            on_error=self.warnings.append,
+        )
 
     def _github_url(self, rel_path: str | Path, source_commit: str) -> str:
         """Build a GitHub source URL pinned to the collected commit."""
-        path = Path(rel_path).as_posix()
-        base_url = self.url[:-4] if self.url.endswith(".git") else self.url
-        return f"{base_url}/blob/{source_commit}/{path}"
+        return github_blob_url(self.url, source_commit, rel_path)
     
     def _select_latest_v6_yaml(self) -> Path | None:
         """Select the newest v6 ATLAS YAML from dist/manifest.yaml."""
@@ -80,7 +74,7 @@ class MitreAtlasCollector(BaseCollector):
             return None
 
         try:
-            manifest = self._read_yaml(manifest_path)
+            manifest = load_yaml(manifest_path, default={})
         except Exception as e:
             self.errors.append(f"Failed to parse ATLAS manifest: {e}")
             return None
@@ -317,7 +311,7 @@ class MitreAtlasCollector(BaseCollector):
 
         self._append_references(lines, obj.references)
 
-        markdown = self._to_markdown("\n".join(lines))
+        markdown = to_markdown("\n".join(lines))
         metadata = self._common_metadata(
             obj,
             atlas_data,
@@ -351,7 +345,7 @@ class MitreAtlasCollector(BaseCollector):
             content_type="technique_definition",
             content_markdown=markdown,
             metadata=metadata,
-            word_count=self._count_words(markdown),
+            word_count=count_words(markdown),
         )
 
     def _build_mitigation_doc(
@@ -393,7 +387,7 @@ class MitreAtlasCollector(BaseCollector):
 
         self._append_references(lines, obj.references)
 
-        markdown = self._to_markdown("\n".join(lines))
+        markdown = to_markdown("\n".join(lines))
         metadata = self._common_metadata(
             obj,
             atlas_data,
@@ -421,7 +415,7 @@ class MitreAtlasCollector(BaseCollector):
             content_type="mitigation",
             content_markdown=markdown,
             metadata=metadata,
-            word_count=self._count_words(markdown),
+            word_count=count_words(markdown),
         )
 
     def _build_case_doc(
@@ -488,7 +482,7 @@ class MitreAtlasCollector(BaseCollector):
 
         self._append_references(lines, obj.references)
 
-        markdown = self._to_markdown("\n".join(lines))
+        markdown = to_markdown("\n".join(lines))
         metadata = self._common_metadata(
             obj,
             atlas_data,
@@ -519,7 +513,7 @@ class MitreAtlasCollector(BaseCollector):
             content_type="case_study",
             content_markdown=markdown,
             metadata=metadata,
-            word_count=self._count_words(markdown),
+            word_count=count_words(markdown),
         )
 
     def collect(self) -> int:
@@ -539,7 +533,7 @@ class MitreAtlasCollector(BaseCollector):
             return 0
 
         try:
-            raw = self._read_yaml(atlas_path)
+            raw = load_yaml(atlas_path, default={})
             AtlasExport, AtlasRelationshipType = self._load_atlas_parser()
             atlas_data = AtlasExport.model_validate(raw)
         except Exception as e:

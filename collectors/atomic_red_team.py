@@ -14,6 +14,8 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +116,7 @@ class AtomicRedTeamCollector(BaseCollector):
                 lines.append("```")
                 lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -183,14 +185,18 @@ class AtomicRedTeamCollector(BaseCollector):
                     doc = RawDocument(
                         doc_id=f"atomic-rt-{guid}",
                         source="atomic_red_team",
-                        source_url=f"https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/{technique_id}/{technique_id}.yaml",
+                        source_url=github_blob_url(
+                            self.url,
+                            "master",
+                            f"atomics/{technique_id}/{technique_id}.yaml",
+                        ),
                         title=f"{technique_id}: {test_name}",
                         date_collected=date.today(),
                         date_published=None,
                         content_type="atomic_test",
                         content_markdown=markdown,
                         metadata=metadata,
-                        word_count=self._count_words(markdown),
+                        word_count=count_words(markdown),
                     )
                     docs.append(doc)
 

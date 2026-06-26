@@ -4,7 +4,6 @@ Clones the wietze/HijackLibs repository and parses YAML files describing
 DLL hijacking opportunities.
 """
 import logging
-import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
@@ -14,6 +13,7 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.text import as_list, slugify, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +31,8 @@ class HijackLibsCollector(BaseCollector):
         self.duration = 0.0
         self.doc_count = 0
 
-    def _as_list(self, value: Any) -> list:
-        """Normalize optional scalar/list fields from HijackLibs YAML."""
-        if not value:
-            return []
-        if isinstance(value, list):
-            return value
-        return [value]
-
-    def _slug(self, value: str) -> str:
-        """Make a stable document-id component from a HijackLibs path."""
-        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-
     def _append_detail_map(self, lines: list[str], title: str, value: Any) -> None:
-        items = self._as_list(value)
+        items = as_list(value)
         if not items:
             return
 
@@ -64,7 +52,7 @@ class HijackLibsCollector(BaseCollector):
         vendor = data.get("Vendor", "")
         expected_locations = data.get("ExpectedLocations", []) or []
         vulnerable_executables = data.get("VulnerableExecutables", []) or []
-        cves = self._as_list(data.get("CVE"))
+        cves = as_list(data.get("CVE"))
         resources = data.get("Resources", []) or []
 
         lines = [
@@ -96,7 +84,7 @@ class HijackLibsCollector(BaseCollector):
                 privilege_escalation = vuln_exe.get("PrivilegeEscalation", False)
                 condition = vuln_exe.get("Condition", "")
                 variable = vuln_exe.get("Variable", "")
-                sha256_hashes = self._as_list(vuln_exe.get("SHA256"))
+                sha256_hashes = as_list(vuln_exe.get("SHA256"))
                 expected_version = vuln_exe.get("ExpectedVersionInformation")
                 expected_signature = vuln_exe.get("ExpectedSignatureInformation")
 
@@ -138,7 +126,7 @@ class HijackLibsCollector(BaseCollector):
                 lines.append(f"- {res}")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def _extract_metadata(self, data: dict) -> dict[str, Any]:
         """Extract retrieval metadata from a HijackLibs YAML entry."""
@@ -155,7 +143,7 @@ class HijackLibsCollector(BaseCollector):
             exe_path = ve.get("Path", "")
             condition = ve.get("Condition", "")
             variable = ve.get("Variable", "")
-            ve_sha256_hashes = self._as_list(ve.get("SHA256"))
+            ve_sha256_hashes = as_list(ve.get("SHA256"))
             ve_auto_elevate = bool(ve.get("AutoElevate", False))
             ve_privilege_escalation = bool(ve.get("PrivilegeEscalation", False))
             ve_expected_version = ve.get("ExpectedVersionInformation") or []
@@ -190,7 +178,7 @@ class HijackLibsCollector(BaseCollector):
             "executable_paths": exe_paths,
             "expected_locations": data.get("ExpectedLocations", []) or [],
             "mitre_attack_ids": ["T1574"],
-            "cves": self._as_list(data.get("CVE")),
+            "cves": as_list(data.get("CVE")),
             "vulnerable_executables": executable_metadata,
         }
 
@@ -228,7 +216,7 @@ class HijackLibsCollector(BaseCollector):
                 rel_path = rel_file.with_suffix(".html").as_posix()
 
                 doc = RawDocument(
-                    doc_id=f"hijacklib-{self._slug(rel_stem)}",
+                    doc_id=f"hijacklib-{slugify(rel_stem)}",
                     source="hijacklibs",
                     source_url=f"https://hijacklibs.net/entries/{rel_path}",
                     title=f"HijackLibs: {name}",
@@ -237,7 +225,7 @@ class HijackLibsCollector(BaseCollector):
                     content_type="abuse_database",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

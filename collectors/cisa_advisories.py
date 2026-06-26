@@ -13,6 +13,8 @@ from typing import Any
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +143,7 @@ class CISAAdvisoriesCollector(BaseCollector):
                     lines.append(f"- [{ref_summary or ref_url}]({ref_url})")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -208,14 +210,18 @@ class CISAAdvisoriesCollector(BaseCollector):
                 doc = RawDocument(
                     doc_id=f"cisa-{advisory_id.lower()}",
                     source="cisa_advisories",
-                    source_url=f"https://github.com/cisagov/CSAF/blob/develop/csaf_files/{rel_path}",
+                    source_url=github_blob_url(
+                        self.url,
+                        "develop",
+                        f"csaf_files/{rel_path}",
+                    ),
                     title=title,
                     date_collected=date.today(),
                     date_published=date_published,
                     content_type="threat_advisory",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

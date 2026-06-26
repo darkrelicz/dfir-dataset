@@ -5,7 +5,6 @@ Two repositories, one collector class with a unified output schema.
 - GTFOBins: YAML files describing Linux binaries in _gtfobins/ directory
 """
 import logging
-import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
@@ -15,6 +14,7 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.text import slugify, unique_preserve_order, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,6 @@ class LOLBASGTFOBinsCollector(BaseCollector):
             "https://lolbas-project.github.io/lolbas/"
             f"{category}/{quote(file_path.stem, safe='')}"
         )
-
-    def _unique(self, values: list[str]) -> list[str]:
-        return list(dict.fromkeys(value for value in values if value))
-
-    def _slug(self, value: str) -> str:
-        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
     def _parse_lolbas_entry(self, file_path: Path) -> RawDocument | None:
         """Parse a single LOLBAS YAML entry."""
@@ -171,11 +165,11 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                 if isinstance(detection, dict):
                     detection_types.extend(detection.keys())
 
-            markdown = self._to_markdown("\n".join(lines))
+            markdown = to_markdown("\n".join(lines))
             created = data.get("Created", "")
 
             return RawDocument(
-                doc_id=f"lolbas-{self._slug(name)}",
+                doc_id=f"lolbas-{slugify(name)}",
                 source="lolbas_gtfobins",
                 source_url=self._lolbas_source_url(file_path),
                 title=f"LOLBAS: {name}",
@@ -191,12 +185,12 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                     "author": str(data.get("Author", "")),
                     "created": str(created) if created else "",
                     "aliases": aliases,
-                    "categories": sorted(self._unique(categories)),
-                    "mitre_attack_ids": self._unique(mitre_ids),
-                    "command_tags": self._unique(command_tags),
+                    "categories": sorted(unique_preserve_order(categories)),
+                    "mitre_attack_ids": unique_preserve_order(mitre_ids),
+                    "command_tags": unique_preserve_order(command_tags),
                     "command_count": len(commands),
                     "full_paths": full_paths,
-                    "detection_types": self._unique(
+                    "detection_types": unique_preserve_order(
                         [str(item) for item in detection_types]
                     ),
                     "detections": detections,
@@ -204,7 +198,7 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                     "code_samples": data.get("Code_Sample", []) or [],
                     "acknowledgements": data.get("Acknowledgement", []) or [],
                 },
-                word_count=self._count_words(markdown),
+                word_count=count_words(markdown),
             )
 
         except yaml.YAMLError as e:
@@ -228,7 +222,7 @@ class LOLBASGTFOBinsCollector(BaseCollector):
             source_url = f"https://gtfobins.github.io/gtfobins/{quote(binary_name, safe='')}/"
 
             if alias_target and not functions:
-                markdown = self._to_markdown(
+                markdown = to_markdown(
                     "\n".join(
                         [
                             f"# GTFOBins Alias: {binary_name}",
@@ -242,7 +236,7 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                     )
                 )
                 return RawDocument(
-                    doc_id=f"gtfobins-{self._slug(binary_name)}",
+                    doc_id=f"gtfobins-{slugify(binary_name)}",
                     source="lolbas_gtfobins",
                     source_url=source_url,
                     title=f"GTFOBins Alias: {binary_name}",
@@ -259,7 +253,7 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                         "function_count": 0,
                         "entry_count": 0,
                     },
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
 
             if not functions:
@@ -349,11 +343,11 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                                 lines.append(f"- **Note**: {context_data['comment']}")
                     lines.append("")
 
-            markdown = self._to_markdown("\n".join(lines))
+            markdown = to_markdown("\n".join(lines))
             function_names = sorted(functions.keys())
 
             return RawDocument(
-                doc_id=f"gtfobins-{self._slug(binary_name)}",
+                doc_id=f"gtfobins-{slugify(binary_name)}",
                 source="lolbas_gtfobins",
                 source_url=source_url,
                 title=f"GTFOBins: {binary_name}",
@@ -369,18 +363,20 @@ class LOLBASGTFOBinsCollector(BaseCollector):
                     "function_count": len(function_names),
                     "alias_target": str(alias_target or ""),
                     "entry_count": entry_count,
-                    "contexts": self._unique([str(item) for item in contexts]),
-                    "inherited_from": self._unique(inherited_from),
-                    "senders": self._unique(senders),
-                    "receivers": self._unique(receivers),
-                    "listeners": self._unique(listeners),
-                    "connectors": self._unique(connectors),
-                    "versions": self._unique(versions),
+                    "contexts": unique_preserve_order(
+                        [str(item) for item in contexts]
+                    ),
+                    "inherited_from": unique_preserve_order(inherited_from),
+                    "senders": unique_preserve_order(senders),
+                    "receivers": unique_preserve_order(receivers),
+                    "listeners": unique_preserve_order(listeners),
+                    "connectors": unique_preserve_order(connectors),
+                    "versions": unique_preserve_order(versions),
                     "has_tty": has_tty,
                     "binary_false_count": binary_false_count,
                     "top_level_comment": str(data.get("comment", "")),
                 },
-                word_count=self._count_words(markdown),
+                word_count=count_words(markdown),
             )
 
         except yaml.YAMLError as e:

@@ -14,6 +14,8 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import meets_order_threshold, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +39,7 @@ class SigmaRulesCollector(BaseCollector):
 
     def _meets_level_threshold(self, level: str) -> bool:
         """Check if rule level meets the minimum threshold."""
-        min_idx = self.LEVEL_ORDER.index(self.min_rule_level) if self.min_rule_level in self.LEVEL_ORDER else 0
-        rule_idx = self.LEVEL_ORDER.index(level) if level in self.LEVEL_ORDER else -1
-        return rule_idx >= min_idx
+        return meets_order_threshold(level, self.min_rule_level, self.LEVEL_ORDER)
 
     def _extract_attack_tags(self, tags: list) -> list[str]:
         """Extract MITRE ATT&CK technique IDs from Sigma tags."""
@@ -139,7 +139,7 @@ class SigmaRulesCollector(BaseCollector):
                 lines.append(f"- {ref}")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def _parse_rule_file(self, rule_path: Path) -> dict:
         """Parse a single Sigma YAML file."""
@@ -207,14 +207,18 @@ class SigmaRulesCollector(BaseCollector):
                 doc = RawDocument(
                     doc_id=f"sigma-{rule_id}",
                     source="sigma_rules",
-                    source_url=f"https://github.com/SigmaHQ/sigma/blob/master/{rule_path.relative_to(self.clone_path)}",
+                    source_url=github_blob_url(
+                        self.url,
+                        "master",
+                        rule_path.relative_to(self.clone_path),
+                    ),
                     title=title,
                     date_collected=date.today(),
                     date_published=date_published,
                     content_type="sigma_rule",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

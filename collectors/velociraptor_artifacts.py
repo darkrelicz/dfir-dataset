@@ -14,6 +14,8 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest, logger
 from collectors.schemas import RawDocument
+from utils.markdown import parse_yaml_frontmatter
+from utils.text import as_list, slugify, to_markdown, count_words
 
 ARTIFACT_BLOCK_RE = re.compile(
     r'<pre><code class="language-yaml">\n?(.*?)</code></pre>',
@@ -47,17 +49,6 @@ class VelociraptorArtifactsCollector(BaseCollector):
             return "macOS"
         return "Cross-platform"
 
-    def _parse_frontmatter(self, content: str) -> tuple[dict[str, Any], str]:
-        """Parse YAML frontmatter and return the remaining Markdown body."""
-        match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", content, re.DOTALL)
-        if not match:
-            return {}, content
-
-        frontmatter = yaml.safe_load(match.group(1)) or {}
-        if not isinstance(frontmatter, dict):
-            frontmatter = {}
-        return frontmatter, match.group(2)
-
     def _parse_artifact_yaml(self, body: str) -> dict[str, Any]:
         """Parse the embedded artifact YAML block from a Markdown page."""
         match = ARTIFACT_BLOCK_RE.search(body)
@@ -82,16 +73,6 @@ class VelociraptorArtifactsCollector(BaseCollector):
         if isinstance(value, list):
             return ", ".join(str(item) for item in value)
         return str(value or "")
-
-    def _slugify(self, value: str) -> str:
-        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-
-    def _as_list(self, value: Any) -> list[str]:
-        if not value:
-            return []
-        if not isinstance(value, list):
-            value = [value]
-        return [str(item) for item in value if item]
 
     def _names_from_items(self, items: list[Any], default_prefix: str) -> list[str]:
         names = []
@@ -157,8 +138,8 @@ class VelociraptorArtifactsCollector(BaseCollector):
 
     def _references(self, artifact: dict[str, Any]) -> list[str]:
         return [
-            *self._as_list(artifact.get("reference")),
-            *self._as_list(artifact.get("references")),
+            *as_list(artifact.get("reference"), stringify=True),
+            *as_list(artifact.get("references"), stringify=True),
         ]
 
     def _build_markdown(
@@ -184,7 +165,7 @@ class VelociraptorArtifactsCollector(BaseCollector):
             lines.append(f"**Author**: {author}")
 
         lines.extend(["", "## Artifact Reference", "", body])
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -205,7 +186,7 @@ class VelociraptorArtifactsCollector(BaseCollector):
         for md_file in md_files:
             try:
                 text = md_file.read_text(encoding="utf-8", errors="replace")
-                frontmatter, body = self._parse_frontmatter(text)
+                frontmatter, body = parse_yaml_frontmatter(text)
                 artifact = self._parse_artifact_yaml(body)
 
                 if not artifact.get("name"):
@@ -255,11 +236,13 @@ class VelociraptorArtifactsCollector(BaseCollector):
                     "source_count": len(sources),
                     "source_names": self._names_from_items(sources, "Source"),
                     "has_vql": has_vql,
-                    "required_permissions": self._as_list(
-                        artifact.get("required_permissions")
+                    "required_permissions": as_list(
+                        artifact.get("required_permissions"),
+                        stringify=True,
                     ),
-                    "implied_permissions": self._as_list(
-                        artifact.get("implied_permissions")
+                    "implied_permissions": as_list(
+                        artifact.get("implied_permissions"),
+                        stringify=True,
                     ),
                     "references": self._references(artifact),
                     "tools": tool_names,
@@ -267,7 +250,7 @@ class VelociraptorArtifactsCollector(BaseCollector):
                 }
 
                 doc = RawDocument(
-                    doc_id=f"velociraptor-{self._slugify(page_path)}",
+                    doc_id=f"velociraptor-{slugify(page_path)}",
                     source="velociraptor_artifacts",
                     source_url=source_url,
                     title=f"Velociraptor: {artifact_name}",
@@ -276,7 +259,7 @@ class VelociraptorArtifactsCollector(BaseCollector):
                     content_type=self._content_type(artifact, tags, has_vql),
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

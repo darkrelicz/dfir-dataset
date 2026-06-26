@@ -8,12 +8,13 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from time import time
 from typing import Any
-from urllib.parse import quote
 
 import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,8 @@ class KapeFilesCollector(BaseCollector):
 
     def _source_url(self, file_path: Path) -> str:
         """Build a GitHub URL for a KapeFiles source file."""
-        base_url = self.url[:-4] if self.url.endswith(".git") else self.url
-        rel_path = file_path.relative_to(self.clone_path).as_posix()
-        return f"{base_url}/blob/master/{quote(rel_path, safe='/')}"
+        rel_path = file_path.relative_to(self.clone_path)
+        return github_blob_url(self.url, "master", rel_path)
 
     def _parse_tkape(self, file_path: Path) -> list[RawDocument]:
         """Parse a .tkape (target) file."""
@@ -89,7 +89,7 @@ class KapeFilesCollector(BaseCollector):
                         lines.append(f"- **Save As**: `{save_as}`")
                     lines.append("")
 
-            markdown = self._to_markdown("\n".join(lines))
+            markdown = to_markdown("\n".join(lines))
 
             # Extract all paths for metadata
             artifact_paths = []
@@ -123,7 +123,7 @@ class KapeFilesCollector(BaseCollector):
                 content_type="artifact_definition",
                 content_markdown=markdown,
                 metadata=metadata,
-                word_count=self._count_words(markdown),
+                word_count=count_words(markdown),
             )
             docs.append(doc)
 
@@ -185,7 +185,7 @@ class KapeFilesCollector(BaseCollector):
                         lines.append(f"- **Export File**: {export_file}")
                     lines.append("")
 
-            markdown = self._to_markdown("\n".join(lines))
+            markdown = to_markdown("\n".join(lines))
 
             tools = []
             for proc in processors:
@@ -214,7 +214,7 @@ class KapeFilesCollector(BaseCollector):
                 content_type="tool_module",
                 content_markdown=markdown,
                 metadata=metadata,
-                word_count=self._count_words(markdown),
+                word_count=count_words(markdown),
             )
             docs.append(doc)
 

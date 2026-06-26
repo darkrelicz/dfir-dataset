@@ -9,6 +9,7 @@ from mitreattack.stix20 import MitreAttackData
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.text import to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ class MitreAttackCollector(BaseCollector):
                         markdown_lines.append(f"- {detection}")
                     markdown_lines.append("")
 
-                markdown_doc = self._to_markdown("\n".join(markdown_lines))
+                markdown_doc = to_markdown("\n".join(markdown_lines))
 
                 data_sources_raw = technique.get("external_references", [])
                 data_sources = []
@@ -196,7 +197,7 @@ class MitreAttackCollector(BaseCollector):
                     content_type="technique_definition",
                     content_markdown=markdown_doc,
                     metadata=metadata,
-                    word_count=self._count_words(markdown_doc),
+                    word_count=count_words(markdown_doc),
                 )
                 docs.append(doc)
 

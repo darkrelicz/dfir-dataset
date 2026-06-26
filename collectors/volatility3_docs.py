@@ -12,10 +12,10 @@ from pathlib import Path
 from time import time
 from typing import Any
 
-import git
-
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import current_commit, github_blob_url
+from utils.text import slugify, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -55,25 +55,18 @@ class Volatility3DocsCollector(BaseCollector):
         self.duration = 0.0
         self.doc_count = 0
 
-    def _slugify(self, value: str) -> str:
-        """Make a stable document-id component from a path or plugin name."""
-        return re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-").lower()
-
     def _github_url(self, rel_path: str | Path, source_commit: str) -> str:
         """Build a GitHub source URL pinned to the collected commit."""
-        path = Path(rel_path).as_posix()
-        return (
-            "https://github.com/volatilityfoundation/volatility3"
-            f"/blob/{source_commit}/{path}"
-        )
+        return github_blob_url(self.url, source_commit, rel_path)
 
     def _get_source_commit(self) -> str:
         """Return the cloned repository commit, falling back to the branch."""
-        try:
-            return git.Repo(self.clone_path).head.commit.hexsha
-        except Exception as e:
-            self.warnings.append(f"Could not determine Volatility 3 commit: {e}")
-            return "develop"
+        return current_commit(
+            self.clone_path,
+            "develop",
+            label="Volatility 3",
+            on_error=self.warnings.append,
+        )
 
     def _ast_name(self, node: ast.AST) -> str:
         """Return a readable dotted name for an AST expression."""
@@ -349,7 +342,7 @@ class Volatility3DocsCollector(BaseCollector):
                 lines.append(line)
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def _collect_documentation_docs(
         self, repo_path: Path, source_ref: str
@@ -369,7 +362,7 @@ class Volatility3DocsCollector(BaseCollector):
 
                 rel_path = doc_file.relative_to(repo_path)
                 stem = rel_path.stem.replace("-", " ").replace("_", " ").title()
-                rel_slug = self._slugify(str(rel_path.with_suffix("")))
+                rel_slug = slugify(str(rel_path.with_suffix("")))
                 doc_type = (
                     "readme"
                     if rel_path.name.lower().startswith("readme")
@@ -383,13 +376,13 @@ class Volatility3DocsCollector(BaseCollector):
                     date_collected=date.today(),
                     date_published=None,
                     content_type="tool_documentation",
-                    content_markdown=self._to_markdown(content),
+                    content_markdown=to_markdown(content),
                     metadata={
                         "doc_type": doc_type,
                         "file_path": str(rel_path),
                         "source_commit": source_ref,
                     },
-                    word_count=self._count_words(content),
+                    word_count=count_words(content),
                 )
                 docs.append(doc)
             except Exception as e:
@@ -450,7 +443,7 @@ class Volatility3DocsCollector(BaseCollector):
                 }
 
                 doc = RawDocument(
-                    doc_id=f"vol3-plugin-{self._slugify(plugin_name)}",
+                    doc_id=f"vol3-plugin-{slugify(plugin_name)}",
                     source="volatility3_docs",
                     source_url=self._github_url(rel_path, source_commit),
                     title=f"Volatility 3: {plugin_name}",
@@ -459,7 +452,7 @@ class Volatility3DocsCollector(BaseCollector):
                     content_type="tool_plugin",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

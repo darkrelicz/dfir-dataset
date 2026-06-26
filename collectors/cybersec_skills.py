@@ -11,10 +11,11 @@ from pathlib import Path
 from time import time
 from typing import Any
 
-import yaml
-
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.markdown import parse_yaml_frontmatter
+from utils.text import as_list, slugify, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -35,54 +36,28 @@ class CybersecSkillsCollector(BaseCollector):
         self.doc_count = 0
         self.filtered_count = 0
 
-    def _parse_frontmatter(self, content: str) -> tuple[dict, str]:
-        """Parse YAML frontmatter and markdown body from a SKILL.md file.
-
-        Returns:
-            (frontmatter_dict, body_markdown)
-        """
-        match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)", content, re.DOTALL)
-        if not match:
-            return {}, content
-
-        frontmatter_str = match.group(1)
-        body = match.group(2)
-
-        try:
-            frontmatter = yaml.safe_load(frontmatter_str)
-            if not isinstance(frontmatter, dict):
-                frontmatter = {}
-        except yaml.YAMLError:
-            frontmatter = {}
-
-        return frontmatter, body
-
-    def _as_list(self, value: Any) -> list[str]:
-        if value in ("", None):
-            return []
-        if isinstance(value, list):
-            return [str(item) for item in value if item not in ("", None)]
-        return [str(value)]
-
     def _count_body_tokens(self, body: str) -> int:
         return len(re.findall(r"\S+", body))
-
-    def _slug(self, value: str) -> str:
-        slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-        return slug or "skill"
 
     def _extract_framework_mappings(
         self,
         frontmatter: dict,
     ) -> dict[str, Any]:
         return {
-            "mitre_attack_ids": self._as_list(frontmatter.get("mitre_attack")),
-            "mitre_atlas_ids": self._as_list(frontmatter.get("atlas_techniques")),
-            "d3fend_techniques": self._as_list(
-                frontmatter.get("d3fend_techniques")
+            "mitre_attack_ids": as_list(
+                frontmatter.get("mitre_attack"),
+                stringify=True,
             ),
-            "nist_csf": self._as_list(frontmatter.get("nist_csf")),
-            "nist_ai_rmf": self._as_list(frontmatter.get("nist_ai_rmf")),
+            "mitre_atlas_ids": as_list(
+                frontmatter.get("atlas_techniques"),
+                stringify=True,
+            ),
+            "d3fend_techniques": as_list(
+                frontmatter.get("d3fend_techniques"),
+                stringify=True,
+            ),
+            "nist_csf": as_list(frontmatter.get("nist_csf"), stringify=True),
+            "nist_ai_rmf": as_list(frontmatter.get("nist_ai_rmf"), stringify=True),
             "mitre_f3": frontmatter.get("mitre_f3") or {},
         }
 
@@ -214,7 +189,7 @@ class CybersecSkillsCollector(BaseCollector):
         lines.append("")
         lines.append(body.strip())
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -241,7 +216,7 @@ class CybersecSkillsCollector(BaseCollector):
         for skill_file in skill_files:
             try:
                 content = skill_file.read_text(encoding="utf-8", errors="replace")
-                frontmatter, body = self._parse_frontmatter(content)
+                frontmatter, body = parse_yaml_frontmatter(content)
 
                 if not frontmatter:
                     self.warnings.append(f"No frontmatter found in {skill_file}")
@@ -260,7 +235,7 @@ class CybersecSkillsCollector(BaseCollector):
                 markdown = self._build_markdown(frontmatter, body)
                 mappings = self._extract_framework_mappings(frontmatter)
                 relative_path = skill_file.relative_to(self.clone_path).as_posix()
-                name_slug = self._slug(str(name))
+                name_slug = slugify(str(name), fallback="skill")
 
                 metadata: dict[str, Any] = {
                     "skill_name": name,
@@ -294,18 +269,14 @@ class CybersecSkillsCollector(BaseCollector):
                 doc = RawDocument(
                     doc_id=f"cybersec-skill-{name_slug}",
                     source="cybersec_skills",
-                    source_url=(
-                        "https://github.com/mukul975/"
-                        "Anthropic-Cybersecurity-Skills/blob/main/"
-                        f"{relative_path}"
-                    ),
+                    source_url=github_blob_url(self.url, "main", relative_path),
                     title=f"Skill: {name}",
                     date_collected=date.today(),
                     date_published=None,
                     content_type="practitioner_workflow",
                     content_markdown=markdown,
                     metadata=metadata,
-                    word_count=self._count_words(markdown),
+                    word_count=count_words(markdown),
                 )
                 docs.append(doc)
 

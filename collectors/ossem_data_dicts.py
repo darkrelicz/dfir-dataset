@@ -14,6 +14,8 @@ import yaml
 
 from collectors.base import BaseCollector, CollectionManifest
 from collectors.schemas import RawDocument
+from utils.git import github_blob_url
+from utils.text import slugify, to_markdown, count_words
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +57,6 @@ class OSSEMDataDictsCollector(BaseCollector):
         if self._path_matches(rel_path, self.include_paths):
             return False
         return self._path_matches(rel_path, self.exclude_paths)
-
-    def _slug(self, value: str) -> str:
-        slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-        return slug or "entry"
 
     def _table_cell(self, value: Any) -> str:
         text = str(value or "").replace("\n", " ").replace("|", "\\|").strip()
@@ -253,7 +251,7 @@ class OSSEMDataDictsCollector(BaseCollector):
                     lines.append(f"- {ref['text']}")
             lines.append("")
 
-        return self._to_markdown("\n".join(lines))
+        return to_markdown("\n".join(lines))
 
     def collect(self) -> int:
         start_time = time()
@@ -327,7 +325,7 @@ class OSSEMDataDictsCollector(BaseCollector):
             yml_file = candidate["path"]
             relative_path = candidate["relative_path"]
             source_path = candidate["source_path"]
-            display_id = self._slug(str(relative_path.with_suffix("")))
+            display_id = slugify(str(relative_path.with_suffix("")), fallback="entry")
             event_id = str(data.get("event_id", ""))
             event_name = data.get("name", "") or yml_file.stem
             platform = data.get("platform", "")
@@ -357,14 +355,14 @@ class OSSEMDataDictsCollector(BaseCollector):
             doc = RawDocument(
                 doc_id=f"ossem-{display_id}",
                 source="ossem_data_dicts",
-                source_url=f"https://github.com/OTRF/OSSEM-DD/blob/main/{source_path}",
+                source_url=github_blob_url(self.url, "main", source_path),
                 title=f"OSSEM: {event_name}",
                 date_collected=date.today(),
                 date_published=None,
                 content_type="event_dictionary",
                 content_markdown=markdown,
                 metadata=metadata,
-                word_count=self._count_words(markdown),
+                word_count=count_words(markdown),
             )
             docs.append(doc)
 
