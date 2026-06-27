@@ -95,6 +95,7 @@ Return only a JSON array. Each item must have this shape:
   "atlas_techniques": [],
   "tools_referenced": [],
   "source_doc_id": "$doc_id",
+  "source": "$source",
   "taxonomy_refs": [],
   "grounding": "source_only|source_plus_general",
   "reasoning_format": "canonical_reasoning_v1"
