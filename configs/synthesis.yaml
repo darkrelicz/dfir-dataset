@@ -4,8 +4,8 @@ model:
   api_key_env: "GEMINI_API_KEY"
   primary: "gemini-2.5-flash"      # Primary teacher model for Phase 3
   fallback: null                   # Comparison models must run as separate, explicit jobs
-  thinking_level: "low"
 generation:
+  thinking_level: "low"
   pairs_per_document:
     mitre_attack: 5
     sigma_rules: 3
