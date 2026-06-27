@@ -1,6 +1,5 @@
 # configs/synthesis.yaml
 model:
-  provider: "google_genai"         # Direct Gemini API; do not route via OpenRouter
   api: "interactions"
   api_key_env: "GEMINI_API_KEY"
   primary: "gemini-2.5-flash"      # Primary teacher model for Phase 3
@@ -26,7 +25,6 @@ generation:
     cybersec_skills: 3
   temperature: 0.7
   max_retries: 2
-  batch_size: 20           # Documents per API batch
   max_source_chars: 24000  # Trim very large source docs for prompt stability
 output:
   format: "jsonl"

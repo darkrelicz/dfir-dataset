@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
+from utils.io import load_yaml
 
 
 PROFILE_CONFIG_PATH = (
@@ -28,8 +28,7 @@ class ContentTypeProfile:
 
 
 def _load_profile_config(path: Path = PROFILE_CONFIG_PATH) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+    data = load_yaml(path, default={})
     if not isinstance(data, dict):
         raise ValueError(f"Profile config must be a mapping: {path}")
     return data
@@ -61,9 +60,7 @@ def _build_source_profiles(config: dict[str, Any]) -> dict[str, SourceProfile]:
     return profiles
 
 
-def _build_content_type_profiles(
-    config: dict[str, Any],
-) -> dict[str, ContentTypeProfile]:
+def _build_content_type_profiles(config: dict[str, Any]) -> dict[str, ContentTypeProfile]:
     profiles: dict[str, ContentTypeProfile] = {}
     for content_type, raw_profile in config.items():
         if not isinstance(raw_profile, dict):
@@ -85,9 +82,7 @@ def _build_pilot_targets(config: dict[str, Any]) -> dict[str, int]:
 
 _PROFILE_CONFIG = _load_profile_config()
 SOURCE_PROFILES = _build_source_profiles(_PROFILE_CONFIG.get("source_profiles", {}))
-CONTENT_TYPE_PROFILES = _build_content_type_profiles(
-    _PROFILE_CONFIG.get("content_type_profiles", {})
-)
+CONTENT_TYPE_PROFILES = _build_content_type_profiles(_PROFILE_CONFIG.get("content_type_profiles", {}))
 DEFAULT_PILOT_TARGETS = _build_pilot_targets(_PROFILE_CONFIG.get("pilot_targets", {}))
 
 
@@ -103,14 +98,3 @@ def content_profile_for_type(content_type: str) -> ContentTypeProfile:
         content_type,
         ContentTypeProfile(content_type=content_type),
     )
-
-
-def source_template_path(source: str, prompt_root: Path) -> Path:
-    return prompt_root / "source_types" / profile_for_source(source).prompt_template
-
-
-def content_template_path(content_type: str, prompt_root: Path) -> Path | None:
-    profile = content_profile_for_type(content_type)
-    if not profile.prompt_template:
-        return None
-    return prompt_root / "content_types" / profile.prompt_template
