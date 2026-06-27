@@ -20,7 +20,7 @@ REASONING_BLOCK_RE = re.compile(r"<reasoning>\s*(.*?)\s*</reasoning>", re.DOTALL
 EVIDENCE_RE = re.compile(r"^E(\d+):\s*(.*)$", re.MULTILINE)
 ANALYSIS_RE = re.compile(r"^A(\d+)\s+\[uses\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE)
 CONCLUSION_RE = re.compile(r"^C(\d+)\s+\[uses\s+([^\]]+)\].*$", re.MULTILINE)
-CAVEAT_RE = re.compile(r"^CV(\d+)\s+\[applies_to\s+([^\]]+)\]:", re.MULTILINE)
+CAVEAT_RE = re.compile(r"^CV(\d+)\s+\[applies_to\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE)
 REF_RE = re.compile(r"\b(?:E|A|C|CV)\d+\b")
 MITRE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?\??$")
 ATLAS_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?\??$")
@@ -50,6 +50,13 @@ def validate_raw_corpus(raw_dir: Path) -> RawCorpusValidation:
     seen_doc_ids: dict[str, str] = {}
     document_count = 0
     paths = raw_jsonl_paths(raw_dir)
+    if not paths:
+        issues.append(
+            RawCorpusIssue(
+                path=str(raw_dir),
+                message="No raw JSONL files found",
+            )
+        )
 
     for path in paths:
         with path.open("r", encoding="utf-8") as handle:
@@ -83,6 +90,14 @@ def validate_raw_corpus(raw_dir: Path) -> RawCorpusValidation:
                 else:
                     seen_doc_ids[doc.doc_id] = location
 
+    if paths and document_count == 0:
+        issues.append(
+            RawCorpusIssue(
+                path=str(raw_dir),
+                message="No raw documents found",
+            )
+        )
+
     return RawCorpusValidation(
         raw_dir=str(raw_dir),
         file_count=len(paths),
@@ -99,10 +114,6 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
     if not match:
         return ReasoningLinkValidation(
             ok=False,
-            evidence_ids=[],
-            analysis_ids=[],
-            conclusion_ids=[],
-            caveat_ids=[],
             issues=[ReasoningLinkIssue(message="Missing <reasoning> block")],
         )
 
@@ -114,7 +125,7 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
     evidence_ids = [f"E{number}" for number, _ in evidence_matches]
     analysis_ids = [f"A{number}" for number, _, _ in analysis_matches]
     conclusion_ids = [f"C{number}" for number, _ in conclusion_matches]
-    caveat_ids = [f"CV{number}" for number, _ in caveat_matches]
+    caveat_ids = [f"CV{number}" for number, _, _ in caveat_matches]
 
     evidence_set = set(evidence_ids)
     analysis_set = set(analysis_ids)
@@ -126,6 +137,22 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
         issues.append(ReasoningLinkIssue(message="No analysis IDs found"))
     if not conclusion_ids:
         issues.append(ReasoningLinkIssue(message="No conclusion IDs found"))
+    if not caveat_ids:
+        issues.append(ReasoningLinkIssue(message="No caveat IDs found"))
+
+    for prefix, ids in (
+        ("evidence", evidence_ids),
+        ("analysis", analysis_ids),
+        ("conclusion", conclusion_ids),
+        ("caveat", caveat_ids),
+    ):
+        duplicate_ids = sorted({value for value in ids if ids.count(value) > 1})
+        if duplicate_ids:
+            issues.append(
+                ReasoningLinkIssue(
+                    message=f"Duplicate {prefix} IDs found: {duplicate_ids}"
+                )
+            )
 
     for evidence_number, evidence_text in evidence_matches:
         if evidence_text.strip().lower() in PLACEHOLDER_TEXT:
@@ -174,22 +201,25 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
                 )
             )
 
-    for caveat_number, refs_text in caveat_matches:
+    for caveat_number, refs_text, caveat_text in caveat_matches:
         refs = set(REF_RE.findall(refs_text))
         missing = sorted(ref for ref in refs if ref not in conclusion_set)
         if missing:
             issues.append(
                 ReasoningLinkIssue(
-                    message=f"CV{caveat_number} references missing conclusion: {missing}"
+                    message=(
+                        f"CV{caveat_number} references missing conclusion: "
+                        f"{missing}"
+                    )
                 )
+            )
+        if caveat_text.strip().lower() in PLACEHOLDER_TEXT:
+            issues.append(
+                ReasoningLinkIssue(message=f"CV{caveat_number} has empty caveat")
             )
 
     return ReasoningLinkValidation(
         ok=not issues,
-        evidence_ids=evidence_ids,
-        analysis_ids=analysis_ids,
-        conclusion_ids=conclusion_ids,
-        caveat_ids=caveat_ids,
         issues=issues,
     )
 
@@ -308,6 +338,9 @@ def _validate_pair_against_source(
     if not final_answer:
         add("Response is missing final answer text after </reasoning>")
 
+    if not pair.taxonomy_refs:
+        add("taxonomy_refs must include at least one taxonomy ID")
+
     invalid_taxonomy = sorted(set(pair.taxonomy_refs) - valid_taxonomy_refs)
     if invalid_taxonomy:
         add(f"Invalid taxonomy_refs: {invalid_taxonomy}")
@@ -326,7 +359,10 @@ def _validate_pair_against_source(
 
     invented_indicators = _invented_indicators(pair, source_doc)
     if invented_indicators:
-        add(f"Concrete indicators not present in source document: {invented_indicators}")
+        add(
+            "Concrete indicators not present in source document: "
+            f"{invented_indicators}"
+        )
 
     return issues
 

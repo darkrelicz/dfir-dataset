@@ -63,9 +63,9 @@
 - Prompt rendering writes `prompts.jsonl` by default. Per-prompt Markdown files are opt-in for manual inspection with `--write-prompt-files`.
 - Prompt planning belongs in `synthesizers/planner.py`; CLI entrypoints should not own document selection, category balancing, difficulty assignment, or prompt-plan construction.
 - `PromptBuilder` should render prompts from explicit category and difficulty choices supplied by the planner, rather than silently assigning fallback categories or difficulties.
-- The first Gemini generation runner is sequential and resumable. Resume should only skip terminal accepted/rejected prompts whose prompt hash and model match the current run; raw model output alone is not terminal. Prefer a reviewed one-prompt smoke test and pilot run before adding concurrency.
+- The first Gemini generation runner is sequential and can skip present outputs with `--skip-present`. Present-output skipping should only skip terminal accepted/rejected prompts whose prompt hash and model match the current run; raw model output alone is not terminal. Prefer a reviewed one-prompt smoke test and pilot run before adding concurrency.
 - Generation execution belongs in `synthesizers/runner.py`; `scripts/synthesize.py` should stay a thin argument parser and dispatcher.
-- Prompt hashing, run IDs, and resume detection are synthesis run-state concerns and should live outside the CLI entrypoint.
+- Prompt hashing, run IDs, and present-output detection are synthesis run-state concerns and should live outside the CLI entrypoint.
 - The Gemini runner has a full-mode rejection-rate circuit breaker. By default, after 20 current-run attempted prompts in full synthesis, generation stops if rejected prompts are at least 20%. Pilot mode still validates each generated output but does not stop early based on aggregate rejection rate.
 - Phase 3 full generation must not begin until the Gemini pilot has acceptable validator pass rate and acceptable manual quality.
 - `accepted.jsonl` from Phase 3 is only candidate synthesis output. It must pass Phase 4 quality validation before packaging or training.
