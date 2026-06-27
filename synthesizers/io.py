@@ -18,14 +18,3 @@ def iter_raw_documents(raw_dir: Path) -> Iterable[tuple[Path, int, RawDocument]]
 
 def load_raw_documents(raw_dir: Path) -> list[RawDocument]:
     return [doc for _, _, doc in iter_raw_documents(raw_dir)]
-
-
-def write_jsonl(path: Path, rows: Iterable[dict]) -> int:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    count = 0
-    with path.open("w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=True) + "\n")
-            count += 1
-    return count
-

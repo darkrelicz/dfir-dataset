@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 Difficulty = Literal["junior", "mid", "senior"]
@@ -12,6 +12,8 @@ ReasoningFormat = Literal["canonical_reasoning_v1"]
 
 class InstructionPair(BaseModel):
     """Canonical synthesized instruction pair before quality filtering."""
+
+    model_config = ConfigDict(extra="forbid")
 
     instruction: str
     response: str
@@ -81,10 +83,6 @@ class ReasoningLinkIssue(BaseModel):
 
 class ReasoningLinkValidation(BaseModel):
     ok: bool
-    evidence_ids: list[str]
-    analysis_ids: list[str]
-    conclusion_ids: list[str]
-    caveat_ids: list[str]
     issues: list[ReasoningLinkIssue] = Field(default_factory=list)
 
 
