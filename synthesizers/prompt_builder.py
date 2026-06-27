@@ -1,34 +1,15 @@
-import hashlib
 from pathlib import Path
 from string import Template
 from typing import Any
 
 from collectors.schemas import RawDocument
+from synthesizers.prompt_policy import load_prompt_policy
 from synthesizers.schemas import Difficulty, PromptRecord
-from synthesizers.source_profiles import (
-    content_profile_for_type,
-    content_template_path,
-    profile_for_source,
-    source_template_path,
-)
+from synthesizers.source_profiles import content_profile_for_type, profile_for_source
 
 
 PROMPT_ROOT = Path(__file__).resolve().parent / "prompts"
 NO_CONTENT_TYPE_INSTRUCTIONS = "No additional content-type-specific instructions."
-
-
-def stable_index(value: str, modulo: int) -> int:
-    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
-    return int(digest[:12], 16) % modulo
-
-
-def difficulty_for_doc(doc: RawDocument) -> Difficulty:
-    bucket = stable_index(doc.doc_id, 10)
-    if bucket <= 2:
-        return "junior"
-    if bucket <= 7:
-        return "mid"
-    return "senior"
 
 
 class PromptBuilder:
@@ -39,22 +20,32 @@ class PromptBuilder:
         prompt_root: Path = PROMPT_ROOT,
     ) -> None:
         self.synthesis_config = synthesis_config
-        self.task_config = task_config
         self.prompt_root = prompt_root
+        self.policy = load_prompt_policy(task_config, prompt_root)
         self.base_template = self._read_template(prompt_root / "base.md")
 
-    def build(self, doc: RawDocument) -> PromptRecord:
+    def build(
+        self,
+        doc: RawDocument,
+        category: str,
+        difficulty: Difficulty,
+    ) -> PromptRecord:
+        if not category:
+            raise ValueError("PromptBuilder.build requires category")
+        if not difficulty:
+            raise ValueError("PromptBuilder.build requires difficulty")
+
         profile = profile_for_source(doc.source)
-        category = self._category_for_doc(doc)
-        difficulty = difficulty_for_doc(doc)
         category_instructions = self._read_template(
-            self.prompt_root / "categories" / self._category_template(category)
+            self.prompt_root
+            / "categories"
+            / self.policy.category_template(category)
         )
         source_type_instructions = self._read_template(
-            source_template_path(doc.source, self.prompt_root)
+            self.prompt_root / "source_types" / profile.prompt_template
         )
         content_type_instructions = self._content_type_instructions(doc)
-        pairs_requested = self._pairs_for_doc(doc)
+        pairs_requested = self.pairs_for_doc(doc)
 
         prompt = Template(self.base_template).safe_substitute(
             category_name=category,
@@ -84,18 +75,10 @@ class PromptBuilder:
             prompt=prompt,
         )
 
-    def _category_for_doc(self, doc: RawDocument) -> str:
-        categories = profile_for_source(doc.source).categories
-        return categories[stable_index(doc.doc_id, len(categories))]
+    def categories_for_doc(self, doc: RawDocument) -> tuple[str, ...]:
+        return profile_for_source(doc.source).categories
 
-    def _category_template(self, category: str) -> str:
-        categories = self.task_config.get("categories", {})
-        try:
-            return str(categories[category]["prompt_template"])
-        except KeyError as exc:
-            raise KeyError(f"No category prompt template configured for {category}") from exc
-
-    def _pairs_for_doc(self, doc: RawDocument) -> int:
+    def pairs_for_doc(self, doc: RawDocument) -> int:
         configured = int(
             self.synthesis_config["generation"]["pairs_per_document"][doc.source]
         )
@@ -114,9 +97,10 @@ class PromptBuilder:
         return pairs
 
     def _content_type_instructions(self, doc: RawDocument) -> str:
-        path = content_template_path(doc.content_type, self.prompt_root)
-        if path is None:
+        profile = content_profile_for_type(doc.content_type)
+        if not profile.prompt_template:
             return NO_CONTENT_TYPE_INSTRUCTIONS
+        path = self.prompt_root / "content_types" / profile.prompt_template
         return self._read_template(path)
 
     def _document_content_for_prompt(self, doc: RawDocument) -> str:
