@@ -72,7 +72,6 @@ def write_prompt_render(args: argparse.Namespace) -> int:
         synthesis_config,
         task_config,
         args.mode,
-        source=args.source,
         limit=args.limit,
     )
     records = [prompt_record_row(record) for record in plan.prompt_records]
@@ -193,7 +192,6 @@ def run_generation(args: argparse.Namespace) -> int:
         synthesis_config,
         task_config,
         args.mode,
-        source=args.source,
         limit=args.limit,
     )
     docs_by_id = {doc.doc_id: doc for doc in plan.docs}

@@ -20,13 +20,9 @@ class PromptPlan:
 def select_documents(
     raw_dir: Path,
     mode: str,
-    source: str | None = None,
     limit: int | None = None,
 ) -> list[RawDocument]:
     docs = load_raw_documents(raw_dir)
-
-    if source:
-        docs = [doc for doc in docs if doc.source == source]
 
     if mode == "pilot":
         docs = sample_pilot_documents(docs)
@@ -46,9 +42,7 @@ def category_targets_from_task_config(task_config: dict) -> dict[str, float]:
 
     raw_targets = distribution.get("category_targets")
     if not isinstance(raw_targets, dict):
-        raise ValueError(
-            "configs/task_categories.yaml must define distribution.category_targets"
-        )
+        raise ValueError("configs/task_categories.yaml must define distribution.category_targets")
 
     targets: dict[str, float] = {}
     for category, weight in raw_targets.items():
@@ -113,10 +107,7 @@ def assign_categories(
     return assignments
 
 
-def assign_difficulties(
-    docs: list[RawDocument],
-    builder: PromptBuilder,
-) -> dict[str, Difficulty]:
+def assign_difficulties(docs: list[RawDocument], builder: PromptBuilder) -> dict[str, Difficulty]:
     weights = builder.policy.difficulty_targets
     total = sum(weights.values())
     assignments: dict[str, Difficulty] = {}
@@ -140,10 +131,9 @@ def build_prompt_plan(
     synthesis_config: dict,
     task_config: dict,
     mode: str,
-    source: str | None = None,
     limit: int | None = None,
 ) -> PromptPlan:
-    docs = select_documents(raw_dir, mode, source=source, limit=limit)
+    docs = select_documents(raw_dir, mode, limit=limit)
     builder = PromptBuilder(synthesis_config, task_config)
     category_assignments = assign_categories(docs, builder, task_config)
     difficulty_assignments = assign_difficulties(docs, builder)

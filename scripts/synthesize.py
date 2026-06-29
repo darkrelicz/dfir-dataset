@@ -20,7 +20,6 @@ def main():
     render.add_argument("--task-config", default="configs/task_categories.yaml")
     render.add_argument("--output-dir", default="data/synthesized/dry_run")
     render.add_argument("--mode", choices=["pilot", "full"], default="pilot")
-    render.add_argument("--source")
     render.add_argument("--limit", type=int)
     render.add_argument(
         "--write-prompt-files",
@@ -38,7 +37,6 @@ def main():
     run.add_argument("--quality-config", default="configs/quality.yaml")
     run.add_argument("--output-dir", default="data/synthesized/gemini_run")
     run.add_argument("--mode", choices=["pilot", "full"], default="pilot")
-    run.add_argument("--source")
     run.add_argument("--limit", type=int)
     run.add_argument("--env-file", default=".env")
     run.add_argument(

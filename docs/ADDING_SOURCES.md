@@ -109,7 +109,7 @@ content_type_profiles:
 ```bash
 .venv/bin/python -m scripts.collect_all --source new_source_key
 .venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw
-.venv/bin/python -m scripts.synthesize render-prompts --mode pilot --source new_source_key --output-dir data/synthesized/dry_run_new_source
+.venv/bin/python -m scripts.synthesize render-prompts --mode pilot --output-dir data/synthesized/dry_run
 ```
 
 ## Documentation Updates
