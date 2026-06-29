@@ -64,6 +64,47 @@ Title: $title
 13. Map behaviors to MITRE ATT&CK or ATLAS technique IDs when supported.
 14. Use a `?` suffix for candidate mappings that require corroboration.
 
+### Taxonomy Mapping
+
+15. `taxonomy_refs` is required. Include one to three IDs from the taxonomy
+    below that match the artifacts, telemetry, or investigation focus used in
+    the instruction and final answer. Do not leave `taxonomy_refs` empty.
+16. Prefer the most specific artifact IDs. For technique-only sources, choose
+    IDs based on the evidence an analyst would inspect or the detection
+    telemetry the answer discusses.
+
+Allowed taxonomy IDs:
+
+- Windows: W1 execution, W2 persistence, W3 authentication, W4 disk/file
+  access, W5 host network activity, W6 user activity, W7 memory, W8 event
+  logs, W9 Active Directory, W10 scripts/commands.
+- Linux: L1 execution, L2 persistence, L3 authentication, L4 disk/file
+  changes, L5 host network activity, L6 system/application logs, L7 memory,
+  L8 containers/orchestration.
+- Network: N1 PCAP/flows, N2 DNS, N3 web/application traffic, N4 C2/beaconing,
+  N5 exfiltration, N6 email artifacts.
+- SIEM/log aggregation: S1 SIEM queries, S2 cross-source correlation, S3
+  detection coverage/rules.
+- Cloud: C1 cloud control plane, C2 cloud identity/access, C3 cloud compute,
+  C4 cloud networking, C5 cloud alerts/detections, C6 SaaS audit logs.
+- File storage/data access: F1 cloud storage access/exfiltration, F2 file
+  sharing activity, F3 on-prem file servers, F4 removable media, F5 database
+  activity.
+- AI/LLM: A1 AI-assisted attacks, A2 LLM application compromise, A3 AI supply
+  chain, A4 AI infrastructure.
+- Mobile: M1 device artifacts, M2 apps/communications, M3 management or
+  compromise.
+- Anti-forensics: AF1 track covering/log clearing, AF2 data destruction, AF3
+  living-off-the-land abuse, AF4 hidden data.
+- Threat intelligence: TI1 operationalizing threat intel, TI2 attribution.
+- IoT/OT: OT1 OT/ICS environment, OT2 IoT devices.
+- Virtualization: V1 hypervisor/VM layer.
+- Supply chain: SC1 software supply chain integrity.
+- Compliance/legal: CL1 legal soundness/chain of custody, CL2 regulatory
+  requirements.
+
+Recommended starting taxonomy refs for this source: $taxonomy_ref_candidates
+
 ## Task Category Instructions
 
 $category_specific_instructions
@@ -96,7 +137,7 @@ Return only a JSON array. Each item must have this shape:
   "tools_referenced": [],
   "source_doc_id": "$doc_id",
   "source": "$source",
-  "taxonomy_refs": [],
+  "taxonomy_refs": $taxonomy_ref_example,
   "grounding": "source_only|source_plus_general",
   "reasoning_format": "canonical_reasoning_v1"
 }
