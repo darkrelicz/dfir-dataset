@@ -23,7 +23,7 @@ This repository is a Python dataset pipeline, not a website application. No fron
 - `configs/source_profiles.yaml`: Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 - `configs/quality.yaml`: Programmatic taxonomy IDs, coverage levels, scoring weights, and dedup settings.
 - `configs/packaging.yaml`: Planned packaging configuration.
-- `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt policy validation, prompt planning, prompt rendering, pilot sampling, model clients, schemas, run-state helpers, generation execution, and validation helpers.
+- `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt policy validation, prompt planning, prompt rendering, prompt-time source compaction, pilot sampling, model clients, schemas, run-state helpers, generation execution, and validation helpers.
 - `scripts/synthesize.py`: Thin CLI for raw corpus validation, no-API prompt rendering, and Gemini-backed instruction-pair generation.
 - `docs/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
 - `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
@@ -45,31 +45,46 @@ Collection runs emit `CollectionManifest` entries containing collector name, ver
 The current manifest and direct JSONL counts show all 16 selected Core + Tier 1-2 sources producing raw documents:
 
 - `mitre_attack`: 697
-- `sigma_rules`: 3109
-- `atomic_red_team`: 1804
-- `cisa_advisories`: 3831
+- `sigma_rules`: 3111
+- `atomic_red_team`: 1811
+- `cisa_advisories`: 3849
 - `volatility3_docs`: 194
 - `mitre_atlas`: 262
-- `cisa_kev`: 268
+- `cisa_kev`: 270
 - `kape_files`: 811
-- `hayabusa_rules`: 4836
+- `hayabusa_rules`: 4839
 - `lolbas_gtfobins`: 720
 - `forensic_artifacts`: 731
 - `velociraptor_artifacts`: 437
 - `hijacklibs`: 590
-- `loldrivers`: 653
+- `loldrivers`: 656
 - `ossem_data_dicts`: 699
 - `cybersec_skills`: 670
 
-Total raw JSONL rows: 20,312. Raw corpus validation currently passes.
+Total raw JSONL rows: 20,347. Raw corpus validation currently passes with 16 files, 20,347 documents, 20,347 unique document IDs, and zero issues.
 
 ## Planned Downstream Architecture
 
 Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses the direct Gemini API through the Google GenAI SDK, with Gemini 2.5 Flash as the primary teacher model, five task-category prompt templates, source-type-specific prompt instructions, and selective content-type prompt overrides. Any Claude or alternate-model comparison must run as a separate, explicitly labeled job rather than an automatic fallback. Canonical synthesized responses use `<reasoning>` blocks with linked evidence, analysis, conclusion, and caveat IDs.
 
-Current Phase 3 scaffold includes deterministic source profiles, content-type profiles, source-type prompt templates, content-type prompt overrides, task-category prompt templates, raw corpus validation, stratified pilot sampling across source/content richness, prompt-size trimming via `max_source_chars`, generated-pair rejection gates, dry-run prompt rendering, and a sequential Gemini generation runner. Source profile policy is data-driven in `configs/source_profiles.yaml`, while `synthesizers/source_profiles.py` loads and validates that config. Prompt/category/difficulty policy and prompt-template asset preflight live in `synthesizers/prompt_policy.py`. Category and difficulty distribution targets are read from `configs/task_categories.yaml`; category assignment balances planned pair counts against those targets while respecting each source profile's allowed categories. Document selection, category assignment, difficulty assignment, and prompt-plan construction live in `synthesizers/planner.py`; `PromptBuilder` renders prompts from those explicit planning choices. Prompt rendering and Gemini execution live in `synthesizers/runner.py`, while `scripts/synthesize.py` only parses CLI arguments and dispatches. Prompt rendering writes `prompts.jsonl` by default; individual Markdown prompt files are opt-in with `--write-prompt-files`. The Gemini runner reads `GEMINI_API_KEY` from `.env` or the environment, writes `prompts.jsonl`, `raw_outputs.jsonl`, `accepted.jsonl`, `rejected.jsonl`, and `generation_manifest.json`, annotates prompt/output rows with prompt hashes and run IDs, and can skip present terminal accepted/rejected prompts whose prompt hash and model match the current run when `--skip-present` is supplied. Prompt hashes, run IDs, and present-output detection live in `synthesizers/run_state.py` rather than the CLI. In full mode only, a current-run rejection-rate circuit breaker stops generation when rejected prompts meet or exceed the configured threshold after a minimum number of attempts. Pilot mode still validates each generated output, but does not stop early based on aggregate rejection rate. Broader rate-limit orchestration and alternate-model comparison jobs are still pending.
+Current Phase 3 scaffold includes:
 
-Prompt construction uses two layers: coarse `source_type` guidance derived from the collector `source`, then optional exact `content_type` guidance derived from each raw document. This keeps broad behavior stable while adding specialized handling for labels such as `atomic_test`, `lolbas_windows_lolbin`, `gtfobins_linux_abuse_function`, `hayabusa_rule`, `event_dictionary`, `tool_module`, `tool_plugin`, and Velociraptor artifact variants.
+- Deterministic source profiles, content-type profiles, source-type prompt templates, content-type prompt overrides, task-category prompt templates, deterministic taxonomy-ref suggestions, raw corpus validation, stratified pilot sampling across source/content richness, prompt-time source compaction, prompt-size trimming via `max_source_chars`, generated-pair rejection gates, dry-run prompt rendering, and a sequential Gemini generation runner.
+- Source profile policy is data-driven in `configs/source_profiles.yaml`, while `synthesizers/source_profiles.py` loads and validates that config.
+- Prompt/category/difficulty policy and prompt-template asset preflight live in `synthesizers/prompt_policy.py`.
+- Category and difficulty distribution targets are read from `configs/task_categories.yaml`; category assignment balances planned pair counts against those targets while respecting each source profile's allowed categories.
+- Document selection, category assignment, difficulty assignment, and prompt-plan construction live in `synthesizers/planner.py`; `PromptBuilder` renders prompts from those explicit planning choices.
+- Raw Phase 2 documents remain complete; `synthesizers/prompts/compactors/prompt_compactors.py` creates prompt-ready source views and dynamically loads source compactors named `synthesizers/prompts/compactors/<source>_compactor.py` exposing `compact_for_prompt(doc, content)`.
+- The first source-specific compactor is `cisa_advisories_compactor.py`, which keeps advisory metadata, key summary/recommendation sections, a capped CVE list, and top CVSS vulnerability blocks while omitting repeated legal/vendor boilerplate and lower-priority vulnerability blocks from prompts.
+- Prompt rendering and Gemini execution live in `synthesizers/runner.py`, while `scripts/synthesize.py` only parses CLI arguments and dispatches.
+- Prompt rendering writes `prompts.jsonl` by default; individual Markdown prompt files are opt-in with `--write-prompt-files`.
+- The Gemini runner reads `GEMINI_API_KEY` from `.env` or the environment, writes `prompts.jsonl`, `raw_outputs.jsonl`, `accepted.jsonl`, `rejected.jsonl`, and `generation_manifest.json`, annotates prompt/output rows with prompt hashes and run IDs, and can skip present terminal accepted/rejected prompts whose prompt hash and model match the current run when `--skip-present` is supplied.
+- Prompt hashes, run IDs, and present-output detection live in `synthesizers/run_state.py` rather than the CLI.
+- In full mode only, a current-run rejection-rate circuit breaker stops generation when rejected prompts meet or exceed the configured threshold after a minimum number of attempts.
+- Pilot mode still validates each generated output, but does not stop early based on aggregate rejection rate.
+- Broader rate-limit orchestration and alternate-model comparison jobs are still pending.
+
+Prompt construction uses two guidance layers plus one source-content layer: coarse `source_type` guidance derived from the collector `source`, optional exact `content_type` guidance derived from each raw document, and optional prompt-time content compaction by source. This keeps broad behavior stable while adding specialized handling for labels such as `atomic_test`, `lolbas_windows_lolbin`, `gtfobins_linux_abuse_function`, `hayabusa_rule`, `event_dictionary`, `tool_module`, `tool_plugin`, and Velociraptor artifact variants. Taxonomy refs are deterministic-first: `PromptBuilder` suggests one to three valid taxonomy IDs from source/content/tactic/platform hints, renders them as a JSON list in the prompt, and the validator still rejects missing or invalid refs.
 
 The generated-pair rejection gates catch invalid JSON, strict schema failures including extra fields, wrong or missing `source_doc_id`, source/category/difficulty mismatches, too many or too few pairs, missing or invalid taxonomy refs, invalid ATT&CK/ATLAS ID formats, broken `<reasoning>` links, duplicate reasoning IDs, missing caveats, empty evidence/analysis/caveat lines, missing final answers, and concrete indicators not present in the source document.
 

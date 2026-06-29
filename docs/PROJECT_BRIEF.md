@@ -20,14 +20,16 @@ The selected dataset scope is Core + Tier 1 + Tier 2: all 16 collectors from the
 
 - Phase 1: DFIR artifact taxonomy and task taxonomy.
 - Phase 2: raw source collection into JSONL.
-- Phase 3: planned instruction-pair synthesis.
+- Phase 3: instruction-pair synthesis scaffold implemented; Gemini smoke test, pilot, and full generation are still gated.
 - Phase 4: planned quality filtering, validation, deduplication, and distribution audits.
 - Phase 5: planned local dataset packaging.
 - Phase 6: planned fine-tuning validation and Shepherd integration.
 
 ## Remaining Workflow
 
-Phase 3 proceeds in two gates: first run and manually review a small Gemini pilot, then run full instruction-pair generation only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data.
+Phase 3 proceeds in three gates: regenerate and review dry-run prompts, run a one-prompt Gemini smoke test, then run and manually review a small Gemini pilot. Full instruction-pair generation starts only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data.
+
+Prompt cost is reduced at prompt time, not by shortening the collected raw corpus. Source-specific compactors live under `synthesizers/prompts/compactors/`; the current implemented compactor is for `cisa_advisories`.
 
 Phase 4 consumes Phase 3 `accepted.jsonl` and applies deterministic validators, heuristic quality scores, deduplication, balance checks, and targeted manual or AI-assisted review. Its output should be a filtered dataset plus review/rejection manifests.
 

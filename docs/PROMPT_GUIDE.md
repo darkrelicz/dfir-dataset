@@ -6,17 +6,32 @@ This guide explains how Phase 3 prompts are structured, how to review pilot outp
 
 ## Prompt Architecture
 
-Prompt construction uses three layers:
+Prompt construction uses four layers:
 
 1. Base prompt: `synthesizers/prompts/base.md`
 2. Task category prompt: `synthesizers/prompts/categories/*.md`
 3. Source-type prompt plus optional content-type override:
    - `synthesizers/prompts/source_types/*.md`
    - `synthesizers/prompts/content_types/*.md`
+4. Prompt-time source compaction:
+   - Shared dispatch and helpers: `synthesizers/prompts/compactors/prompt_compactors.py`
+   - Source-specific compactors: `synthesizers/prompts/compactors/<source>_compactor.py`
 
 Source and content-type policy lives in `configs/source_profiles.yaml`.
 
 Task category and difficulty targets live in `configs/task_categories.yaml`.
+
+Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. The current source-specific compactor is `cisa_advisories_compactor.py`, which keeps advisory metadata, dates, CVE count/IDs, summary/recommendation/context sections, and top CVSS vulnerability blocks while omitting repeated legal/vendor boilerplate and lower-priority vulnerability blocks.
+
+## Taxonomy Refs
+
+`PromptBuilder` renders a deterministic JSON list of one to three suggested taxonomy IDs into each prompt:
+
+```text
+Taxonomy references: ["TI1", "N4", "S3"]
+```
+
+The full 57-ID taxonomy is not repeated in every prompt. The model should normally copy or use the rendered refs, and Phase 3 validators still reject missing or unknown taxonomy refs.
 
 ## Canonical Response Format
 
@@ -41,6 +56,8 @@ Review dry-run prompts before API generation.
 
 - [ ] Prompt asks for the expected number of pairs.
 - [ ] Source document is recognizable and not over-truncated.
+- [ ] If a prompt compaction note is present, the compacted content still includes enough source evidence for the requested task.
+- [ ] Taxonomy refs render as a JSON list, not a quoted string, and match valid taxonomy IDs.
 - [ ] Task category fits the source.
 - [ ] Difficulty level is plausible.
 - [ ] Source-type instructions are appropriate.
@@ -69,7 +86,7 @@ Use this table whenever prompt behavior changes.
 
 | Date | File Changed | Reason | Expected Effect | Validation Result |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 2026-06-29 | `synthesizers/prompts/base.md`, `synthesizers/prompt_builder.py`, `synthesizers/prompts/compactors/prompt_compactors.py`, `synthesizers/prompts/compactors/cisa_advisories_compactor.py` | Reduce prompt cost while keeping taxonomy refs deterministic and valid | Smaller CISA advisory prompts, no full taxonomy list in every prompt, non-empty valid `taxonomy_refs` in output schema | Python compile passed; dry-run prompt rendering passed; raw validation passed |
 
 ## Common Failure Modes
 
@@ -79,6 +96,8 @@ Use this table whenever prompt behavior changes.
 | Broken reasoning links | Model ignored format or prompt examples are ambiguous | Tighten format example and validator feedback |
 | Rephrased duplicate pairs | Pair count too high for the document | Lower source/content-type pair cap |
 | Generic answers | Source truncation removed useful fields or source is too sparse | Adjust `max_source_chars` or cap pairs |
+| Compacted prompt lacks key evidence | Source-specific compactor removed a section needed for the task | Adjust the source compactor or add task-aware preservation rules |
+| `taxonomy_refs` rendered as a string | Prompt template or builder passed JSON as quoted text | Render the list directly from `json.dumps(...)` without extra quotes |
 | Overconfident conclusions | Prompt underemphasizes caveats | Strengthen uncertainty and corroboration instructions |
 | Unsupported ATT&CK/ATLAS mapping | Model inferred too aggressively | Require candidate `?` suffix or source-backed mapping only |
 

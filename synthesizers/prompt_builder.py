@@ -5,9 +5,9 @@ from typing import Any
 
 from collectors.schemas import RawDocument
 from synthesizers.prompt_policy import load_prompt_policy
+from synthesizers.prompts.compactors.prompt_compactors import compact_document_for_prompt
 from synthesizers.schemas import Difficulty, PromptRecord
-from synthesizers.source_profiles import (content_profile_for_type,
-                                          profile_for_source)
+from synthesizers.source_profiles import content_profile_for_type, profile_for_source
 
 PROMPT_ROOT = Path(__file__).resolve().parent / "prompts"
 NO_CONTENT_TYPE_INSTRUCTIONS = "No additional content-type-specific instructions."
@@ -182,16 +182,9 @@ class PromptBuilder:
         max_chars = int(
             self.synthesis_config.get("generation", {}).get("max_source_chars", 24000)
         )
-        content = doc.content_markdown.strip()
-        if len(content) <= max_chars:
-            return content
-
-        head_chars = max_chars * 2 // 3
-        tail_chars = max_chars - head_chars
-        return (
-            content[:head_chars].rstrip()
-            + "\n\n[TRUNCATED FOR PROMPT SIZE: middle of source document omitted]\n\n"
-            + content[-tail_chars:].lstrip()
+        return compact_document_for_prompt(
+            doc,
+            max_chars=max_chars,
         )
 
     def _taxonomy_refs_for_prompt(

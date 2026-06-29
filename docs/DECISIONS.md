@@ -53,16 +53,21 @@
 - Canonical synthesized responses use `<reasoning>`, not `<think>`.
 - The `<reasoning>` block is an auditable rationale with linked IDs: evidence (`E1`), analysis (`A1 [uses E1]`), conclusions (`C1 [uses E1,A1]`), and caveats (`CV1 [applies_to C1]`).
 - Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
+- The Pydantic response schema is not a substitute for prompt instructions about the linked reasoning chain. Keep the concise `<reasoning>` structure and example in the prompt even when using Gemini `response_format`.
 - A model-specific packaging exporter may convert `<reasoning>` to `<think>` for GLM training only if the training recipe requires that exact tag. The canonical synthesized and packaged dataset remains `<reasoning>`.
 - Pilot sampling is source-aware and stratified by content type and source richness so the pilot reviews both thin and rich examples. Pair counts are source-richness aware: documents under 250 words generate one pair, and thin content types such as artifact definitions, event dictionaries, and abuse database entries are capped to avoid padded hallucinations.
 - Prompting uses a two-layer source model: broad `source_type` instructions from the collector source plus selective exact `content_type` overrides from each raw document.
 - Source and content-type prompt policy should live in config, not hard-coded Python mappings.
+- Taxonomy refs are deterministic-first prompt metadata. `PromptBuilder` computes one to three candidate refs from source/content/tactic/platform hints and renders them as a JSON list; the full 57-ID taxonomy list is not repeated in every prompt. The model should normally use the rendered refs, while validators still reject missing or unknown refs.
 - Category and difficulty distribution targets come from `configs/task_categories.yaml`; prompt generation should treat that config as the source of truth while still respecting source-profile category allowlists.
 - Prompt/category/difficulty config parsing and prompt-template asset preflight belong in `synthesizers/prompt_policy.py`, not in `PromptBuilder`.
 - Do not create a separate prompt file for every raw `content_type` by default. Add content-type templates only when the generation behavior differs materially from the broad source type.
 - Prompt rendering writes `prompts.jsonl` by default. Per-prompt Markdown files are opt-in for manual inspection with `--write-prompt-files`.
 - Prompt planning belongs in `synthesizers/planner.py`; CLI entrypoints should not own document selection, category balancing, difficulty assignment, or prompt-plan construction.
 - `PromptBuilder` should render prompts from explicit category and difficulty choices supplied by the planner, rather than silently assigning fallback categories or difficulties.
+- Phase 2 raw documents should remain complete for provenance and reprocessing. Prompt-cost reduction belongs in Phase 3 prompt-time compactors under `synthesizers/prompts/compactors/`.
+- Source compactors should follow the naming convention `synthesizers/prompts/compactors/<source>_compactor.py` and expose `compact_for_prompt(doc, content)`. Shared dispatch, truncation, and Markdown helpers live in `prompt_compactors.py`.
+- `cisa_advisories_compactor.py` is the first source-specific prompt compactor. It preserves advisory metadata, dates, CVE count/IDs, summary/recommendation/context sections, and top CVSS vulnerability blocks while omitting repeated legal/vendor boilerplate, references, and lower-priority vulnerability blocks from prompts.
 - The first Gemini generation runner is sequential and can skip present outputs with `--skip-present`. Present-output skipping should only skip terminal accepted/rejected prompts whose prompt hash and model match the current run; raw model output alone is not terminal. Prefer a reviewed one-prompt smoke test and pilot run before adding concurrency.
 - Generation execution belongs in `synthesizers/runner.py`; `scripts/synthesize.py` should stay a thin argument parser and dispatcher.
 - Prompt hashing, run IDs, and present-output detection are synthesis run-state concerns and should live outside the CLI entrypoint.
