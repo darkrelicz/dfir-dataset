@@ -6,7 +6,8 @@ from typing import Any
 from collectors.schemas import RawDocument
 from synthesizers.prompt_policy import load_prompt_policy
 from synthesizers.schemas import Difficulty, PromptRecord
-from synthesizers.source_profiles import content_profile_for_type, profile_for_source
+from synthesizers.source_profiles import (content_profile_for_type,
+                                          profile_for_source)
 
 PROMPT_ROOT = Path(__file__).resolve().parent / "prompts"
 NO_CONTENT_TYPE_INSTRUCTIONS = "No additional content-type-specific instructions."
@@ -133,8 +134,7 @@ class PromptBuilder:
             title=doc.title,
             difficulty=difficulty,
             pairs_requested=pairs_requested,
-            taxonomy_ref_candidates=", ".join(taxonomy_refs),
-            taxonomy_ref_example=json.dumps(list(taxonomy_refs)),
+            taxonomy_refs=json.dumps(list(taxonomy_refs)),
         )
 
         prompt_id = f"prompt-{doc.doc_id}-{category}-{difficulty}"
