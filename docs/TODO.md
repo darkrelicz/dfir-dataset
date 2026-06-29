@@ -4,7 +4,8 @@
 
 - Regenerate `data/synthesized/dry_run/prompts.jsonl` after prompt compactor and taxonomy-ref changes.
 - Inspect dry-run prompts for CISA advisories and confirm compacted source views still preserve enough evidence for grounded answers.
-- Decide the next source compactors based on prompt-size outliers. Current high-value candidates are `mitre_attack`, `cisa_kev`, `cybersec_skills`, `loldrivers`, and selected large rule/artifact sources.
+- Inspect large Velociraptor prompts separately; query bodies intentionally bypass shared source truncation, so cost control should come from sampling or pair caps rather than capping VQL.
+- Decide the next source compactors based on prompt-size outliers. Current high-value candidates are selected large rule/artifact sources.
 - Decide whether to update `configs/synthesis.yaml` pair targets using current raw counts, since the collected corpus is larger than the plan estimate.
 
 ## Phase 3 Pilot

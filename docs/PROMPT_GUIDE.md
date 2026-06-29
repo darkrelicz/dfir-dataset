@@ -21,7 +21,9 @@ Source and content-type policy lives in `configs/source_profiles.yaml`.
 
 Task category and difficulty targets live in `configs/task_categories.yaml`.
 
-Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. The current source-specific compactor is `cisa_advisories_compactor.py`, which keeps advisory metadata, dates, CVE count/IDs, summary/recommendation/context sections, and top CVSS vulnerability blocks while omitting repeated legal/vendor boilerplate and lower-priority vulnerability blocks.
+Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. Current source-specific compactors are `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.
+
+Velociraptor is a special case: VQL is the valuable training signal, so `velociraptor_artifacts_compactor.py` preserves query bodies in full and opts out of shared source truncation. Review large Velociraptor prompts for cost, but do not solve that by capping `precondition`, `export`, `query`, `queries`, or VQL-like parameter defaults.
 
 ## Taxonomy Refs
 
@@ -87,6 +89,10 @@ Use this table whenever prompt behavior changes.
 | Date | File Changed | Reason | Expected Effect | Validation Result |
 |---|---|---|---|---|
 | 2026-06-29 | `synthesizers/prompts/base.md`, `synthesizers/prompt_builder.py`, `synthesizers/prompts/compactors/prompt_compactors.py`, `synthesizers/prompts/compactors/cisa_advisories_compactor.py` | Reduce prompt cost while keeping taxonomy refs deterministic and valid | Smaller CISA advisory prompts, no full taxonomy list in every prompt, non-empty valid `taxonomy_refs` in output schema | Python compile passed; dry-run prompt rendering passed; raw validation passed |
+| 2026-06-29 | `synthesizers/prompts/compactors/mitre_attack_compactor.py`, `synthesizers/prompts/compactors/cybersec_skills_compactor.py` | Compact two remaining high-token source families before pilot cost estimation | Large ATT&CK procedure lists and Cybersecurity Skills scripts are capped while identifiers, mappings, detections, tools, examples, and workflow steps remain available | Python compile passed; pilot prompt rendering wrote 285 prompts |
+| 2026-06-29 | `synthesizers/prompts/compactors/cisa_kev_compactor.py` | Compact vendor-grouped KEV catalogs that duplicate large summary tables and detailed CVE blocks | Large vendors keep vendor/product/CVE summary metadata and selected ransomware-linked/recent detail blocks without prompt-size truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
+| 2026-06-29 | `synthesizers/prompts/compactors/velociraptor_artifacts_compactor.py`, `synthesizers/prompts/compactors/prompt_compactors.py` | Compact Velociraptor metadata/prose while preserving VQL query bodies in full | Duplicate rendered prose and non-query YAML boilerplate are shortened; VQL bodies bypass shared source truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
+| 2026-06-29 | `synthesizers/prompts/compactors/loldrivers_compactor.py`, `synthesizers/prompts/compactors/hijacklibs_compactor.py` | Compact abuse databases with repeated sample, hash, executable, and signature blocks | LOLDrivers keeps abuse commands, mappings, detections, selected hashes, and sample metadata; HijackLibs keeps paths, hijack types, conditions, variables, hashes, and elevation flags | Python compile passed; pilot prompt rendering wrote 285 prompts |
 
 ## Common Failure Modes
 

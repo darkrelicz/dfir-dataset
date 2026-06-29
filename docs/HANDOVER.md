@@ -17,7 +17,7 @@
 - Phase 1 taxonomy work is complete enough for synthesis: the human taxonomy is in `docs/TAXONOMY.md`, and machine-readable taxonomy validation lives in `configs/quality.yaml`.
 - Phase 2 collection is complete for the selected Core + Tier 1 + Tier 2 scope: 16 collectors, 20,347 raw documents, and zero raw validation issues in the current corpus.
 - Phase 3 scaffolding is implemented: prompt planning, prompt rendering, deterministic taxonomy-ref suggestions, Gemini client/runner, run-state handling, inline validators, and prompt-time source compaction.
-- Prompt-cost reduction is handled at prompt time, not by mutating Phase 2 raw documents. The current source-specific compactor is `cisa_advisories_compactor.py`.
+- Prompt-cost reduction is handled at prompt time, not by mutating Phase 2 raw documents. Current source-specific compactors cover `cisa_advisories`, `cisa_kev`, `mitre_attack`, `cybersec_skills`, `velociraptor_artifacts`, `loldrivers`, and `hijacklibs`.
 - The full Gemini pilot and full synthesis are still gated. Existing old pilot artifacts should be treated as historical until prompts are regenerated with the current taxonomy and compactor behavior.
 - Phase 4 quality filtering, Phase 5 packaging, and Phase 6 training/evaluation are planned but not yet implemented.
 - The next critical gate is a regenerated dry-run prompt review followed by a one-prompt Gemini smoke test and a source-aware pilot.
@@ -39,7 +39,7 @@
 - Source collectors: all 16 selected collectors emit `RawDocument` JSONL under `data/raw/`.
 - Raw corpus validation: `.venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw` currently reports 16 files, 20,347 documents, 20,347 unique IDs, and 0 issues.
 - Prompt templates: base, category, source-type, and selected content-type templates exist under `synthesizers/prompts/`.
-- Prompt compactors: shared compactor dispatch/helpers live in `synthesizers/prompts/compactors/prompt_compactors.py`; CISA advisory compaction lives in `synthesizers/prompts/compactors/cisa_advisories_compactor.py`.
+- Prompt compactors: shared compactor dispatch/helpers live in `synthesizers/prompts/compactors/prompt_compactors.py`; source compactors currently live in `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.
 - Synthesis runner: `synthesizers/runner.py` renders prompts, calls Gemini, writes prompt/raw/accepted/rejected/manifest files, and supports terminal-output skipping.
 - Inline validators: Phase 3 rejects invalid JSON, schema mismatches, wrong source/category/difficulty, missing or invalid taxonomy refs, malformed ATT&CK/ATLAS IDs, broken reasoning links, missing caveats, empty reasoning lines, missing final answers, and invented concrete indicators.
 - Quality filters, packaging outputs, evaluation, and training artifacts are not yet implemented.

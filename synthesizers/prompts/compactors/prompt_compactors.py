@@ -20,6 +20,8 @@ def compact_document_for_prompt(doc: RawDocument, max_chars: int) -> str:
     compactor = compactor_for_source(doc.source)
     if compactor is not None:
         content = compactor(doc, content)
+        if getattr(compactor, "skip_source_truncation", False):
+            return content
     return truncate_content_for_prompt(content, max_chars)
 
 

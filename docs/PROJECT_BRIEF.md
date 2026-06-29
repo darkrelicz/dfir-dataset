@@ -29,7 +29,7 @@ The selected dataset scope is Core + Tier 1 + Tier 2: all 16 collectors from the
 
 Phase 3 proceeds in three gates: regenerate and review dry-run prompts, run a one-prompt Gemini smoke test, then run and manually review a small Gemini pilot. Full instruction-pair generation starts only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data.
 
-Prompt cost is reduced at prompt time, not by shortening the collected raw corpus. Source-specific compactors live under `synthesizers/prompts/compactors/`; the current implemented compactor is for `cisa_advisories`.
+Prompt cost is reduced at prompt time, not by shortening the collected raw corpus. Source-specific compactors live under `synthesizers/prompts/compactors/`; current implemented compactors cover `cisa_advisories`, `cisa_kev`, `mitre_attack`, `cybersec_skills`, `velociraptor_artifacts`, `loldrivers`, and `hijacklibs`.
 
 Phase 4 consumes Phase 3 `accepted.jsonl` and applies deterministic validators, heuristic quality scores, deduplication, balance checks, and targeted manual or AI-assisted review. Its output should be a filtered dataset plus review/rejection manifests.
 
