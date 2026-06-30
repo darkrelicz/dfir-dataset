@@ -6,7 +6,7 @@
 - Inspect dry-run prompts for CISA advisories and confirm compacted source views still preserve enough evidence for grounded answers.
 - Inspect large Velociraptor prompts separately; query bodies intentionally bypass shared source truncation, so cost control should come from sampling or pair caps rather than capping VQL.
 - Decide the next source compactors based on prompt-size outliers. Current high-value candidates are selected large rule/artifact sources.
-- Decide whether to update `configs/synthesis.yaml` pair targets using current raw counts, since the collected corpus is larger than the plan estimate.
+- Reassess `configs/synthesis.yaml` pair targets only after the budget-safe one-pair-per-document run has known cost and quality; current full-pair estimate is 20,347 pairs across 20,347 raw documents.
 - Complete or rerun `data/synthesized/gemini_pilot_8/` after the latest grounding/tag validator update, then compare rejection categories against pilot 7.
 
 ## Phase 3 Pilot

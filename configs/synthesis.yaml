@@ -7,22 +7,24 @@ model:
 generation:
   thinking_budget: 1024          # Gemini 2.5 uses token budgets, not thinking_level
   pairs_per_document:
-    mitre_attack: 5
-    sigma_rules: 3
-    atomic_red_team: 4
-    cisa_advisories: 5
-    volatility3_docs: 4
-    mitre_atlas: 4
-    cisa_kev: 3
-    kape_files: 2
-    hayabusa_rules: 2
-    lolbas_gtfobins: 3
-    forensic_artifacts: 2
-    velociraptor_artifacts: 3
+    # Budget-safe full synthesis: generate breadth first, then add more pairs
+    # only for selected high-value sources if budget remains.
+    mitre_attack: 1
+    sigma_rules: 1
+    atomic_red_team: 1
+    cisa_advisories: 1
+    volatility3_docs: 1
+    mitre_atlas: 1
+    cisa_kev: 1
+    kape_files: 1
+    hayabusa_rules: 1
+    lolbas_gtfobins: 1
+    forensic_artifacts: 1
+    velociraptor_artifacts: 1
     hijacklibs: 1
     loldrivers: 1
     ossem_data_dicts: 1
-    cybersec_skills: 3
+    cybersec_skills: 1
   temperature: 0.7
   max_retries: 4
   retry_initial_delay_seconds: 2
