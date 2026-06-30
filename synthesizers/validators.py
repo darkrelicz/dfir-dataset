@@ -22,6 +22,10 @@ ANALYSIS_RE = re.compile(r"^A(\d+)\s+\[uses\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE
 CONCLUSION_RE = re.compile(r"^C(\d+)\s+\[uses\s+([^\]]+)\].*$", re.MULTILINE)
 CAVEAT_RE = re.compile(r"^CV(\d+)\s+\[applies_to\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE)
 REF_RE = re.compile(r"\b(?:E|A|C|CV)\d+\b")
+JSON_FENCE_RE = re.compile(
+    r"\A\s*```[ \t]*(?:json)?[ \t]*\r?\n(?P<body>.*?)(?:\r?\n)?```\s*\Z",
+    re.DOTALL | re.IGNORECASE,
+)
 MITRE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?\??$")
 ATLAS_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?\??$")
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b", re.IGNORECASE)
@@ -241,7 +245,7 @@ def validate_generated_pairs(
     pairs: list[InstructionPair] = []
 
     try:
-        decoded = json.loads(raw_output)
+        decoded = json.loads(normalize_generated_json_output(raw_output))
     except json.JSONDecodeError as exc:
         return GeneratedPairValidation(
             ok=False,
@@ -300,6 +304,14 @@ def validate_generated_pairs(
         )
 
     return GeneratedPairValidation(ok=not issues, pairs=pairs, issues=issues)
+
+
+def normalize_generated_json_output(raw_output: str) -> str:
+    output = raw_output.strip()
+    match = JSON_FENCE_RE.match(output)
+    if match:
+        return match.group("body").strip()
+    return output
 
 
 def _validate_pair_against_source(

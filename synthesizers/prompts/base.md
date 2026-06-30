@@ -68,16 +68,15 @@ $document_content
 
 ## Output Format
 
-Return only a JSON array. Each item must have this shape:
+Return only a JSON array. Do not wrap the array in Markdown fences. Do not include prose before or after the JSON. Each item must have this shape:
 
-```json
 {
   "instruction": "...",
   "response": "<reasoning>\nE1: ...\nA1 [uses E1]: ...\nC1 [uses E1,A1] Confidence: medium. ...\nCV1 [applies_to C1]: ...\n</reasoning>\n\n...",
   "category": "$category_name",
   "difficulty": "$difficulty",
   "confidence": "high|medium|low",
-  "mitre_techniques": [],
+  "mitre_techniques": ["T1001"],
   "atlas_techniques": [],
   "tools_referenced": [],
   "source_doc_id": "$doc_id",
@@ -86,11 +85,10 @@ Return only a JSON array. Each item must have this shape:
   "grounding": "source_only|source_plus_general",
   "reasoning_format": "canonical_reasoning_v1"
 }
-```
+
 
 The `response` string MUST render like this when decoded:
 
-```text
 <reasoning>
 E1: Source-grounded evidence.
 E2: Additional source-grounded evidence.
@@ -100,4 +98,5 @@ CV1 [applies_to C1]: Caveat or corroboration need.
 </reasoning>
 
 Final practitioner-ready answer.
-```
+
+The `mitre_techniques` and `atlas_techniques` list should contain actual ATT&CK and ATLAS technique IDs, and not software IDs like S1120 or group IDs like G0047.

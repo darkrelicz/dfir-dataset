@@ -1,11 +1,11 @@
 # configs/synthesis.yaml
 model:
-  api: "interactions"
+  api: "generate_content"
   api_key_env: "GEMINI_API_KEY"
   primary: "gemini-2.5-flash"      # Primary teacher model for Phase 3
   fallback: null                   # Comparison models must run as separate, explicit jobs
 generation:
-  thinking_level: "low"
+  thinking_budget: 1024          # Gemini 2.5 uses token budgets, not thinking_level
   pairs_per_document:
     mitre_attack: 5
     sigma_rules: 3

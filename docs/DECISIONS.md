@@ -45,7 +45,7 @@
 - Inline rejection covers invalid JSON, strict schema failures, wrong source IDs, too many or too few pairs, broken `<reasoning>` links, duplicate reasoning IDs, missing caveats, empty evidence/analysis/caveat text, missing taxonomy refs, invalid taxonomy refs, malformed ATT&CK/ATLAS IDs, and invented concrete indicators.
 - Gemini 2.5 Flash is the selected primary teacher model.
 - Phase 3 generation uses the direct Gemini API via the Google GenAI SDK and `GEMINI_API_KEY`.
-- Gemini request controls such as `thinking_level` belong under `generation` in `configs/synthesis.yaml`, because they are sent in the Interactions API `generation_config`.
+- Gemini request controls belong under `generation` in `configs/synthesis.yaml`; the Gemini client maps supported controls into `models.generate_content` config alongside structured JSON response settings. Use `thinking_budget` for Gemini 2.5 thinking control. Do not use `thinking_level` with the current `gemini-2.5-flash` `generate_content` path because the API rejects it for this model. Do not request thought summaries for structured JSON generation.
 - Local API secrets live in `.env`, which is ignored by git. Do not commit real API keys.
 - OpenRouter is not used for canonical instruction generation because Gemini 2.5 Flash is not available through OpenRouter's distillable-model path.
 - Claude Sonnet or any alternate teacher model must run as a separate, explicitly labeled comparison job rather than an automatic fallback, so generated data provenance stays clean.
@@ -53,7 +53,7 @@
 - Canonical synthesized responses use `<reasoning>`, not `<think>`.
 - The `<reasoning>` block is an auditable rationale with linked IDs: evidence (`E1`), analysis (`A1 [uses E1]`), conclusions (`C1 [uses E1,A1]`), and caveats (`CV1 [applies_to C1]`).
 - Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
-- The Pydantic response schema is not a substitute for prompt instructions about the linked reasoning chain. Keep the concise `<reasoning>` structure and example in the prompt even when using Gemini `response_format`.
+- The Pydantic response schema is not a substitute for prompt instructions about the linked reasoning chain. Keep the concise `<reasoning>` structure and example in the prompt even when using Gemini structured JSON output.
 - A model-specific packaging exporter may convert `<reasoning>` to `<think>` for GLM training only if the training recipe requires that exact tag. The canonical synthesized and packaged dataset remains `<reasoning>`.
 - Pilot sampling is source-aware and stratified by content type and source richness so the pilot reviews both thin and rich examples. Pair counts are source-richness aware: documents under 250 words generate one pair, and thin content types such as artifact definitions, event dictionaries, and abuse database entries are capped to avoid padded hallucinations.
 - Prompting uses a two-layer source model: broad `source_type` instructions from the collector source plus selective exact `content_type` overrides from each raw document.

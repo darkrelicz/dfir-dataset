@@ -103,6 +103,8 @@ Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpo
 
 ## Remaining Pipeline Gates
 
+The Gemini client uses `models.generate_content` with `response_mime_type="application/json"` and a sanitized `InstructionPair` response schema, then validates the resulting JSON through the same Phase 3 rejection gates.
+
 The remaining workflow is intentionally gated:
 
 1. Phase 3 pilot: run Gemini on the planned pilot sample, then manually review 100% of pilot output. Fix prompts, validators, source profiles, or pair counts before continuing.
