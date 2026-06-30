@@ -42,13 +42,16 @@ Title: $title
 12. Never invent file paths, hashes, IP addresses, hostnames, usernames, event records, CVEs, IOCs, or tool output not present in the source.
 13. Do not create example domains, IP addresses, hashes, CVEs, usernames, hostnames, or URLs such as `example.com`, `c2server.net`, or `192.168.1.10`. If the source lacks a concrete value, use a non-indicator placeholder such as `<DOMAIN>`, `<IP_ADDRESS>`, `<ELASTIC_URL>`, or `<HOSTNAME>`.
 14. Never declare compromise without corroborating evidence.
+15. Set `grounding` to `source_only` only when every substantive claim in the response is directly supported by the source document. Do not include `[GENERAL KNOWLEDGE]` anywhere in a `source_only` response.
+16. Set `grounding` to `source_plus_general` when any substantive claim uses well-established knowledge that is not directly present in the source document. Every such non-source claim in the reasoning block and final answer must be explicitly marked with `[GENERAL KNOWLEDGE]`.
+17. Do not mark source-derived evidence or conclusions as `[GENERAL KNOWLEDGE]`.
 
 ### Technique Mapping
 
-15. Map behaviors to MITRE ATT&CK or ATLAS technique IDs when supported.
-16. Use a `?` suffix for candidate mappings that require corroboration.
-17. `mitre_techniques` may contain only ATT&CK technique IDs shaped like `T1001` or `T1003.001`, optionally with `?`. Do not include tactic IDs such as `TA0005`, software IDs such as `S1120`, group IDs such as `G0047`, or malformed IDs such as `T1059/001`.
-18. `atlas_techniques` may contain only ATLAS technique IDs shaped like `AML.T0001` or `AML.T0001.001`, optionally with `?`. Do not include ATLAS tactic IDs such as `AML.TA0002`, short IDs such as `A0009`, or prefixed IDs such as `ATLAS-1025`.
+18. Map behaviors to MITRE ATT&CK or ATLAS technique IDs when supported.
+19. Use a `?` suffix for candidate mappings that require corroboration.
+20. `mitre_techniques` may contain only ATT&CK technique IDs shaped like `T1001` or `T1003.001`, optionally with `?`. Do not include tactic IDs such as `TA0005`, software IDs such as `S1120`, group IDs such as `G0047`, or malformed IDs such as `T1059/001`.
+21. `atlas_techniques` may contain only ATLAS technique IDs shaped like `AML.T0001` or `AML.T0001.001`, optionally with `?`. Do not include ATLAS tactic IDs such as `AML.TA0002`, short IDs such as `A0009`, or prefixed IDs such as `ATLAS-1025`.
 
 ### Taxonomy Mapping
 
@@ -104,3 +107,5 @@ CV1 [applies_to C1]: Caveat or corroboration need.
 Final practitioner-ready answer.
 
 The `mitre_techniques` and `atlas_techniques` lists must contain only valid technique IDs in the shapes described above. If no valid technique ID is directly supported, use an empty list.
+
+The `grounding` field must match the response text: use `source_only` only when there are no `[GENERAL KNOWLEDGE]` tags, and use `source_plus_general` whenever the response contains any `[GENERAL KNOWLEDGE]` tag.

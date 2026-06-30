@@ -20,14 +20,14 @@ The selected dataset scope is Core + Tier 1 + Tier 2: all 16 collectors from the
 
 - Phase 1: DFIR artifact taxonomy and task taxonomy.
 - Phase 2: raw source collection into JSONL.
-- Phase 3: instruction-pair synthesis scaffold implemented; Gemini smoke test, pilot, and full generation are still gated.
+- Phase 3: instruction-pair synthesis scaffold implemented, including Gemini structured JSON output, validation-feedback retry, deterministic provenance normalization, and grounding/tag consistency checks; completed pilot review and full generation are still gated.
 - Phase 4: planned quality filtering, validation, deduplication, and distribution audits.
 - Phase 5: planned local dataset packaging.
 - Phase 6: planned fine-tuning validation and Shepherd integration.
 
 ## Remaining Workflow
 
-Phase 3 proceeds in three gates: regenerate and review dry-run prompts, run a one-prompt Gemini smoke test, then run and manually review a small Gemini pilot. Full instruction-pair generation starts only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data.
+Phase 3 proceeds in three gates: regenerate and review dry-run prompts, run a one-prompt Gemini smoke test, then run and manually review a small Gemini pilot. Full instruction-pair generation starts only after the pilot has acceptable validator pass rate and manual quality. Phase 3 writes `accepted.jsonl`, but that file is only a candidate synthesis output, not final training data. Current validators catch structural failures, malformed technique IDs, invented concrete indicators, grounding/tag mismatches, and broken canonical reasoning links; semantic unsupported-claim review still belongs in pilot review and Phase 4.
 
 Prompt cost is reduced at prompt time, not by shortening the collected raw corpus. Source-specific compactors live under `synthesizers/prompts/compactors/`; current implemented compactors cover `cisa_advisories`, `cisa_kev`, `mitre_attack`, `cybersec_skills`, `velociraptor_artifacts`, `loldrivers`, and `hijacklibs`.
 

@@ -26,6 +26,7 @@ JSON_FENCE_RE = re.compile(
     r"\A\s*```[ \t]*(?:json)?[ \t]*\r?\n(?P<body>.*?)(?:\r?\n)?```\s*\Z",
     re.DOTALL | re.IGNORECASE,
 )
+GENERAL_KNOWLEDGE_RE = re.compile(r"\[GENERAL KNOWLEDGE\]", re.IGNORECASE)
 MITRE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?\??$")
 ATLAS_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?\??$")
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b", re.IGNORECASE)
@@ -389,6 +390,11 @@ def _validate_pair_against_source(
     if invalid_atlas:
         add(f"Invalid ATLAS technique IDs: {invalid_atlas}")
 
+    if pair.grounding == "source_only" and _has_general_knowledge_tag(pair):
+        add("grounding is source_only but response contains [GENERAL KNOWLEDGE]")
+    if pair.grounding == "source_plus_general" and not _has_general_knowledge_tag(pair):
+        add("grounding is source_plus_general but response has no [GENERAL KNOWLEDGE] tags")
+
     invented_indicators = _invented_indicators(pair, source_doc)
     if invented_indicators:
         add(
@@ -404,6 +410,10 @@ def _final_answer_text(response: str) -> str:
     if closing not in response:
         return ""
     return response.split(closing, 1)[1].strip()
+
+
+def _has_general_knowledge_tag(pair: InstructionPair) -> bool:
+    return bool(GENERAL_KNOWLEDGE_RE.search(pair.response))
 
 
 def _invented_indicators(pair: InstructionPair, source_doc: RawDocument) -> list[str]:

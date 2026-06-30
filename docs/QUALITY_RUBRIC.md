@@ -27,6 +27,7 @@ These checks should run before heuristic scoring.
 | ATLAS IDs | Malformed ID | Candidate mapping may go to review | Validate separately from ATT&CK |
 | Reasoning links | Broken evidence/analysis/conclusion/caveat references |  | Reuse Phase 3 reasoning validator |
 | Empty evidence | Evidence lines are empty or purely generic |  |  |
+| Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Reuse Phase 3 grounding validator where possible |
 | Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic/AI assist |
 | Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
 
@@ -71,6 +72,7 @@ Use stable reason codes so later analysis is easy.
 | `attack_id_invalid` | Invalid ATT&CK technique ID |
 | `atlas_id_invalid` | Invalid ATLAS technique ID |
 | `reasoning_links_invalid` | Broken reasoning ID references |
+| `grounding_mismatch` | `grounding` field does not match `[GENERAL KNOWLEDGE]` tag usage |
 | `invented_indicator` | Concrete indicator absent from source |
 | `unsupported_claim` | Claim not supported by reasoning/source |
 | `low_specificity` | Too generic for useful training |

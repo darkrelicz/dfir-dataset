@@ -37,6 +37,8 @@ Taxonomy references: ["TI1", "N4", "S3"]
 
 The full 57-ID taxonomy is not repeated in every prompt. The model should normally copy or use the rendered refs, and Phase 3 validators still reject missing or unknown taxonomy refs.
 
+`PromptRecord` also stores the deterministic taxonomy refs. During Phase 3 validation, generated `category`, `difficulty`, `source_doc_id`, `source`, `taxonomy_refs`, and `reasoning_format` are normalized from the prompt record before validation so model typos in provenance metadata do not reject otherwise valid pairs.
+
 ## Canonical Response Format
 
 All synthesized responses must use the canonical reasoning format:
@@ -53,6 +55,16 @@ Final practitioner-ready answer.
 ```
 
 Do not switch canonical data to `<think>`. A model-specific Phase 5 exporter may create a training view using `<think>` only if the training recipe requires it.
+
+## Grounding Contract
+
+The `grounding` field must match the response text:
+
+- Use `source_only` only when every substantive claim is directly supported by the visible source document. A `source_only` response must not contain `[GENERAL KNOWLEDGE]`.
+- Use `source_plus_general` whenever any substantive claim uses well-established knowledge that is not directly present in the visible source document. Every non-source claim must be explicitly marked with `[GENERAL KNOWLEDGE]`.
+- Do not mark source-derived evidence, source-derived conclusions, or source-visible details as `[GENERAL KNOWLEDGE]`.
+
+Phase 3 validators reject obvious tag/field mismatches: `source_only` with `[GENERAL KNOWLEDGE]`, and `source_plus_general` with no `[GENERAL KNOWLEDGE]` tag.
 
 ## Prompt Review Checklist
 
@@ -100,6 +112,8 @@ Use this table whenever prompt behavior changes.
 | 2026-06-30 | `synthesizers/validators.py` | Treat full-output Markdown JSON fences as a recoverable wrapper instead of invalid JSON | Gemini outputs wrapped in Markdown JSON fences are normalized before JSON parsing, while genuinely malformed JSON still fails | Python compile passed; Gemini pilot 3 rejected rows replayed with T1011 passing and T1001 surfacing concrete-indicator issues |
 | 2026-06-30 | `synthesizers/clients/gemini.py`, `configs/synthesis.yaml` | Move Gemini generation off Interactions text output and onto structured `models.generate_content` JSON output | Gemini receives `response_mime_type="application/json"` and a sanitized `InstructionPair` JSON schema; parsed responses are serialized before validation so new outputs should not arrive as Markdown-fenced JSON | Python compile passed; SDK config construction passed; pilot 5 `additional_properties` API error reproduced and sanitized schema conversion no longer emits `additional*` fields |
 | 2026-06-30 | `synthesizers/clients/gemini.py`, `configs/synthesis.yaml` | Stop sending unsupported `thinking_level` to Gemini Flash through `models.generate_content` | Generation uses supported `thinking_budget` and does not request thought summaries for structured JSON output | Pilot 6 `Thinking level is not supported for this model` API error reproduced; Python compile and config conversion passed |
+| 2026-06-30 | `synthesizers/runner.py`, `synthesizers/validators.py`, `synthesizers/schemas.py`, `synthesizers/prompt_builder.py`, `configs/synthesis.yaml`, `synthesizers/prompts/base.md` | Reduce pilot 7 validation rejects caused by recoverable model format slips, transient Gemini demand, and deterministic metadata typos | Runner uses exponential API retry/backoff with jitter, adds one validation-feedback regeneration, records validation retry metadata, and validators normalize deterministic provenance fields from `PromptRecord` | Python compile passed; `git diff --check` passed; raw corpus validation passed; one-prompt render and focused metadata-normalization validator replay passed |
+| 2026-06-30 | `synthesizers/validators.py`, `synthesizers/prompts/base.md`, `synthesizers/runner.py` | Enforce consistency between `[GENERAL KNOWLEDGE]` tagging and the `grounding` field | `source_only` responses with general-knowledge tags and `source_plus_general` responses without tags are rejected; retry prompt restates the grounding contract | Python compile passed; `git diff --check` passed; focused validator cases passed |
 
 ## Common Failure Modes
 
@@ -116,6 +130,10 @@ Use this table whenever prompt behavior changes.
 | `taxonomy_refs` rendered as a string | Prompt template or builder passed JSON as quoted text | Render the list directly from `json.dumps(...)` without extra quotes |
 | Overconfident conclusions | Prompt underemphasizes caveats | Strengthen uncertainty and corroboration instructions |
 | Unsupported ATT&CK/ATLAS mapping | Model inferred too aggressively | Require candidate `?` suffix or source-backed mapping only |
+| `source_only` response contains `[GENERAL KNOWLEDGE]` | Model tagged outside-source reasoning but left grounding as source-only | Validator rejects; regenerate with `source_plus_general` or remove non-source claim |
+| `source_plus_general` response has no `[GENERAL KNOWLEDGE]` tag | Model set broad grounding but did not identify which claim is non-source | Validator rejects; tag each non-source claim or use `source_only` if all claims are source-backed |
+| Recoverable validation failures persist after first generation | Model missed reasoning link, caveat, ID-shape, grounding, or indicator rule | Runner retries once with validator feedback; review remaining rejects for prompt or validator changes |
+| Gemini high-demand `503 UNAVAILABLE` API errors | Temporary model capacity spike | API retry/backoff uses `max_retries`, initial delay, max delay, and jitter from `configs/synthesis.yaml`; rerun with `--skip-present` if needed |
 
 ## Smoke Test Procedure
 

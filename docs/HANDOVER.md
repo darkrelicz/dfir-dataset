@@ -4,7 +4,7 @@
 
 - Project: Shepherd DFIR Dataset
 - Current owner: current project owner
-- Handover date: 2026-06-29
+- Handover date: 2026-06-30
 - Repository: `/home/hunta/dfir-dataset`
 - Dataset version: pre-packaging
 - Shepherd version or branch: not set in this repository
@@ -16,9 +16,9 @@
 
 - Phase 1 taxonomy work is complete enough for synthesis: the human taxonomy is in `docs/TAXONOMY.md`, and machine-readable taxonomy validation lives in `configs/quality.yaml`.
 - Phase 2 collection is complete for the selected Core + Tier 1 + Tier 2 scope: 16 collectors, 20,347 raw documents, and zero raw validation issues in the current corpus.
-- Phase 3 scaffolding is implemented: prompt planning, prompt rendering, deterministic taxonomy-ref suggestions, Gemini client/runner, run-state handling, inline validators, and prompt-time source compaction.
+- Phase 3 scaffolding is implemented: prompt planning, prompt rendering, deterministic taxonomy-ref suggestions, Gemini structured-output client/runner, run-state handling, inline validators, validation-feedback retry, API backoff, deterministic provenance normalization, grounding/tag consistency checks, and prompt-time source compaction.
 - Prompt-cost reduction is handled at prompt time, not by mutating Phase 2 raw documents. Current source-specific compactors cover `cisa_advisories`, `cisa_kev`, `mitre_attack`, `cybersec_skills`, `velociraptor_artifacts`, `loldrivers`, and `hijacklibs`.
-- The full Gemini pilot and full synthesis are still gated. Existing old pilot artifacts should be treated as historical until prompts are regenerated with the current taxonomy and compactor behavior.
+- The full Gemini pilot and full synthesis are still gated. Existing old pilot artifacts should be treated as historical unless they were generated with the current prompt, validator, and runner behavior. `data/synthesized/gemini_pilot_8/` exists as an experimental partial run, not a completed quality gate.
 - Phase 4 quality filtering, Phase 5 packaging, and Phase 6 training/evaluation are planned but not yet implemented.
 - The next critical gate is a regenerated dry-run prompt review followed by a one-prompt Gemini smoke test and a source-aware pilot.
 - The biggest known risk is prompt compaction or truncation removing evidence that the model needs for grounded answers.
@@ -40,8 +40,8 @@
 - Raw corpus validation: `.venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw` currently reports 16 files, 20,347 documents, 20,347 unique IDs, and 0 issues.
 - Prompt templates: base, category, source-type, and selected content-type templates exist under `synthesizers/prompts/`.
 - Prompt compactors: shared compactor dispatch/helpers live in `synthesizers/prompts/compactors/prompt_compactors.py`; source compactors currently live in `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.
-- Synthesis runner: `synthesizers/runner.py` renders prompts, calls Gemini, writes prompt/raw/accepted/rejected/manifest files, and supports terminal-output skipping.
-- Inline validators: Phase 3 rejects invalid JSON, schema mismatches, wrong source/category/difficulty, missing or invalid taxonomy refs, malformed ATT&CK/ATLAS IDs, broken reasoning links, missing caveats, empty reasoning lines, missing final answers, and invented concrete indicators.
+- Synthesis runner: `synthesizers/runner.py` renders prompts, calls Gemini, writes prompt/raw/accepted/rejected/manifest files, supports terminal-output skipping, retries transient API errors with configurable backoff, and can regenerate once from validation feedback by default.
+- Inline validators: Phase 3 rejects invalid JSON, schema mismatches, missing or invalid taxonomy refs after deterministic prompt metadata normalization, malformed ATT&CK/ATLAS IDs, broken reasoning links, missing caveats, empty reasoning lines, missing final answers, grounding/tag mismatches, and invented concrete indicators.
 - Quality filters, packaging outputs, evaluation, and training artifacts are not yet implemented.
 
 ## What Is Next
@@ -50,9 +50,10 @@
 2. Manually inspect dry-run prompts for CISA advisories and other high-token source families.
 3. Run a one-prompt Gemini smoke test and inspect `accepted.jsonl`, `rejected.jsonl`, `raw_outputs.jsonl`, and `generation_manifest.json`.
 4. Run the planned source-aware Gemini pilot if the smoke test passes.
-5. Review 100% of pilot accepted and rejected rows before full synthesis.
-6. Add the next high-value source compactors based on observed prompt sizes and review results.
-7. Implement Phase 4 deterministic and heuristic quality filtering before packaging.
+5. Complete or rerun the current pilot with the latest grounding validator if `gemini_pilot_8` was started before the final prompt/validator update.
+6. Review 100% of pilot accepted and rejected rows before full synthesis.
+7. Add the next high-value source compactors based on observed prompt sizes and review results.
+8. Implement Phase 4 deterministic and heuristic quality filtering before packaging.
 
 ## Important Decisions
 
@@ -61,6 +62,8 @@
 | Canonical reasoning tag is `<reasoning>` | Keeps validation and audit format stable | `docs/DECISIONS.md` |
 | Pydantic schema does not replace reasoning-format prompt instructions | Gemini still needs explicit linked-reasoning structure and example text | `docs/DECISIONS.md`, `synthesizers/prompts/base.md` |
 | Taxonomy refs are deterministic-first prompt metadata | Reduces prompt size while preserving valid taxonomy grounding | `docs/DECISIONS.md`, `synthesizers/prompt_builder.py` |
+| Deterministic provenance is normalized from `PromptRecord` before validation | Prevents model typos in source/category/difficulty/taxonomy metadata from rejecting valid content | `docs/DECISIONS.md`, `synthesizers/validators.py` |
+| Grounding field must match `[GENERAL KNOWLEDGE]` tags | Makes source-only vs source-plus-general explicit and machine-checkable | `docs/DECISIONS.md`, `synthesizers/validators.py`, `synthesizers/prompts/base.md` |
 | Raw Phase 2 documents stay complete; prompts may use compacted source views | Preserves provenance while reducing prompt cost | `docs/DECISIONS.md` |
 | Source compactors live under `synthesizers/prompts/compactors/<source>_compactor.py` and expose `compact_for_prompt` | Keeps source-specific prompt reduction modular | `docs/DECISIONS.md` |
 | Phase 5 consumes Phase 4 filtered output, not raw Phase 3 accepted output | Prevents candidate data from being treated as training data | `docs/DECISIONS.md` |
@@ -138,6 +141,7 @@ python -m scripts.collect_all
 | Raw manifest | `data/raw/collection_manifest.json` | Current | Produced by Phase 2 collection |
 | Dry-run prompts | `data/synthesized/dry_run/` | Current but should be regenerated after prompt changes | Used for manual prompt review and cost estimation |
 | Historical Gemini pilot | `data/synthesized/gemini_pilot_1/` | Historical | Pre-current prompt/taxonomy state; do not treat as final gate |
+| Experimental Gemini pilot 8 | `data/synthesized/gemini_pilot_8/` | Partial | Generated after validation-retry/metadata work began; as of 2026-06-30 it has 285 prompts, 83 raw outputs, 208 accepted pairs, and 2 rejected prompts, but it is not a completed/reviewed gate |
 | Pilot synthesis | `data/synthesized/pilot/` | Not current | Next canonical pilot output location |
 | Full synthesis | `data/synthesized/full/` | Not started | Must wait for accepted pilot |
 | Quality output | `data/quality/` | Not started | Phase 4 |
@@ -152,6 +156,7 @@ python -m scripts.collect_all
 | Source imbalance | Open | Audit source distribution after synthesis and quality filtering | Project owner |
 | Thin sources cause padded answers | Open | Keep pair caps low and review pilot thin-source outputs | Project owner |
 | Prompt compaction removes useful evidence | Open | Review compacted prompts by source and add source-specific tests or checks where needed | Project owner |
+| Untagged general knowledge passes as source-only | Open | Prompt and validator now catch tag/field mismatches, but semantic unsupported-claim review still belongs in pilot review and Phase 4 | Project owner |
 | Sigma/Hayabusa duplicates | Open | Run near-duplicate detection in Phase 4 | Project owner |
 | Fine-tuning may not improve baseline | Open | Run baseline before training and document before/after results | Project owner |
 

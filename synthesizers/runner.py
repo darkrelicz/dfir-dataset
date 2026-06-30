@@ -206,6 +206,11 @@ Additional hard requirements:
 - Include at least one `CV*` caveat line in every response.
 - Do not invent concrete domains, IP addresses, hashes, CVEs, usernames,
   hostnames, file paths, event records, or tool output absent from the source.
+- Use `grounding="source_only"` only when the response has no
+  `[GENERAL KNOWLEDGE]` tags. Use `grounding="source_plus_general"` whenever
+  the response includes any `[GENERAL KNOWLEDGE]` tag.
+- If you rely on well-established knowledge absent from the source, mark each
+  non-source claim with `[GENERAL KNOWLEDGE]`.
 - `mitre_techniques` may contain only `T####` or `T####.###` IDs, with an
   optional `?` suffix.
 - `atlas_techniques` may contain only `AML.T####` or `AML.T####.###` IDs, with
