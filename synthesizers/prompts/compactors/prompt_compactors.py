@@ -12,6 +12,10 @@ from collectors.schemas import RawDocument
 
 
 COMPACTOR_PACKAGE = "synthesizers.prompts.compactors"
+COMPACTED_SOURCE_NOTE = (
+    "[Compacted source view: repeated or lower-priority blocks were omitted. "
+    "Use only visible details as evidence.]"
+)
 Compactor = Callable[[RawDocument, str], str]
 
 

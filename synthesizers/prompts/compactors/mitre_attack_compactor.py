@@ -2,6 +2,7 @@ import re
 
 from collectors.schemas import RawDocument
 from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
     limit_text,
     markdown_sections,
     prompt_section,
@@ -69,11 +70,7 @@ def compact_mitre_attack_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(f"- {limit_text(detection, DETECTION_CHAR_LIMIT)}")
         lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: long ATT&CK procedure lists, citations, and "
-        "lower-priority examples were omitted from this prompt. Full technique "
-        "document remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
     compacted = "\n".join(lines).strip()
     if len(compacted) >= len(content):
         return content

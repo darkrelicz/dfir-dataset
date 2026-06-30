@@ -23,7 +23,9 @@ Task category and difficulty targets live in `configs/task_categories.yaml`.
 
 Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. Current source-specific compactors are `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.
 
-Velociraptor is a special case: VQL is the valuable training signal, so `velociraptor_artifacts_compactor.py` preserves query bodies in full and opts out of shared source truncation. Review large Velociraptor prompts for cost, but do not solve that by capping `precondition`, `export`, `query`, `queries`, or VQL-like parameter defaults.
+Velociraptor is a special case: VQL is the valuable training signal, so `velociraptor_artifacts_compactor.py` preserves query bodies in full and opts out of shared source truncation. Review large Velociraptor prompts for cost, but do not solve that by capping `precondition`, `export`, `query`, `queries`, VQL-like parameter defaults, or long structured parameter defaults such as YARA, Grok, CSV, registry glob, JSON, and YAML blocks.
+
+Lossy source compactors append a shared note: `[Compacted source view: repeated or lower-priority blocks were omitted. Use only visible details as evidence.]`
 
 ## Taxonomy Refs
 
@@ -93,6 +95,8 @@ Use this table whenever prompt behavior changes.
 | 2026-06-29 | `synthesizers/prompts/compactors/cisa_kev_compactor.py` | Compact vendor-grouped KEV catalogs that duplicate large summary tables and detailed CVE blocks | Large vendors keep vendor/product/CVE summary metadata and selected ransomware-linked/recent detail blocks without prompt-size truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
 | 2026-06-29 | `synthesizers/prompts/compactors/velociraptor_artifacts_compactor.py`, `synthesizers/prompts/compactors/prompt_compactors.py` | Compact Velociraptor metadata/prose while preserving VQL query bodies in full | Duplicate rendered prose and non-query YAML boilerplate are shortened; VQL bodies bypass shared source truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
 | 2026-06-29 | `synthesizers/prompts/compactors/loldrivers_compactor.py`, `synthesizers/prompts/compactors/hijacklibs_compactor.py` | Compact abuse databases with repeated sample, hash, executable, and signature blocks | LOLDrivers keeps abuse commands, mappings, detections, selected hashes, and sample metadata; HijackLibs keeps paths, hijack types, conditions, variables, hashes, and elevation flags | Python compile passed; pilot prompt rendering wrote 285 prompts |
+| 2026-06-30 | `synthesizers/prompts/compactors/cybersec_skills_compactor.py`, `synthesizers/prompts/compactors/velociraptor_artifacts_compactor.py` | Fix malformed Markdown truncation and preserve long structured Velociraptor defaults | Cybersecurity Skills truncation closes code fences; Velociraptor keeps long VQL, YARA, Grok, CSV, registry glob, JSON, and YAML parameter defaults as full blocks | Python compile passed; corpus checks found 0 Cybersecurity Skills docs with odd code fences and 42/42 long Velociraptor defaults preserved as blocks |
+| 2026-06-30 | `synthesizers/prompts/compactors/prompt_compactors.py`, `synthesizers/prompts/compactors/*_compactor.py` | Standardize lossy compaction note and avoid implying the model can access hidden raw corpus content | Lossy compacted source views append the same short note telling the model to use only visible details as evidence | Python compile passed; compactor note search confirmed no old `Prompt compaction note` strings remain |
 
 ## Common Failure Modes
 

@@ -2,6 +2,7 @@ from collections.abc import Iterable
 
 from collectors.schemas import RawDocument
 from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
     limit_text,
     markdown_sections,
     section_body,
@@ -87,10 +88,7 @@ def compact_loldriver_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(f"- [{omitted} additional resource(s) omitted]")
         lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: repeated LOLDrivers sample blocks and long hash "
-        "lists were capped. Full driver entry remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
 
     compacted = "\n".join(lines).strip()
     if len(compacted) >= len(content):

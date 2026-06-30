@@ -2,6 +2,7 @@ from collections.abc import Iterable
 
 from collectors.schemas import RawDocument
 from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
     markdown_sections,
     section_body,
 )
@@ -59,12 +60,7 @@ def compact_hijacklib_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(f"- [{omitted} additional resource(s) omitted]")
         lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: repeated HijackLibs executable/signature blocks "
-        "were capped while preserving DLL name, expected locations, hijack types, "
-        "conditions, variables, hashes, and privilege/elevation flags. Full entry "
-        "remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
 
     compacted = "\n".join(lines).strip()
     if len(compacted) >= len(content):

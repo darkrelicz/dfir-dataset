@@ -2,6 +2,7 @@ import re
 
 from collectors.schemas import RawDocument
 from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
     limit_text,
     markdown_sections,
     prompt_section,
@@ -95,11 +96,7 @@ def compact_cisa_advisory_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(compact_cisa_vulnerability_block(block))
             lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: repetitive legal text, vendor boilerplate, "
-        "references, and lower-priority vulnerability blocks were omitted from "
-        "this prompt. Full advisory remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
     return "\n".join(lines).strip()
 
 

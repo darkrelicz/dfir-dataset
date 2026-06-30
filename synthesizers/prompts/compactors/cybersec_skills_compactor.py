@@ -3,9 +3,8 @@ from collections.abc import Iterable
 
 from collectors.schemas import RawDocument
 from synthesizers.prompts.compactors.prompt_compactors import (
-    limit_text,
+    COMPACTED_SOURCE_NOTE,
     markdown_sections,
-    prompt_section,
     section_body,
 )
 
@@ -17,6 +16,7 @@ MAX_CODE_BLOCK_CHARS = 700
 MAX_CODE_BLOCK_LINES = 12
 MAX_LIST_VALUES = 20
 MAX_WORKFLOW_STEPS = 8
+TRUNCATION_MARKER = "[truncated]"
 
 KEEP_SECTIONS = (
     "Overview",
@@ -59,18 +59,34 @@ def compact_cybersec_skill_for_prompt(doc: RawDocument, content: str) -> str:
         metadata.get("description") or ""
     )
     if description:
-        lines.extend(prompt_section("Description", description, DESCRIPTION_CHAR_LIMIT))
+        lines.extend(
+            markdown_prompt_section(
+                "Description",
+                description,
+                DESCRIPTION_CHAR_LIMIT,
+            )
+        )
 
     framework_mappings = section_body(sections, "Framework Mappings")
     if framework_mappings:
         lines.extend(
-            prompt_section("Framework Mappings", framework_mappings, SECTION_CHAR_LIMIT)
+            markdown_prompt_section(
+                "Framework Mappings",
+                framework_mappings,
+                SECTION_CHAR_LIMIT,
+            )
         )
 
     for heading in KEEP_SECTIONS:
         body = section_body(sections, heading)
         if body:
-            lines.extend(prompt_section(heading, compact_code_blocks(body), SECTION_CHAR_LIMIT))
+            lines.extend(
+                markdown_prompt_section(
+                    heading,
+                    compact_code_blocks(body),
+                    SECTION_CHAR_LIMIT,
+                )
+            )
 
     workflow_body = section_body(sections, "Workflow")
     workflow_blocks = workflow_subsections(workflow_body)
@@ -103,11 +119,7 @@ def compact_cybersec_skill_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(f"- {scenario}")
         lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: legal notices, long scripts/code blocks, "
-        "references, and lower-priority workflow detail were shortened or omitted "
-        "from this prompt. Full skill document remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
     compacted = "\n".join(lines).strip()
     if len(compacted) >= len(content):
         return content
@@ -158,7 +170,40 @@ def workflow_subsections(body: str) -> list[str]:
 
 def compact_workflow_block(block: str) -> str:
     compacted = compact_code_blocks(block)
-    return limit_text(compacted, WORKFLOW_STEP_CHAR_LIMIT)
+    return limit_markdown_preserving_fences(compacted, WORKFLOW_STEP_CHAR_LIMIT)
+
+
+def markdown_prompt_section(heading: str, body: str, char_limit: int) -> list[str]:
+    return [f"## {heading}", limit_markdown_preserving_fences(body, char_limit), ""]
+
+
+def limit_markdown_preserving_fences(text: str, char_limit: int) -> str:
+    text = text.strip()
+    if len(text) <= char_limit:
+        return text
+
+    selected: list[str] = []
+    used_chars = 0
+    in_code_fence = False
+
+    for line in text.splitlines():
+        next_chars = used_chars + len(line) + (1 if selected else 0)
+        if selected and next_chars > char_limit:
+            break
+        if not selected and len(line) > char_limit:
+            selected.append(line[:char_limit].rstrip())
+            used_chars = len(selected[0])
+            break
+
+        selected.append(line)
+        used_chars = next_chars
+        if is_code_fence(line):
+            in_code_fence = not in_code_fence
+
+    if in_code_fence:
+        selected.append("```")
+    selected.append(TRUNCATION_MARKER)
+    return "\n".join(selected).strip()
 
 
 def compact_code_blocks(text: str) -> str:
@@ -168,16 +213,16 @@ def compact_code_blocks(text: str) -> str:
 
     while index < len(source_lines):
         line = source_lines[index]
-        if not line.startswith("```"):
+        if not is_code_fence(line):
             lines.append(line)
             index += 1
             continue
 
         fence = line
-        language = fence.removeprefix("```").strip()
+        language = fence.lstrip().removeprefix("```").strip()
         code_lines: list[str] = []
         index += 1
-        while index < len(source_lines) and not source_lines[index].startswith("```"):
+        while index < len(source_lines) and not is_code_fence(source_lines[index]):
             code_lines.append(source_lines[index])
             index += 1
 
@@ -210,3 +255,7 @@ def trim_code_lines(code_lines: list[str]) -> list[str]:
         used_chars = next_chars
 
     return selected
+
+
+def is_code_fence(line: str) -> bool:
+    return line.lstrip().startswith("```")

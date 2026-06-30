@@ -1,7 +1,10 @@
 from datetime import date
 
 from collectors.schemas import RawDocument
-from synthesizers.prompts.compactors.prompt_compactors import limit_text
+from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
+    limit_text,
+)
 
 
 MAX_CVE_IDS = 80
@@ -54,11 +57,7 @@ def compact_cisa_kev_for_prompt(doc: RawDocument, content: str) -> str:
             lines.append(format_kev_detail(detail))
             lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: the full vendor vulnerability table and "
-        "lower-priority KEV detail blocks were omitted from this prompt. Full KEV "
-        "vendor catalog remains in the raw corpus.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
 
     compacted = "\n".join(lines).strip()
     if len(compacted) >= len(content):

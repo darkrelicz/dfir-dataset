@@ -4,7 +4,10 @@ from collections.abc import Iterable
 import yaml
 
 from collectors.schemas import RawDocument
-from synthesizers.prompts.compactors.prompt_compactors import limit_text
+from synthesizers.prompts.compactors.prompt_compactors import (
+    COMPACTED_SOURCE_NOTE,
+    limit_text,
+)
 
 
 YAML_BLOCK_RE = re.compile(r"```yaml\n(.*?)\n```", re.DOTALL)
@@ -14,6 +17,7 @@ DESCRIPTION_CHAR_LIMIT = 1800
 PARAMETER_DESCRIPTION_CHAR_LIMIT = 260
 PARAMETER_DEFAULT_CHAR_LIMIT = 220
 REFERENCE_LIMIT = 12
+STRUCTURED_DEFAULT_SCAN_LINES = 12
 
 
 def compact_velociraptor_artifact_for_prompt(doc: RawDocument, content: str) -> str:
@@ -95,11 +99,7 @@ def compact_velociraptor_artifact_for_prompt(doc: RawDocument, content: str) -> 
         lines.extend(format_reports(reports))
         lines.append("")
 
-    lines.append(
-        "[Prompt compaction note: duplicate rendered prose and non-query YAML "
-        "boilerplate were shortened. Velociraptor query bodies, exports, "
-        "preconditions, and VQL-like parameter defaults were preserved in full.]"
-    )
+    lines.append(COMPACTED_SOURCE_NOTE)
     return "\n".join(lines).strip()
 
 
@@ -164,9 +164,11 @@ def format_parameters(parameters: list[object]) -> list[str]:
                 + limit_text(description, PARAMETER_DESCRIPTION_CHAR_LIMIT)
             )
         default = string_value(parameter.get("default"))
+        default_block = parameter_default_block(default) if default else None
         if default:
-            if is_vql_like(default):
-                pieces.append("default: see full VQL block below")
+            if default_block:
+                block_label, _ = default_block
+                pieces.append(f"default: see full {block_label} block below")
             else:
                 pieces.append(
                     "default="
@@ -179,8 +181,9 @@ def format_parameters(parameters: list[object]) -> list[str]:
             pieces.append(f"choices={', '.join(list_values(choices))}")
         lines.append("; ".join(pieces))
 
-        if default and is_vql_like(default):
-            append_query_block(lines, f"Parameter Default: {name}", default)
+        if default and default_block:
+            _, language = default_block
+            append_fenced_block(lines, f"Parameter Default: {name}", default, language)
     return lines
 
 
@@ -206,8 +209,17 @@ def append_source_queries(
 
 
 def append_query_block(lines: list[str], heading: str, body: str) -> None:
+    append_fenced_block(lines, heading, body, "vql")
+
+
+def append_fenced_block(
+    lines: list[str],
+    heading: str,
+    body: str,
+    language: str,
+) -> None:
     lines.append(f"## {heading}")
-    lines.append("```vql")
+    lines.append(f"```{language}")
     lines.append(body.rstrip())
     lines.append("```")
     lines.append("")
@@ -215,6 +227,92 @@ def append_query_block(lines: list[str], heading: str, body: str) -> None:
 
 def is_vql_like(text: str) -> bool:
     return bool(VQL_RE.search(text))
+
+
+def parameter_default_block(text: str) -> tuple[str, str] | None:
+    if is_vql_like(text):
+        return "VQL", "vql"
+    if is_structured_default(text):
+        return "structured default", structured_default_language(text)
+    return None
+
+
+def is_structured_default(text: str) -> bool:
+    stripped = text.strip()
+    if len(stripped) <= PARAMETER_DEFAULT_CHAR_LIMIT:
+        return False
+
+    lines = structured_lines(stripped)
+    if not lines:
+        return False
+    if stripped.startswith(("[", "{")):
+        return True
+    if "%{" in stripped:
+        return True
+    if "HKEY_" in stripped and (
+        "," in stripped or "*" in stripped or "\n" in stripped
+    ):
+        return True
+    if stripped.count("|") >= 4:
+        return True
+    if looks_like_yara(lines):
+        return True
+    if any(
+        line.startswith(("Glob", "KeyGlob", "remappings:"))
+        for line in lines[:STRUCTURED_DEFAULT_SCAN_LINES]
+    ):
+        return True
+    if csv_row_count(lines[:STRUCTURED_DEFAULT_SCAN_LINES]) >= 2:
+        return True
+    if yamlish_line_count(lines[:STRUCTURED_DEFAULT_SCAN_LINES]) >= 2:
+        return True
+    return path_glob_line_count(lines[:STRUCTURED_DEFAULT_SCAN_LINES]) >= 2
+
+
+def structured_default_language(text: str) -> str:
+    lines = structured_lines(text)
+    stripped = text.lstrip()
+    if looks_like_yara(lines):
+        return "yara"
+    if stripped.startswith(("[", "{")):
+        return "json"
+    if csv_row_count(lines[:STRUCTURED_DEFAULT_SCAN_LINES]) >= 2:
+        return "csv"
+    if yamlish_line_count(lines[:STRUCTURED_DEFAULT_SCAN_LINES]) >= 2:
+        return "yaml"
+    return "text"
+
+
+def structured_lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def looks_like_yara(lines: list[str]) -> bool:
+    return any(
+        line.startswith("rule ")
+        for line in lines[:STRUCTURED_DEFAULT_SCAN_LINES]
+    )
+
+
+def csv_row_count(lines: list[str]) -> int:
+    return sum(
+        1
+        for line in lines
+        if "," in line and not line.startswith(("http://", "https://"))
+    )
+
+
+def yamlish_line_count(lines: list[str]) -> int:
+    return sum(
+        1
+        for line in lines
+        if line.startswith("- ") or (":" in line and not line.startswith(("http", "%{")))
+    )
+
+
+def path_glob_line_count(lines: list[str]) -> int:
+    markers = ("/*", "/**", ":/", ":\\", "*.")
+    return sum(1 for line in lines if any(marker in line for marker in markers))
 
 
 def format_reports(reports: list[object]) -> list[str]:
