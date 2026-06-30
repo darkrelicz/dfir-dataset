@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from collectors.schemas import RawDocument
-from synthesizers.source_profiles import DEFAULT_PILOT_TARGETS
+from synthesizers.source_profiles import DEFAULT_PILOT_TARGETS, DEFAULT_SUBSET_TARGETS
 
 
 def _richness_bucket(doc: RawDocument) -> int:
@@ -39,11 +39,10 @@ def _sample_source_documents(docs: list[RawDocument], limit: int) -> list[RawDoc
     return selected
 
 
-def sample_pilot_documents(
+def sample_documents_by_targets(
     docs: list[RawDocument],
-    targets: dict[str, int] | None = None,
+    targets: dict[str, int],
 ) -> list[RawDocument]:
-    targets = targets or DEFAULT_PILOT_TARGETS
     by_source: dict[str, list[RawDocument]] = defaultdict(list)
     seen_doc_ids: set[str] = set()
 
@@ -58,3 +57,17 @@ def sample_pilot_documents(
         selected.extend(_sample_source_documents(by_source.get(source, []), limit))
 
     return selected
+
+
+def sample_pilot_documents(
+    docs: list[RawDocument],
+    targets: dict[str, int] | None = None,
+) -> list[RawDocument]:
+    return sample_documents_by_targets(docs, targets or DEFAULT_PILOT_TARGETS)
+
+
+def sample_subset_documents(
+    docs: list[RawDocument],
+    targets: dict[str, int] | None = None,
+) -> list[RawDocument]:
+    return sample_documents_by_targets(docs, targets or DEFAULT_SUBSET_TARGETS)

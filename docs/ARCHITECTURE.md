@@ -73,6 +73,7 @@ Current Phase 3 scaffold includes:
 - Source profile policy is data-driven in `configs/source_profiles.yaml`, while `synthesizers/source_profiles.py` loads and validates that config.
 - Prompt/category/difficulty policy and prompt-template asset preflight live in `synthesizers/prompt_policy.py`.
 - Category and difficulty distribution targets are read from `configs/task_categories.yaml`; category assignment balances planned pair counts against those targets while respecting each source profile's allowed categories.
+- In addition to `pilot` and `full`, synthesis supports `subset` mode for budget-aware training runs. `subset_targets` in `configs/source_profiles.yaml` select a representative source/content/richness-aware slice that currently renders 6,494 one-pair prompts across all 16 sources.
 - Document selection, category assignment, difficulty assignment, and prompt-plan construction live in `synthesizers/planner.py`; `PromptBuilder` renders prompts from those explicit planning choices.
 - Raw Phase 2 documents remain complete; `synthesizers/prompts/compactors/prompt_compactors.py` creates prompt-ready source views and dynamically loads source compactors named `synthesizers/prompts/compactors/<source>_compactor.py` exposing `compact_for_prompt(doc, content)`.
 - Source-specific compactors currently include `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.

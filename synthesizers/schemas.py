@@ -49,7 +49,7 @@ class GenerationManifest(BaseModel):
     """Audit metadata for a synthesis run or dry-run prompt render."""
 
     run_id: str
-    mode: Literal["pilot", "full", "dry_run"]
+    mode: Literal["pilot", "subset", "full", "dry_run"]
     model: str
     created_at: datetime
     source_doc_count: int

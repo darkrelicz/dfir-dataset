@@ -51,9 +51,10 @@
 3. Run a one-prompt Gemini smoke test and inspect `accepted.jsonl`, `rejected.jsonl`, `raw_outputs.jsonl`, and `generation_manifest.json`.
 4. Run the planned source-aware Gemini pilot if the smoke test passes.
 5. Complete or rerun the current pilot with the latest grounding validator if `gemini_pilot_8` was started before the final prompt/validator update.
-6. Review 100% of pilot accepted and rejected rows before full synthesis.
-7. Add the next high-value source compactors based on observed prompt sizes and review results.
-8. Implement Phase 4 deterministic and heuristic quality filtering before packaging.
+6. For the shortened timeline, use `--mode subset` as the main training-data generation path; it currently renders 6,494 one-pair prompts across all 16 sources.
+7. Review 100% of pilot accepted and rejected rows before subset/full synthesis.
+8. Add only blocking source compactors based on observed prompt sizes and review results.
+9. Implement minimal Phase 4 deterministic filtering before packaging and training.
 
 ## Important Decisions
 
@@ -126,6 +127,12 @@ python -m scripts.collect_all
 
 ```bash
 .venv/bin/python -m scripts.synthesize run --mode pilot --output-dir data/synthesized/pilot
+```
+
+### Run Representative Subset Synthesis
+
+```bash
+.venv/bin/python -m scripts.synthesize run --mode subset --output-dir data/synthesized/gemini_subset_1
 ```
 
 ### Run Full Synthesis

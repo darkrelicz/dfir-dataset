@@ -19,7 +19,7 @@ def main():
     render.add_argument("--synthesis-config", default="configs/synthesis.yaml")
     render.add_argument("--task-config", default="configs/task_categories.yaml")
     render.add_argument("--output-dir", default="data/synthesized/dry_run")
-    render.add_argument("--mode", choices=["pilot", "full"], default="pilot")
+    render.add_argument("--mode", choices=["pilot", "subset", "full"], default="pilot")
     render.add_argument("--limit", type=int)
     render.add_argument(
         "--write-prompt-files",
@@ -36,7 +36,7 @@ def main():
     run.add_argument("--task-config", default="configs/task_categories.yaml")
     run.add_argument("--quality-config", default="configs/quality.yaml")
     run.add_argument("--output-dir", default="data/synthesized/gemini_run")
-    run.add_argument("--mode", choices=["pilot", "full"], default="pilot")
+    run.add_argument("--mode", choices=["pilot", "subset", "full"], default="pilot")
     run.add_argument("--limit", type=int)
     run.add_argument("--env-file", default=".env")
     run.add_argument(
@@ -44,20 +44,23 @@ def main():
         type=float,
         default=0.20,
         help=(
-            "In full mode, stop generation when current-run rejected prompts "
-            "reach this rate after --min-rejection-check attempts"
+            "In full/subset mode, stop generation when current-run rejected "
+            "prompts reach this rate after --min-rejection-check attempts"
         ),
     )
     run.add_argument(
         "--min-rejection-check",
         type=int,
         default=20,
-        help="In full mode, minimum attempted prompts before checking rejection rate",
+        help=(
+            "In full/subset mode, minimum attempted prompts before checking "
+            "rejection rate"
+        ),
     )
     run.add_argument(
         "--disable-rejection-circuit-breaker",
         action="store_true",
-        help="Disable full-mode early stop based on current-run rejection rate",
+        help="Disable full/subset early stop based on current-run rejection rate",
     )
     run.add_argument(
         "--skip-present",

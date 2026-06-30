@@ -235,3 +235,23 @@ pilot_targets:
   loldrivers: 10
   ossem_data_dicts: 10
   cybersec_skills: 15
+
+subset_targets:
+  # Budget-aware representative training subset.
+  # With one pair per document, these targets yield about 6,494 pairs.
+  mitre_attack: 500
+  sigma_rules: 800
+  atomic_red_team: 500
+  cisa_advisories: 900
+  volatility3_docs: 194
+  mitre_atlas: 250
+  cisa_kev: 250
+  kape_files: 300
+  hayabusa_rules: 800
+  lolbas_gtfobins: 300
+  forensic_artifacts: 300
+  velociraptor_artifacts: 300
+  hijacklibs: 250
+  loldrivers: 300
+  ossem_data_dicts: 250
+  cybersec_skills: 300

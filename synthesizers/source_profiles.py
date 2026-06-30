@@ -76,14 +76,15 @@ def _build_content_type_profiles(config: dict[str, Any]) -> dict[str, ContentTyp
     return profiles
 
 
-def _build_pilot_targets(config: dict[str, Any]) -> dict[str, int]:
+def _build_source_targets(config: dict[str, Any]) -> dict[str, int]:
     return {str(source): int(limit) for source, limit in config.items()}
 
 
 _PROFILE_CONFIG = _load_profile_config()
 SOURCE_PROFILES = _build_source_profiles(_PROFILE_CONFIG.get("source_profiles", {}))
 CONTENT_TYPE_PROFILES = _build_content_type_profiles(_PROFILE_CONFIG.get("content_type_profiles", {}))
-DEFAULT_PILOT_TARGETS = _build_pilot_targets(_PROFILE_CONFIG.get("pilot_targets", {}))
+DEFAULT_PILOT_TARGETS = _build_source_targets(_PROFILE_CONFIG.get("pilot_targets", {}))
+DEFAULT_SUBSET_TARGETS = _build_source_targets(_PROFILE_CONFIG.get("subset_targets", {}))
 
 
 def profile_for_source(source: str) -> SourceProfile:

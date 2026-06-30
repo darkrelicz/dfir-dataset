@@ -6,7 +6,7 @@ from collectors.schemas import RawDocument
 from synthesizers.io import load_raw_documents
 from synthesizers.prompt_builder import PromptBuilder
 from synthesizers.prompt_policy import DIFFICULTY_ORDER
-from synthesizers.sampler import sample_pilot_documents
+from synthesizers.sampler import sample_pilot_documents, sample_subset_documents
 from synthesizers.schemas import Difficulty, PromptRecord
 from utils.text import stable_index
 
@@ -26,6 +26,8 @@ def select_documents(
 
     if mode == "pilot":
         docs = sample_pilot_documents(docs)
+    elif mode == "subset":
+        docs = sample_subset_documents(docs)
     else:
         docs = sorted(docs, key=lambda doc: (doc.source, doc.doc_id))
 

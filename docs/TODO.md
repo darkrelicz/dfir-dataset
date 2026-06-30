@@ -6,7 +6,7 @@
 - Inspect dry-run prompts for CISA advisories and confirm compacted source views still preserve enough evidence for grounded answers.
 - Inspect large Velociraptor prompts separately; query bodies intentionally bypass shared source truncation, so cost control should come from sampling or pair caps rather than capping VQL.
 - Decide the next source compactors based on prompt-size outliers. Current high-value candidates are selected large rule/artifact sources.
-- Reassess `configs/synthesis.yaml` pair targets only after the budget-safe one-pair-per-document run has known cost and quality; current full-pair estimate is 20,347 pairs across 20,347 raw documents.
+- Use `--mode subset` for the budget-aware training run; current configured subset renders 6,494 one-pair prompts across all 16 sources.
 - Complete or rerun `data/synthesized/gemini_pilot_8/` after the latest grounding/tag validator update, then compare rejection categories against pilot 7.
 
 ## Phase 3 Pilot
@@ -25,6 +25,7 @@
 ## Phase 3 Full Generation
 
 - Start full Gemini generation only after the pilot has acceptable validator pass rate and manual quality.
+- If budget is limited, treat `--mode subset` as the main training-data generation path and leave full-corpus generation to the successor.
 - Treat Phase 3 `accepted.jsonl` as candidate synthesis output, not final training data.
 - Preserve `prompts.jsonl`, `raw_outputs.jsonl`, `rejected.jsonl`, and `generation_manifest.json` for audit and retry analysis.
 - Use `--skip-present` when resuming interrupted or high-demand Gemini runs, since raw output alone is not terminal and accepted/rejected rows are keyed by prompt hash and model.

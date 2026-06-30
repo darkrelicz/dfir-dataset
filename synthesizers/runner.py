@@ -31,6 +31,9 @@ from utils.io import append_jsonl, load_yaml, write_json, write_jsonl
 from utils.text import safe_filename
 
 
+CIRCUIT_BREAKER_MODES = {"full", "subset"}
+
+
 def load_env_file(path: Path) -> None:
     if not path.exists():
         return
@@ -254,7 +257,7 @@ def rejection_circuit_breaker_reason(
     attempted_prompts: int,
     rejected_prompts: int,
 ) -> str | None:
-    if args.mode != "full":
+    if args.mode not in CIRCUIT_BREAKER_MODES:
         return None
     if args.disable_rejection_circuit_breaker:
         return None
@@ -273,7 +276,7 @@ def rejection_circuit_breaker_reason(
 
 
 def validate_rejection_circuit_breaker_args(args: argparse.Namespace) -> str | None:
-    if args.mode != "full":
+    if args.mode not in CIRCUIT_BREAKER_MODES:
         return None
     if args.min_rejection_check < 1:
         return "--min-rejection-check must be at least 1"
@@ -514,7 +517,7 @@ def run_generation(args: argparse.Namespace) -> int:
         f"Present prompts skipped: {len(already_completed)}",
         (
             "Rejection circuit breaker inactive in pilot mode."
-            if args.mode != "full"
+            if args.mode not in CIRCUIT_BREAKER_MODES
             else "Rejection circuit breaker disabled."
             if args.disable_rejection_circuit_breaker
             else (
