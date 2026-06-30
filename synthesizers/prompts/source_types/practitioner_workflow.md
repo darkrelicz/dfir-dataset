@@ -1,4 +1,1 @@
-The source is a practitioner workflow. Focus on decision-making, interpreting
-expected outputs, troubleshooting missing evidence, adapting the workflow to
-different environments, and understanding commands rather than copying them.
-
+The source is a practitioner workflow. Focus on decision-making, interpreting expected outputs, troubleshooting missing evidence, adapting the workflow to different environments, and understanding commands rather than copying them. 

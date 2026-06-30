@@ -1,5 +1,1 @@
-The source is a detection rule. Focus on what the rule detects, why the
-behavior is suspicious, true-positive versus false-positive conditions, and
-what corroborating evidence an analyst should seek. Do not invent artifact
-details beyond what the rule references.
-
+The source is a detection rule. Focus on what the rule detects, why the behavior is suspicious, true-positive versus false-positive conditions, and what corroborating evidence an analyst should seek. Do not invent artifact details beyond what the rule references.

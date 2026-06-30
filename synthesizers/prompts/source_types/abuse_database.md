@@ -1,5 +1,1 @@
-The source documents abuse of legitimate binaries, libraries, drivers, or
-system components. Focus on how abuse would appear in artifacts, how to
-distinguish legitimate from suspicious use, and detection opportunities. Avoid
-padding thin entries with invented scenarios.
-
+The source documents abuse of legitimate binaries, libraries, drivers, or system components. Focus on how abuse would appear in artifacts, how to distinguish legitimate from suspicious use, and detection opportunities. Avoid padding thin entries with invented scenarios.

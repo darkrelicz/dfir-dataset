@@ -1,5 +1,1 @@
-Generate pairs that interpret or design detection logic. Emphasize what the
-rule or query detects, required telemetry, false positives, tuning ideas,
-coverage gaps, and translations to SIEM-style thinking when supported by the
-source.
-
+Generate pairs that interpret or design detection logic. Emphasize what the rule or query detects, required telemetry, false positives, tuning ideas, coverage gaps, and translations to SIEM-style thinking when supported by the source.
