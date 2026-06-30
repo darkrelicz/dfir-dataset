@@ -41,6 +41,7 @@ class PromptRecord(BaseModel):
     category: str
     difficulty: Difficulty
     pairs_requested: int
+    taxonomy_refs: list[str] = Field(default_factory=list)
     prompt: str
 
 

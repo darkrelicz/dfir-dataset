@@ -281,7 +281,9 @@ def validate_generated_pairs(
 
     for index, item in enumerate(decoded):
         try:
-            pair = InstructionPair.model_validate(item)
+            pair = InstructionPair.model_validate(
+                _with_prompt_metadata(item, prompt_record)
+            )
         except Exception as exc:
             issues.append(
                 GeneratedPairIssue(
@@ -312,6 +314,24 @@ def normalize_generated_json_output(raw_output: str) -> str:
     if match:
         return match.group("body").strip()
     return output
+
+
+def _with_prompt_metadata(item: object, prompt_record: PromptRecord) -> object:
+    if not isinstance(item, dict):
+        return item
+
+    normalized = dict(item)
+    normalized.update(
+        {
+            "category": prompt_record.category,
+            "difficulty": prompt_record.difficulty,
+            "source_doc_id": prompt_record.source_doc_id,
+            "source": prompt_record.source,
+            "taxonomy_refs": list(prompt_record.taxonomy_refs),
+            "reasoning_format": "canonical_reasoning_v1",
+        }
+    )
+    return normalized
 
 
 def _validate_pair_against_source(

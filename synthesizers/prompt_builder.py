@@ -147,6 +147,7 @@ class PromptBuilder:
             category=category,
             difficulty=difficulty,
             pairs_requested=pairs_requested,
+            taxonomy_refs=list(taxonomy_refs),
             prompt=prompt,
         )
 
