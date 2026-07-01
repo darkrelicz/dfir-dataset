@@ -81,6 +81,10 @@
 - Phase 3 full generation must not begin until the Gemini pilot has acceptable validator pass rate and acceptable manual quality.
 - `accepted.jsonl` from Phase 3 is only candidate synthesis output. It must pass Phase 4 quality validation before packaging or training.
 - Phase 4 quality validation should be primarily deterministic and heuristic, with AI-assisted judging and manual review used for fuzzy quality issues such as weak reasoning or unsupported claims.
+- Phase 4 must not depend on Phase 3's generated-output validators for differentiation. It has independent row-level gates for schema, source provenance, taxonomy refs, ATT&CK/ATLAS IDs, reasoning links, grounding, invented indicators, source specificity, operational value, and rubric scoring, plus dataset-level gates for near-duplicates and distribution audits. Only `filtered.jsonl` is eligible for Phase 5 packaging.
+- Phase 4 ATT&CK/ATLAS validation uses local reference caches when present (`data/raw/.cache/enterprise-attack.json` and `data/raw/.repos/atlas-data/dist/ATLAS.yaml`) with raw-corpus fallbacks. This keeps validation reproducible and offline while avoiding false rejections from the reduced prompt subset.
+- The old `10k-15k` filtered-pair target belongs to the full-synthesis plan. Under the shortened timeline and reduced subset budget, the gate should optimize for coverage, factuality, and reviewability rather than forcing the old pair count.
+- Phase 4 should expose sub-stage progress through normal Python logging. `scripts/quality_filter.py` defaults to `--log-level INFO` and logs config loading, output preparation, raw/reference loading, row-validation progress, dataset audits, JSONL writes, manual spot-check sampling, and manifest writing.
 - Phase 5 packaging consumes Phase 4 filtered output, not raw Phase 3 `accepted.jsonl`.
 
 ## Training And Hosting

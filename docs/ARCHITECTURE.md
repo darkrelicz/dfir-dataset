@@ -8,7 +8,7 @@ This repository is a Python dataset pipeline, not a website application. No fron
 
 - Language: Python 3.11+
 - Packaging: `pyproject.toml` with setuptools
-- CLI entrypoint: `dfir-collect = scripts.collect_all:main`
+- CLI entrypoints: `dfir-collect`, `dfir-synthesize`, and `dfir-quality`
 - Core libraries: `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`
 - Tests are configured for `pytest`, but no `tests/` tree is currently present.
 
@@ -25,10 +25,12 @@ This repository is a Python dataset pipeline, not a website application. No fron
 - `configs/packaging.yaml`: Planned packaging configuration.
 - `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt policy validation, prompt planning, prompt rendering, prompt-time source compaction, pilot sampling, model clients, schemas, run-state helpers, generation execution, and validation helpers.
 - `scripts/synthesize.py`: Thin CLI for raw corpus validation, no-API prompt rendering, and Gemini-backed instruction-pair generation.
+- `quality/`: Phase 4 quality filtering for Phase 3 accepted pairs, including independent row validators, local ATT&CK/ATLAS STIX/YAML reference checks, tool allowlist checks, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/tactic/taxonomy audits, manual spot-check sampling, manifest output, and stage-level logging.
+- `scripts/quality_filter.py`: Thin CLI for running the Phase 4 quality filter against a Phase 3 `accepted.jsonl`; supports `--log-level` with `INFO` stage logs by default.
 - `docs/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
 - `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
 
-Planned but not yet implemented packages from the project plan: `quality/`, `packaging/`, and `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
+Planned but not yet implemented packages from the project plan: `packaging/` and `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
 
 ## Data Contracts
 
@@ -97,7 +99,7 @@ Prompt construction uses two guidance layers plus one source-content layer: coar
 
 The generated-pair rejection gates catch invalid JSON, strict schema failures including extra fields, too many or too few pairs, invalid ATT&CK/ATLAS ID formats, broken `<reasoning>` links, duplicate reasoning IDs, missing caveats, empty evidence/analysis/caveat lines, missing final answers, grounding/tag mismatches between `grounding` and `[GENERAL KNOWLEDGE]`, and concrete indicators not present in the source document. Generated `source_doc_id`, `source`, `category`, `difficulty`, `taxonomy_refs`, and `reasoning_format` are overwritten from the prompt record before these checks, because they are deterministic provenance fields.
 
-Phase 4 quality assurance should validate structure, ATT&CK/ATLAS IDs, taxonomy refs, tool names, `<reasoning>` link integrity, near-duplicates, source balance, difficulty balance, and the 57-category taxonomy heatmap.
+The Phase 4 quality gate consumes Phase 3 `accepted.jsonl` and writes `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` under `data/quality/<run>/`. It does not call Phase 3's generated-output validators. Instead, it independently validates candidate row shape, source provenance, taxonomy refs, ATT&CK/ATLAS IDs against local STIX/YAML reference caches when present, tool names against source text and a configurable allowlist, `<reasoning>` link integrity and step count, grounding/tag consistency, final-answer presence, concrete indicators absent from source, source-specificity, operational signal, rubric score, near-duplicates, source balance, category balance, difficulty balance, ATT&CK tactic coverage, ATLAS tactic coverage, and taxonomy heatmap density. Objective failures go to `rejected.jsonl`; fuzzy semantic concerns such as broad unsupported claims or tagged general-knowledge indicators go to `review_queue.jsonl`. The CLI logs config loading, output setup, raw/reference loading, row validation progress, dataset gates, output writes, spot-check sampling, and manifest writing so users can see which sub-stage is complete.
 
 Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. The canonical export keeps `<reasoning>`; a model-specific GLM export may convert it to `<think>` only if needed. 
 
@@ -111,6 +113,6 @@ The remaining workflow is intentionally gated:
 
 1. Phase 3 pilot: run Gemini on the planned pilot sample, then manually review 100% of pilot output. Fix prompts, validators, source profiles, or pair counts before continuing.
 2. Phase 3 full generation: run the full Gemini job only after the pilot has acceptable pass rate and manual quality. `accepted.jsonl` is the input to Phase 4, not final training data.
-3. Phase 4 quality validation: consume `accepted.jsonl`, apply deterministic checks, heuristic scoring, weak-reasoning and unsupported-claim checks, near-duplicate detection, balance audits, and targeted review. Produce a filtered dataset plus review and rejection manifests.
+3. Phase 4 quality validation: consume `accepted.jsonl`, run the independent deterministic, heuristic, duplicate, and distribution gates, then adjudicate `review_queue.jsonl`. Produce a filtered dataset plus review and rejection manifests.
 4. Phase 5 packaging: consume the Phase 4 filtered dataset, split by `source_doc_id`, and write GLM-friendly train/validation/test JSONL plus a packaging manifest.
 5. Phase 6 fine-tuning: run baseline evaluation, train LoRA SFT on GLM-4.7-Flash, rerun evaluation, compare against baseline, and integrate into Shepherd only if results improve.

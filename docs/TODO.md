@@ -8,6 +8,8 @@
 - Decide the next source compactors based on prompt-size outliers. Current high-value candidates are selected large rule/artifact sources.
 - Use `--mode subset` for the budget-aware training run; current configured subset renders 6,494 one-pair prompts across all 16 sources.
 - Complete or rerun `data/synthesized/gemini_pilot_8/` after the latest grounding/tag validator update, then compare rejection categories against pilot 7.
+- Rerun Phase 4 quality filtering with `--log-level INFO` after the subset generation completes, then review `data/quality/gemini_subset_1/review_queue.jsonl` before packaging.
+- Review the 100-row manual sample at `data/quality/gemini_subset_1/manual_spot_check_sample.jsonl`.
 
 ## Phase 3 Pilot
 
@@ -32,11 +34,13 @@
 
 ## Phase 4 Quality
 
-- Reuse Phase 3 validator logic where appropriate, then implement Phase 4 dataset-level deterministic checks for schema, source provenance, taxonomy validity, reasoning-link integrity, ATT&CK/ATLAS ID format, invented indicators, and final-answer consistency.
-- Add heuristic quality scoring for grounding, specificity, reasoning strength, caveat quality, operational usefulness, source balance, difficulty balance, and taxonomy coverage.
-- Add unsupported-claim review for cases where a response claims `source_only` but uses domain knowledge without an explicit `[GENERAL KNOWLEDGE]` tag.
-- Add near-duplicate detection and overrepresented-source/category audits.
-- Create `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, and `quality_manifest.json`.
+- Keep Phase 4 independent from Phase 3 generated-output validators. Implemented in `quality/`.
+- Deterministic checks for schema, source provenance, taxonomy validity, reasoning-link integrity, ATT&CK/ATLAS ID validity, tool names, invented indicators, and final-answer consistency are implemented. Review/tune them only after examining false positives.
+- Heuristic quality scoring for grounding, specificity, reasoning strength, caveat quality, operational usefulness, source balance, difficulty balance, and taxonomy coverage is implemented. Tune thresholds after reviewing the subset run.
+- Review unsupported-claim cases where a response claims `source_only` but uses domain knowledge without an explicit `[GENERAL KNOWLEDGE]` tag. Current code sends broad claim terms absent from the source to `review_queue.jsonl`.
+- Near-duplicate detection, source/category/difficulty/tactic/taxonomy audits, and manual spot-check sampling are implemented; tune thresholds in `configs/quality.yaml` after reviewing the subset run.
+- `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` are implemented via `scripts/quality_filter.py`.
+- Stage-level quality logs are implemented; keep `--log-level INFO` for long runs unless quiet output is explicitly needed.
 - Use AI-assisted judging and manual review for fuzzy quality issues such as weak reasoning or unsupported claims, not as the only quality gate.
 
 ## Phase 5 Packaging

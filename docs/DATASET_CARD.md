@@ -3,9 +3,9 @@
 ## Dataset Summary
 
 - Name: Shepherd DFIR Dataset
-- Version:
-- Date:
-- Owner:
+- Version: pre-packaging reduced subset snapshot
+- Date: 2026-07-01
+- Owner: current project owner
 - Intended use: Fine-tuning Shepherd's DFIR reasoning layer
 - Hosting: Local DGX Sparks filesystem unless changed
 - Canonical reasoning format: `<reasoning>`
@@ -22,36 +22,36 @@ Describe what the dataset is designed to teach the model:
 
 ## Dataset Sources
 
+Current source counts below use the Phase 2 raw corpus and the latest Phase 4 reduced-subset quality snapshot at `data/quality/gemini_subset_1/`.
+
 | Source | Raw Docs | Filtered Pairs | License/Attribution Notes | Included |
 |---|---:|---:|---|---|
-| `mitre_attack` |  |  |  |  |
-| `sigma_rules` |  |  |  |  |
-| `atomic_red_team` |  |  |  |  |
-| `cisa_advisories` |  |  |  |  |
-| `volatility3_docs` |  |  |  |  |
-| `mitre_atlas` |  |  |  |  |
-| `cisa_kev` |  |  |  |  |
-| `kape_files` |  |  |  |  |
-| `hayabusa_rules` |  |  |  |  |
-| `lolbas_gtfobins` |  |  |  |  |
-| `forensic_artifacts` |  |  |  |  |
-| `velociraptor_artifacts` |  |  |  |  |
-| `hijacklibs` |  |  |  |  |
-| `loldrivers` |  |  |  |  |
-| `ossem_data_dicts` |  |  |  |  |
-| `cybersec_skills` |  |  |  |  |
+| `mitre_attack` | 697 | 137 | Preserve MITRE ATT&CK attribution | Yes |
+| `sigma_rules` | 3,111 | 143 | Preserve Sigma rule attribution | Yes |
+| `atomic_red_team` | 1,811 | 112 | Preserve Atomic Red Team attribution | Yes |
+| `cisa_advisories` | 3,849 | 138 | Public CISA advisory content | Yes |
+| `volatility3_docs` | 194 | 46 | Preserve Volatility documentation attribution | Yes |
+| `mitre_atlas` | 262 | 42 | Preserve MITRE ATLAS attribution | Yes |
+| `cisa_kev` | 270 | 17 | Public CISA KEV catalog content | Yes |
+| `kape_files` | 811 | 92 | Preserve KAPE Files attribution | Yes |
+| `hayabusa_rules` | 4,839 | 112 | Preserve Hayabusa rule attribution | Yes |
+| `lolbas_gtfobins` | 720 | 51 | Preserve LOLBAS/GTFOBins attribution | Yes |
+| `forensic_artifacts` | 731 | 67 | Preserve ForensicArtifacts attribution | Yes |
+| `velociraptor_artifacts` | 437 | 81 | Preserve Velociraptor documentation attribution | Yes |
+| `hijacklibs` | 590 | 43 | Preserve HijackLibs attribution | Yes |
+| `loldrivers` | 656 | 5 | Preserve LOLDrivers attribution | Yes |
+| `ossem_data_dicts` | 699 | 43 | Preserve OSSEM data dictionary attribution | Yes |
+| `cybersec_skills` | 670 | 5 | Preserve upstream skills attribution | Yes |
 
 ## Generation Methodology
 
-Summarize:
-
-- Raw source collection process:
-- Teacher model:
-- Prompt structure:
-- Pilot procedure:
-- Full synthesis procedure:
-- Rejection gates:
-- Quality filtering:
+- Raw source collection process: 16 collectors normalize public DFIR/cybersecurity sources into `RawDocument` JSONL under `data/raw/`.
+- Teacher model: Gemini 2.5 Flash through the Google GenAI SDK with structured JSON output.
+- Prompt structure: base prompt, task-category instructions, source/content-type instructions, deterministic taxonomy refs, and prompt-time source compaction.
+- Pilot procedure: smoke and pilot gates are still required before treating full generation as final.
+- Current synthesis procedure: budget-aware `subset` mode is the main shortened-timeline path; the latest quality snapshot checked 6,023 Phase 3 candidate pairs.
+- Rejection gates: Phase 3 catches invalid JSON/schema/reasoning/provenance/grounding/indicator failures before Phase 4.
+- Quality filtering: Phase 4 independently checks schema, provenance, taxonomy, ATT&CK/ATLAS IDs, tool names, reasoning links, grounding, invented indicators, rubric score, near-duplicates, balance, tactic coverage, taxonomy coverage, and manual spot-check sampling.
 
 ## Dataset Structure
 
@@ -105,31 +105,31 @@ Splits must be by `source_doc_id` to avoid leakage.
 
 | Category | Records | Percent |
 |---|---:|---:|
-| `artifact_analysis` |  |  |
-| `ttp_identification` |  |  |
-| `triage_and_hunting` |  |  |
-| `detection_engineering` |  |  |
-| `report_generation` |  |  |
+| `artifact_analysis` | 417 | 36.8% |
+| `ttp_identification` | 229 | 20.2% |
+| `triage_and_hunting` | 166 | 14.6% |
+| `detection_engineering` | 240 | 21.2% |
+| `report_generation` | 82 | 7.2% |
 
 ### Difficulty Distribution
 
 | Difficulty | Records | Percent |
 |---|---:|---:|
-| `junior` |  |  |
-| `mid` |  |  |
-| `senior` |  |  |
+| `junior` | 430 | 37.9% |
+| `mid` | 547 | 48.2% |
+| `senior` | 157 | 13.8% |
 
 ### Taxonomy Coverage
 
-Link to `docs/COVERAGE_MAP.md` and summarize the most important strengths/gaps.
+See `docs/COVERAGE_MAP.md`. The latest Phase 4 snapshot covers 26 of 57 configured taxonomy IDs. Strongest filtered coverage is detection coverage (`S3`), threat-intel operations (`TI1`), Windows execution/disk/event-log categories (`W1`, `W4`, `W8`), living-off-the-land (`AF3`), and C2/beaconing (`N4`). Missing IDs remain concentrated in cloud, SaaS/file-storage, legal/chain-of-custody, container, OT/IoT, malware-analysis, and some network categories.
 
 ## Quality Controls
 
-- Deterministic validators:
-- Heuristic scoring:
-- Near-duplicate checks:
-- Manual spot-check:
-- Known rejected patterns:
+- Deterministic validators: schema, source provenance, category/difficulty, taxonomy refs, ATT&CK/ATLAS IDs against local reference caches, tool names, reasoning links, grounding/tag consistency, final-answer consistency, and invented concrete indicators.
+- Heuristic scoring: weighted factual accuracy, reasoning quality, operational relevance, specificity, and completeness with accept/review thresholds from `configs/quality.yaml`.
+- Near-duplicate checks: current Phase 4 snapshot found zero pairs above the 0.8 Jaccard threshold.
+- Manual spot-check: `data/quality/gemini_subset_1/manual_spot_check_sample.jsonl` contains 100 pending rows.
+- Known rejected/review patterns: invented indicators, broad unsupported claims, mapping inconsistencies, low operational value, invalid ATT&CK/ATLAS IDs, and reasoning-link failures.
 
 ## Intended Use
 
@@ -167,7 +167,12 @@ This dataset is not intended for:
 ```bash
 .venv/bin/python -m scripts.collect_all
 .venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw
-.venv/bin/python -m scripts.synthesize run --mode full --output-dir data/synthesized/full
+.venv/bin/python -m scripts.synthesize run --mode subset --output-dir data/synthesized/gemini_subset_1
+.venv/bin/python -m scripts.quality_filter \
+  --input data/synthesized/gemini_subset_1/accepted.jsonl \
+  --raw-dir data/raw \
+  --output-dir data/quality/gemini_subset_1 \
+  --log-level INFO
 ```
 
-Add Phase 4 and Phase 5 commands once implemented.
+Phase 5 packaging is not implemented yet; packaged train/validation/test splits are intentionally blank above.

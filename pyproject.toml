@@ -21,6 +21,7 @@ dependencies = [
 [project.scripts]
 dfir-collect = "scripts.collect_all:main"
 dfir-synthesize = "scripts.synthesize:main"
+dfir-quality = "scripts.quality_filter:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]

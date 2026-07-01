@@ -89,6 +89,7 @@ taxonomy:
 
 scoring:
   threshold: 3.5
+  review_threshold: 3.0
   weights:
     factual_accuracy: 0.25
     reasoning_quality: 0.25
@@ -96,6 +97,90 @@ scoring:
     specificity: 0.15
     completeness: 0.15
 
+reasoning:
+  min_steps: 4
+  max_steps: 24
+
 deduplication:
-  method: "minhash"
+  method: "jaccard_inverted_index"
   jaccard_threshold: 0.8
+
+balance:
+  max_source_share: 0.50
+  distribution_tolerance: 0.05
+
+manual_spot_check:
+  sample_size: 100
+  seed: 1337
+
+tools:
+  allowlist:
+    - 7-Zip
+    - AADInternals
+    - auditd
+    - bash
+    - BloodHound
+    - bstrings
+    - Carbon Black
+    - certutil
+    - certutil.exe
+    - cmd
+    - cmd.exe
+    - Cobalt Strike
+    - Cowrie
+    - curl
+    - curl.exe
+    - dd
+    - DFIR ORC
+    - DSInternals
+    - Event Viewer
+    - Finder
+    - Hayabusa
+    - Impacket
+    - KAPE
+    - LaZagne
+    - LogParser.exe
+    - MFTECmd.exe
+    - Mimikatz
+    - net
+    - net.exe
+    - netcat
+    - netsh
+    - netsh.exe
+    - nmap
+    - openssl
+    - osascript
+    - PowerShell
+    - powershell.exe
+    - PowerSploit
+    - PowerView
+    - ProcDump
+    - PsExec
+    - pwsh.exe
+    - RECmd
+    - reg
+    - reg.exe
+    - regsvr32
+    - regsvr32.exe
+    - rsync
+    - rundll32
+    - rundll32.exe
+    - Rubeus
+    - sc
+    - sc.exe
+    - schtasks
+    - schtasks.exe
+    - Sigma
+    - Sysmon
+    - tar
+    - tcpdump
+    - Velociraptor
+    - volatility3
+    - Volatility 3
+    - wevtutil
+    - wevtutil.exe
+    - wget
+    - wmic
+    - wmic.exe
+    - YARA
+    - zip
