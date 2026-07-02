@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Use this guide when adding a new collector to the dataset factory. A new source is ready only when it can be collected reproducibly, normalized into `RawDocument`, validated, mapped to synthesis profiles, and documented in the coverage map.
+Use this guide when adding a new collector to the dataset factory. A new source is ready only when it can be collected reproducibly, normalized into `RawDocument`, validated, mapped to synthesis profiles, and accounted for in generated manifests and the state files named in `PROJECT_BRIEF.md`.
 
 ## Source Intake Checklist
 
 - [ ] Source is legally usable for local dataset generation.
 - [ ] Source license and attribution notes are recorded.
 - [ ] Source has stable access or a pinned clone/cache strategy.
-- [ ] Source content is relevant to one or more current task categories.
+- [ ] Source content is relevant to one or more configured task categories.
 - [ ] Source content is rich enough for the planned pairs per document.
 - [ ] Thin sources are capped to avoid hallucinated details.
 - [ ] Expected output volume is estimated.
@@ -116,9 +116,8 @@ content_type_profiles:
 
 - [ ] `docs/ARCHITECTURE.md`: add source to pipeline layout or generated state.
 - [ ] `docs/DECISIONS.md`: record any durable source-specific decision.
-- [ ] `docs/COVERAGE_MAP.md`: add source coverage and gaps.
-- [ ] `docs/PROMPT_GUIDE.md`: document prompt behavior if new templates were added.
-- [ ] `docs/HANDOVER.md`: mention source status if it affects current handover.
+- [ ] `docs/TODO.md`: add follow-up work if collection, synthesis, quality, or packaging remains incomplete.
+- [ ] Handover guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, dataset-card template, quality rubric, or training recipe.
 
 ## New Source Review
 

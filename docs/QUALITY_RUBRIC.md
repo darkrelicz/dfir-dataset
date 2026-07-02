@@ -4,11 +4,13 @@
 
 Define the Phase 4 quality gate for candidate instruction pairs. Phase 4 consumes Phase 3 `accepted.jsonl` and produces filtered training candidates, review queues, rejection manifests, and quality summaries.
 
-## Current Implementation
+This file is a reusable rubric and operating guide, not a live quality snapshot. Run-specific counts belong in `data/quality/<run>/quality_manifest.json` and the state files named in `PROJECT_BRIEF.md`.
 
-The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. It uses independent Phase 4 row validators, local ATT&CK/ATLAS STIX/YAML reference caches when present, raw-corpus fallback references, a configurable tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/tactic/taxonomy audits, and writes all required output files plus `quality_manifest.json`. The CLI defaults to `--log-level INFO` and logs each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
+## Implementation Notes
 
-Current reduced-pair snapshot: `data/quality/gemini_subset_1/quality_manifest.json` from run `quality-20260701T064847Z` checked 6,023 candidate pairs, filtered 1,134, routed 4,144 to review, rejected 745, found zero near-duplicates above the 0.8 Jaccard threshold, covered 15/15 local ATT&CK tactic labels, covered 16/16 ATLAS tactics, and covered 26/57 taxonomy IDs.
+The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. It uses independent Phase 4 row validators, local ATT&CK/ATLAS STIX/YAML reference caches when present, raw-corpus fallback references, a configurable tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/tactic/taxonomy audits, and writes all required output files plus `quality_manifest.json`.
+
+The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 
 ## Required Outputs
 
@@ -18,19 +20,19 @@ Current reduced-pair snapshot: `data/quality/gemini_subset_1/quality_manifest.js
 | `rejected.jsonl` | Pairs rejected with reasons |
 | `review_queue.jsonl` | Pairs that need manual or AI-assisted review |
 | `quality_manifest.json` | Run metadata, counts, distributions, thresholds |
-| `manual_spot_check_sample.jsonl` | Deterministic 100-pair filtered sample for manual rubric scoring |
+| `manual_spot_check_sample.jsonl` | Deterministic filtered sample for manual rubric scoring |
 
 ## Running Phase 4
 
 ```bash
 .venv/bin/python -m scripts.quality_filter \
-  --input data/synthesized/gemini_subset_1/accepted.jsonl \
+  --input data/synthesized/<run>/accepted.jsonl \
   --raw-dir data/raw \
-  --output-dir data/quality/gemini_subset_1 \
+  --output-dir data/quality/<run> \
   --log-level INFO
 ```
 
-The logger reports config loading, output preparation, raw document loading, reference-set construction, row-level validation progress every 1,000 rows, each dataset-level audit, JSONL output writing, spot-check sampling, and manifest writing.
+The logger should report config loading, output preparation, raw document loading, reference-set construction, row-level validation progress, dataset-level audits, JSONL output writing, spot-check sampling, and manifest writing.
 
 ## Deterministic Validators
 
@@ -48,7 +50,7 @@ These checks should run before heuristic scoring.
 | Reasoning links | Broken evidence/analysis/conclusion/caveat references | Reasoning step count above configured maximum | Use independent Phase 4 reasoning parser |
 | Empty evidence | Evidence lines are empty or purely generic |  |  |
 | Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Use independent Phase 4 grounding checks |
-| Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic/AI assist |
+| Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic or AI-assisted review |
 | Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
 
 ## Heuristic Scoring
@@ -113,7 +115,7 @@ Run these after filtering:
 | Audit | Target |
 |---|---|
 | Task category distribution | Within agreed tolerance of `configs/task_categories.yaml` |
-| Difficulty distribution | Near 30/50/20 unless intentionally changed |
+| Difficulty distribution | Near configured target unless intentionally changed |
 | Source balance | No single source dominates the final dataset |
 | ATT&CK tactic coverage | All applicable tactics represented |
 | ATLAS coverage | AI/ML coverage documented honestly |
@@ -131,9 +133,9 @@ Run these after filtering:
 ```json
 {
   "run_id": "quality-YYYYMMDDTHHMMSSZ",
-  "input_path": "data/synthesized/full/accepted.jsonl",
+  "input_path": "data/synthesized/<run>/accepted.jsonl",
   "raw_dir": "data/raw",
-  "output_dir": "data/quality/full",
+  "output_dir": "data/quality/<run>",
   "created_at": "YYYY-MM-DDTHH:MM:SSZ",
   "total_pairs": 0,
   "filtered_pairs": 0,
@@ -147,20 +149,10 @@ Run these after filtering:
   "taxonomy_distribution": {},
   "score_threshold": 3.5,
   "review_threshold": 3.0,
-  "dataset_audits": {
-    "near_duplicates": {},
-    "source_balance": {},
-    "category_balance": {},
-    "difficulty_balance": {},
-    "attack_tactic_coverage": {},
-    "atlas_tactic_coverage": {},
-    "taxonomy_coverage": {},
-    "manual_spot_check": {}
-  },
-  "notes": []
+  "dataset_audits": {}
 }
 ```
 
-Older notes may refer to accepted pairs at this stage; the implemented Phase 4 name is `filtered_pairs` because Phase 3 `accepted.jsonl` remains candidate data until quality filtering.
+## Maintenance Rule
 
-The historical plan's `~10,000-15,000` filtered-pair target applied to the full synthesis path. Under the reduced subset budget, the expected filtered count is materially lower and should be judged against coverage and training budget, not the old full-corpus target.
+Change this rubric only when quality-gate behavior, reason codes, scoring, or review guidance changes. Do not use it as a quality-run report.

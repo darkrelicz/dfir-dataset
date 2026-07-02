@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This guide explains how Phase 3 prompts are structured, how to review pilot outputs, and how to safely iterate prompts without losing provenance.
+This guide explains how Phase 3 prompts are structured, how to review generated outputs, and how to safely iterate prompts without losing provenance.
 
 ## Prompt Architecture
 
@@ -21,7 +21,7 @@ Source and content-type policy lives in `configs/source_profiles.yaml`.
 
 Task category and difficulty targets live in `configs/task_categories.yaml`.
 
-Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. Current source-specific compactors are `cisa_advisories_compactor.py`, `cisa_kev_compactor.py`, `mitre_attack_compactor.py`, `cybersec_skills_compactor.py`, `velociraptor_artifacts_compactor.py`, `loldrivers_compactor.py`, and `hijacklibs_compactor.py`.
+Prompt compaction must not mutate Phase 2 raw documents. Raw documents stay complete for provenance and reprocessing; compactors only create shorter source views for Phase 3 prompts. Source-specific compactors follow the naming convention `synthesizers/prompts/compactors/<source>_compactor.py`.
 
 Velociraptor is a special case: VQL is the valuable training signal, so `velociraptor_artifacts_compactor.py` preserves query bodies in full and opts out of shared source truncation. Review large Velociraptor prompts for cost, but do not solve that by capping `precondition`, `export`, `query`, `queries`, VQL-like parameter defaults, or long structured parameter defaults such as YARA, Grok, CSV, registry glob, JSON, and YAML blocks.
 
@@ -84,7 +84,7 @@ Review dry-run prompts before API generation.
 
 ## Pilot Review Rubric
 
-Score each pilot pair before full generation.
+Score each pilot pair before any future full-corpus generation or major prompt rerun.
 
 | Dimension | Pass Criteria | Notes |
 |---|---|---|
@@ -96,26 +96,13 @@ Score each pilot pair before full generation.
 | Uncertainty | Confidence and caveats are appropriate |  |
 | Thin-source handling | No padded forensic detail from sparse records |  |
 
-## Iteration Log
+## Prompt Change Review Template
 
-Use this table whenever prompt behavior changes.
+Use this table in a run note or pull request when prompt behavior changes. Do not use this guide as the prompt history log.
 
-| Date | File Changed | Reason | Expected Effect | Validation Result |
-|---|---|---|---|---|
-| 2026-06-29 | `synthesizers/prompts/base.md`, `synthesizers/prompt_builder.py`, `synthesizers/prompts/compactors/prompt_compactors.py`, `synthesizers/prompts/compactors/cisa_advisories_compactor.py` | Reduce prompt cost while keeping taxonomy refs deterministic and valid | Smaller CISA advisory prompts, no full taxonomy list in every prompt, non-empty valid `taxonomy_refs` in output schema | Python compile passed; dry-run prompt rendering passed; raw validation passed |
-| 2026-06-29 | `synthesizers/prompts/compactors/mitre_attack_compactor.py`, `synthesizers/prompts/compactors/cybersec_skills_compactor.py` | Compact two remaining high-token source families before pilot cost estimation | Large ATT&CK procedure lists and Cybersecurity Skills scripts are capped while identifiers, mappings, detections, tools, examples, and workflow steps remain available | Python compile passed; pilot prompt rendering wrote 285 prompts |
-| 2026-06-29 | `synthesizers/prompts/compactors/cisa_kev_compactor.py` | Compact vendor-grouped KEV catalogs that duplicate large summary tables and detailed CVE blocks | Large vendors keep vendor/product/CVE summary metadata and selected ransomware-linked/recent detail blocks without prompt-size truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
-| 2026-06-29 | `synthesizers/prompts/compactors/velociraptor_artifacts_compactor.py`, `synthesizers/prompts/compactors/prompt_compactors.py` | Compact Velociraptor metadata/prose while preserving VQL query bodies in full | Duplicate rendered prose and non-query YAML boilerplate are shortened; VQL bodies bypass shared source truncation | Python compile passed; pilot prompt rendering wrote 285 prompts |
-| 2026-06-29 | `synthesizers/prompts/compactors/loldrivers_compactor.py`, `synthesizers/prompts/compactors/hijacklibs_compactor.py` | Compact abuse databases with repeated sample, hash, executable, and signature blocks | LOLDrivers keeps abuse commands, mappings, detections, selected hashes, and sample metadata; HijackLibs keeps paths, hijack types, conditions, variables, hashes, and elevation flags | Python compile passed; pilot prompt rendering wrote 285 prompts |
-| 2026-06-30 | `synthesizers/prompts/compactors/cybersec_skills_compactor.py`, `synthesizers/prompts/compactors/velociraptor_artifacts_compactor.py` | Fix malformed Markdown truncation and preserve long structured Velociraptor defaults | Cybersecurity Skills truncation closes code fences; Velociraptor keeps long VQL, YARA, Grok, CSV, registry glob, JSON, and YAML parameter defaults as full blocks | Python compile passed; corpus checks found 0 Cybersecurity Skills docs with odd code fences and 42/42 long Velociraptor defaults preserved as blocks |
-| 2026-06-30 | `synthesizers/prompts/compactors/prompt_compactors.py`, `synthesizers/prompts/compactors/*_compactor.py` | Standardize lossy compaction note and avoid implying the model can access hidden raw corpus content | Lossy compacted source views append the same short note telling the model to use only visible details as evidence | Python compile passed; compactor note search confirmed no old `Prompt compaction note` strings remain |
-| 2026-06-30 | `synthesizers/validators.py` | Treat full-output Markdown JSON fences as a recoverable wrapper instead of invalid JSON | Gemini outputs wrapped in Markdown JSON fences are normalized before JSON parsing, while genuinely malformed JSON still fails | Python compile passed; Gemini pilot 3 rejected rows replayed with T1011 passing and T1001 surfacing concrete-indicator issues |
-| 2026-06-30 | `synthesizers/clients/gemini.py`, `configs/synthesis.yaml` | Move Gemini generation off Interactions text output and onto structured `models.generate_content` JSON output | Gemini receives `response_mime_type="application/json"` and a sanitized `InstructionPair` JSON schema; parsed responses are serialized before validation so new outputs should not arrive as Markdown-fenced JSON | Python compile passed; SDK config construction passed; pilot 5 `additional_properties` API error reproduced and sanitized schema conversion no longer emits `additional*` fields |
-| 2026-06-30 | `synthesizers/clients/gemini.py`, `configs/synthesis.yaml` | Stop sending unsupported `thinking_level` to Gemini Flash through `models.generate_content` | Generation uses supported `thinking_budget` and does not request thought summaries for structured JSON output | Pilot 6 `Thinking level is not supported for this model` API error reproduced; Python compile and config conversion passed |
-| 2026-06-30 | `synthesizers/runner.py`, `synthesizers/validators.py`, `synthesizers/schemas.py`, `synthesizers/prompt_builder.py`, `configs/synthesis.yaml`, `synthesizers/prompts/base.md` | Reduce pilot 7 validation rejects caused by recoverable model format slips, transient Gemini demand, and deterministic metadata typos | Runner uses exponential API retry/backoff with jitter, adds one validation-feedback regeneration, records validation retry metadata, and validators normalize deterministic provenance fields from `PromptRecord` | Python compile passed; `git diff --check` passed; raw corpus validation passed; one-prompt render and focused metadata-normalization validator replay passed |
-| 2026-06-30 | `synthesizers/validators.py`, `synthesizers/prompts/base.md`, `synthesizers/runner.py` | Enforce consistency between `[GENERAL KNOWLEDGE]` tagging and the `grounding` field | `source_only` responses with general-knowledge tags and `source_plus_general` responses without tags are rejected; retry prompt restates the grounding contract | Python compile passed; `git diff --check` passed; focused validator cases passed |
-| 2026-06-30 | `configs/synthesis.yaml`, `docs/TODO.md` | Reduce full-synthesis output cost for shortened timeline and limited generation budget | Source pair targets are budget-safe at one pair per document, preserving source breadth while reducing expected full output from about 42,048 pairs to 20,347 pairs | Pair estimate script confirmed 20,347 full pairs; pilot prompt render smoke check passed |
-| 2026-06-30 | `configs/source_profiles.yaml`, `synthesizers/source_profiles.py`, `synthesizers/sampler.py`, `synthesizers/planner.py`, `scripts/synthesize.py`, `synthesizers/schemas.py`, `synthesizers/runner.py` | Add a budget-aware representative subset for the shortened training timeline | New `subset` mode samples source/content/richness-aware targets for about 6,500 one-pair prompts while preserving task-category and difficulty balancing | Python compile passed; `render-prompts --mode subset` wrote 6,494 prompts; subset pair/category/difficulty summary matched targets |
+| File Changed | Reason | Expected Effect | Validation To Run |
+|---|---|---|---|
+|  |  |  |  |
 
 ## Common Failure Modes
 
@@ -162,6 +149,6 @@ Use this table whenever prompt behavior changes.
 ## Full Generation Rules
 
 - Do not run full synthesis from an invalid raw corpus.
-- Do not run full synthesis before pilot quality is acceptable.
+- Do not run future full-corpus synthesis before smoke and pilot quality are acceptable.
 - Preserve all prompt, raw output, accepted, rejected, and manifest files.
 - Keep alternate teacher-model comparisons in separate labeled output directories.
