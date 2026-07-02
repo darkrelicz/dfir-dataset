@@ -88,7 +88,6 @@ Canonical packaged record:
     "taxonomy_refs": [],
     "source_doc_id": "",
     "source": "",
-    "reasoning_format": "canonical_reasoning_v1",
     "quality_score": 0.0
   }
 }

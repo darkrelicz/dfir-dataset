@@ -329,7 +329,6 @@ def _with_prompt_metadata(item: object, prompt_record: PromptRecord) -> object:
             "source_doc_id": prompt_record.source_doc_id,
             "source": prompt_record.source,
             "taxonomy_refs": list(prompt_record.taxonomy_refs),
-            "reasoning_format": "canonical_reasoning_v1",
         }
     )
     return normalized

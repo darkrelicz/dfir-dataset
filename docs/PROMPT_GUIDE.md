@@ -37,7 +37,7 @@ Taxonomy references: ["TI1", "N4", "S3"]
 
 The full 57-ID taxonomy is not repeated in every prompt. The model should normally copy or use the rendered refs, and Phase 3 validators still reject missing or unknown taxonomy refs.
 
-`PromptRecord` also stores the deterministic taxonomy refs. During Phase 3 validation, generated `category`, `difficulty`, `source_doc_id`, `source`, `taxonomy_refs`, and `reasoning_format` are normalized from the prompt record before validation so model typos in provenance metadata do not reject otherwise valid pairs.
+`PromptRecord` also stores the deterministic taxonomy refs. During Phase 3 validation, generated `category`, `difficulty`, `source_doc_id`, `source`, and `taxonomy_refs` are normalized from the prompt record before validation so model typos in provenance metadata do not reject otherwise valid pairs.
 
 ## Canonical Response Format
 

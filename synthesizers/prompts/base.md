@@ -89,8 +89,7 @@ Return only a JSON array. Do not wrap the array in Markdown fences. Do not inclu
   "source_doc_id": "$doc_id",
   "source": "$source",
   "taxonomy_refs": $taxonomy_refs,
-  "grounding": "source_only|source_plus_general",
-  "reasoning_format": "canonical_reasoning_v1"
+  "grounding": "source_only|source_plus_general"
 }
 
 

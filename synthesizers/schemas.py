@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 Difficulty = Literal["junior", "mid", "senior"]
 Confidence = Literal["high", "medium", "low"]
 Grounding = Literal["source_only", "source_plus_general"]
-ReasoningFormat = Literal["canonical_reasoning_v1"]
 
 
 class InstructionPair(BaseModel):
@@ -27,7 +26,6 @@ class InstructionPair(BaseModel):
     source: str
     taxonomy_refs: list[str] = Field(default_factory=list)
     grounding: Grounding
-    reasoning_format: ReasoningFormat = "canonical_reasoning_v1"
 
 
 class PromptRecord(BaseModel):

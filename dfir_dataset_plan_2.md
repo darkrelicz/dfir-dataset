@@ -1529,7 +1529,6 @@ After filtering, verify:
     "taxonomy_refs": ["W7", "W10"],
     "source_doc_id": "mitre-attack-T1059.001",
     "source": "mitre_attack",
-    "reasoning_format": "canonical_reasoning_v1",
     "quality_score": 4.2
   }
 }
