@@ -49,7 +49,7 @@
 - Local API secrets live in `.env`, which is ignored by git. Do not commit real API keys.
 - OpenRouter is not used for canonical instruction generation because Gemini 2.5 Flash is not available through OpenRouter's distillable-model path.
 - Claude Sonnet or any alternate teacher model must run as a separate, explicitly labeled comparison job rather than an automatic fallback, so generated data provenance stays clean.
-- The planned pilot gate is at least 75% pass rate before full synthesis.
+- The historical full-synthesis pilot gate was at least 75% pass rate before full-corpus synthesis. Under the shortened timeline, the completed `subset` run is the current Phase 3 deliverable, and full-corpus synthesis is deferred.
 - Canonical synthesized responses use `<reasoning>`, not `<think>`.
 - The `<reasoning>` block is an auditable rationale with linked IDs: evidence (`E1`), analysis (`A1 [uses E1]`), conclusions (`C1 [uses E1,A1]`), and caveats (`CV1 [applies_to C1]`).
 - Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
@@ -78,8 +78,12 @@
 - Generation execution belongs in `synthesizers/runner.py`; `scripts/synthesize.py` should stay a thin argument parser and dispatcher.
 - Prompt hashing, run IDs, and present-output detection are synthesis run-state concerns and should live outside the CLI entrypoint.
 - The Gemini runner has a full-mode rejection-rate circuit breaker. By default, after 20 current-run attempted prompts in full synthesis, generation stops if rejected prompts are at least 20%. Pilot mode still validates each generated output but does not stop early based on aggregate rejection rate.
-- Phase 3 full generation must not begin until the Gemini pilot has acceptable validator pass rate and acceptable manual quality.
+- The current Phase 3 deliverable is `data/synthesized/gemini_subset_1/`, a budget-aware reduced subset with 6,494 prompts and 6,287 accepted candidate pairs for `run-20260701T021807Z`.
+- Future full-corpus generation must not begin until a fresh Gemini smoke test and reviewed pilot have acceptable validator pass rate and manual quality.
 - `accepted.jsonl` from Phase 3 is only candidate synthesis output. It must pass Phase 4 quality validation before packaging or training.
+
+## Phase 4 Guardrails
+
 - Phase 4 quality validation should be primarily deterministic and heuristic, with AI-assisted judging and manual review used for fuzzy quality issues such as weak reasoning or unsupported claims.
 - Phase 4 must not depend on Phase 3's generated-output validators for differentiation. It has independent row-level gates for schema, source provenance, taxonomy refs, ATT&CK/ATLAS IDs, reasoning links, grounding, invented indicators, source specificity, operational value, and rubric scoring, plus dataset-level gates for near-duplicates and distribution audits. Only `filtered.jsonl` is eligible for Phase 5 packaging.
 - Phase 4 ATT&CK/ATLAS validation uses local reference caches when present (`data/raw/.cache/enterprise-attack.json` and `data/raw/.repos/atlas-data/dist/ATLAS.yaml`) with raw-corpus fallbacks. This keeps validation reproducible and offline while avoiding false rejections from the reduced prompt subset.

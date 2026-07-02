@@ -4,9 +4,10 @@ Before making changes, read the relevant durable project state files:
 
 - `PROJECT_BRIEF.md` for product intent
 - `ARCHITECTURE.md` for codebase structure
-- `DESIGN_SYSTEM.md` for visual and UX rules
 - `TODO.md` for current tasks
 - `DECISIONS.md` for important decisions
+- `DESIGN_SYSTEM.md` for documentation and CLI presentation rules
+- `HANDOVER.md`, `ADDING_SOURCES.md`, `COVERAGE_MAP.md`, `DATASET_CARD.md`, `PROMPT_GUIDE.md`, `QUALITY_RUBRIC.md`, and `TRAINING_RECIPE.md` only when changing successor guidance or maintenance procedures
 
 Do not rely on chat history as long-term memory. If a change affects project direction, architecture, design rules, active tasks, or important decisions, update the corresponding durable state file.
 
@@ -19,6 +20,8 @@ For small edits, read:
 For structural changes, also read:
 - `ARCHITECTURE.md`
 - `DECISIONS.md`
+
+Do not treat handover guides as canonical project state. Change them only when the successor workflow, maintenance guidance, templates, or rubric changes.
 
 After meaningful changes, summarize:
 - what changed

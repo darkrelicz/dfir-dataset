@@ -65,11 +65,11 @@ The current manifest and direct JSONL counts show all 16 selected Core + Tier 1-
 
 Total raw JSONL rows: 20,347. Raw corpus validation currently passes with 16 files, 20,347 documents, 20,347 unique document IDs, and zero issues.
 
-## Planned Downstream Architecture
+## Synthesis And Downstream Architecture
 
-Phase 3 synthesis should read validated `RawDocument` JSONL and write instruction pairs plus generation manifests under `data/synthesized/`. The plan uses the direct Gemini API through the Google GenAI SDK, with Gemini 2.5 Flash as the primary teacher model, five task-category prompt templates, source-type-specific prompt instructions, and selective content-type prompt overrides. Any Claude or alternate-model comparison must run as a separate, explicitly labeled job rather than an automatic fallback. Canonical synthesized responses use `<reasoning>` blocks with linked evidence, analysis, conclusion, and caveat IDs.
+Phase 3 synthesis reads validated `RawDocument` JSONL and writes instruction pairs plus generation manifests under `data/synthesized/`. The current run is a budget-aware subset with 6,494 rendered prompts, 6,287 accepted candidate pairs, and 206 prompt rows rejected. Full-corpus synthesis is deferred to a future budget window or successor. The generation path uses the direct Gemini API through the Google GenAI SDK, with Gemini 2.5 Flash as the primary teacher model, five task-category prompt templates, source-type-specific prompt instructions, and selective content-type prompt overrides. Any Claude or alternate-model comparison must run as a separate, explicitly labeled job rather than an automatic fallback. Canonical synthesized responses use `<reasoning>` blocks with linked evidence, analysis, conclusion, and caveat IDs.
 
-Current Phase 3 scaffold includes:
+### Implemented Phase 3 components include
 
 - Deterministic source profiles, content-type profiles, source-type prompt templates, content-type prompt overrides, task-category prompt templates, deterministic taxonomy-ref suggestions, raw corpus validation, stratified pilot sampling across source/content richness, prompt-time source compaction, prompt-size trimming via `max_source_chars`, generated-pair rejection gates, dry-run prompt rendering, and a sequential Gemini generation runner.
 - Source profile policy is data-driven in `configs/source_profiles.yaml`, while `synthesizers/source_profiles.py` loads and validates that config.
@@ -99,6 +99,8 @@ Prompt construction uses two guidance layers plus one source-content layer: coar
 
 The generated-pair rejection gates catch invalid JSON, strict schema failures including extra fields, too many or too few pairs, invalid ATT&CK/ATLAS ID formats, broken `<reasoning>` links, duplicate reasoning IDs, missing caveats, empty evidence/analysis/caveat lines, missing final answers, grounding/tag mismatches between `grounding` and `[GENERAL KNOWLEDGE]`, and concrete indicators not present in the source document. Generated `source_doc_id`, `source`, `category`, `difficulty`, `taxonomy_refs`, and `reasoning_format` are overwritten from the prompt record before these checks, because they are deterministic provenance fields.
 
+### Current Phase 4 implementation
+
 The Phase 4 quality gate consumes Phase 3 `accepted.jsonl` and writes `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` under `data/quality/<run>/`. It does not call Phase 3's generated-output validators. Instead, it independently validates candidate row shape, source provenance, taxonomy refs, ATT&CK/ATLAS IDs against local STIX/YAML reference caches when present, tool names against source text and a configurable allowlist, `<reasoning>` link integrity and step count, grounding/tag consistency, final-answer presence, concrete indicators absent from source, source-specificity, operational signal, rubric score, near-duplicates, source balance, category balance, difficulty balance, ATT&CK tactic coverage, ATLAS tactic coverage, and taxonomy heatmap density. Objective failures go to `rejected.jsonl`; fuzzy semantic concerns such as broad unsupported claims or tagged general-knowledge indicators go to `review_queue.jsonl`. The CLI logs config loading, output setup, raw/reference loading, row validation progress, dataset gates, output writes, spot-check sampling, and manifest writing so users can see which sub-stage is complete.
 
 Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. The canonical export keeps `<reasoning>`; a model-specific GLM export may convert it to `<think>` only if needed. 
@@ -109,10 +111,9 @@ Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpo
 
 The Gemini client uses `models.generate_content` with `response_mime_type="application/json"` and a sanitized `InstructionPair` response schema, then validates the resulting JSON through the same Phase 3 rejection gates. If validation fails and `generation.validation_retries` is greater than zero, the runner can ask Gemini to regenerate using the original prompt plus a compact list of validation errors.
 
-The remaining workflow is intentionally gated:
+The remaining workflow is intentionally gated around Phase 4 review and later stages:
 
-1. Phase 3 pilot: run Gemini on the planned pilot sample, then manually review 100% of pilot output. Fix prompts, validators, source profiles, or pair counts before continuing.
-2. Phase 3 full generation: run the full Gemini job only after the pilot has acceptable pass rate and manual quality. `accepted.jsonl` is the input to Phase 4, not final training data.
-3. Phase 4 quality validation: consume `accepted.jsonl`, run the independent deterministic, heuristic, duplicate, and distribution gates, then adjudicate `review_queue.jsonl`. Produce a filtered dataset plus review and rejection manifests.
-4. Phase 5 packaging: consume the Phase 4 filtered dataset, split by `source_doc_id`, and write GLM-friendly train/validation/test JSONL plus a packaging manifest.
-5. Phase 6 fine-tuning: run baseline evaluation, train LoRA SFT on GLM-4.7-Flash, rerun evaluation, compare against baseline, and integrate into Shepherd only if results improve.
+1. Phase 4 review: use the current `data/quality/gemini_subset_1/` output, adjudicate `review_queue.jsonl`, review the 100-row manual spot-check sample, and rerun the quality filter only after threshold or code changes.
+2. Phase 5 packaging: consume the Phase 4 filtered dataset, split by `source_doc_id`, and write GLM-friendly train/validation/test JSONL plus a packaging manifest.
+3. Phase 6 fine-tuning: run baseline evaluation, train LoRA SFT on GLM-4.7-Flash, rerun evaluation, compare against baseline, and integrate into Shepherd only if results improve.
+4. Future full-corpus synthesis: if budget returns, rerun a smoke test and reviewed pilot before launching the larger full-generation job. Treat its `accepted.jsonl` as candidate data until Phase 4 passes again.

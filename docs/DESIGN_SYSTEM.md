@@ -6,7 +6,7 @@ The project currently presents information through:
 
 - Markdown documentation in `docs/` and `README.md`.
 - CLI output from `scripts/collect_all.py`.
-- Generated JSONL and JSON manifest files under `data/raw/`.
+- Generated JSONL and JSON manifest files under `data/raw/`, `data/synthesized/`, and `data/quality/`.
 
 ## Documentation Style
 
