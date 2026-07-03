@@ -20,12 +20,6 @@ def main() -> None:
         action="store_true",
         help="Append to existing quality output files instead of replacing them",
     )
-    parser.add_argument(
-        "--log-level",
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Console logging level for quality-filter stages",
-    )
     args = parser.parse_args()
     logging.basicConfig(
         level=getattr(logging, args.log_level),
