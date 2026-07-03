@@ -74,7 +74,5 @@ class QualityManifest(BaseModel):
     category_distribution: dict[str, int]
     difficulty_distribution: dict[str, int]
     taxonomy_distribution: dict[str, int]
-    score_threshold: float | None = None
-    review_threshold: float | None = None
     dataset_audits: dict[str, Any] = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)

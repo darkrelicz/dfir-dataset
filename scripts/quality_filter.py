@@ -22,7 +22,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     logging.basicConfig(
-        level=getattr(logging, args.log_level),
+        level=logging.INFO,
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         datefmt="%H:%M:%S",
     )

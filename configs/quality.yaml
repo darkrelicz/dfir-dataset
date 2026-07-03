@@ -88,8 +88,6 @@ taxonomy:
         weak: [CL1, CL2]
 
 scoring:
-  threshold: 3.5
-  review_threshold: 3.0
   weights:
     factual_accuracy: 0.25
     reasoning_quality: 0.25

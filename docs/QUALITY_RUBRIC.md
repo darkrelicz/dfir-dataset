@@ -8,7 +8,7 @@ This file is a reusable rubric and operating guide, not a live quality snapshot.
 
 ## Implementation Notes
 
-The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. It uses independent Phase 4 row validators, local ATT&CK/ATLAS ID reference caches when present, raw-corpus fallback ID references, a config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and writes all required output files plus `quality_manifest.json`.
+The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local ATT&CK/ATLAS ID reference checks, raw-corpus fallback ID references, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`.
 
 The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 
@@ -19,7 +19,7 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 | `filtered.jsonl` | Pairs accepted for packaging |
 | `rejected.jsonl` | Pairs rejected with reasons |
 | `review_queue.jsonl` | Pairs that need manual or AI-assisted review |
-| `quality_manifest.json` | Run metadata, counts, distributions, thresholds |
+| `quality_manifest.json` | Run metadata, counts, distributions, and audits |
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample for manual rubric scoring |
 
 ## Running Phase 4
@@ -47,9 +47,9 @@ These checks should run before heuristic scoring.
 | ATT&CK IDs | Malformed or absent from local ATT&CK STIX/reference cache | Candidate mapping may go to review | Allow `?` suffix for candidate mappings |
 | ATLAS IDs | Malformed or absent from local ATLAS YAML/reference cache | Candidate mapping may go to review | Validate separately from ATT&CK |
 | Tool names |  | Tool absent from source text and allowlist | Configured in `configs/quality.yaml` and expanded from raw tool-like sources |
-| Reasoning links | Broken evidence/analysis/conclusion/caveat references | Reasoning step count above configured maximum | Use independent Phase 4 reasoning parser |
+| Reasoning links | Broken evidence/analysis/conclusion/caveat references | Reasoning step count above configured maximum | Use shared reasoning parser with stricter Phase 4 options |
 | Empty evidence | Evidence lines are empty or purely generic |  |  |
-| Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Use independent Phase 4 grounding checks |
+| Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Use shared grounding helper with Phase 4 reject policy |
 | Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic or AI-assisted review |
 | Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
 
@@ -65,11 +65,11 @@ Suggested weights:
 | Specificity | 15% | Generic | Some source detail | Specific without invention |
 | Completeness | 15% | Missing key fields or caveats | Adequate | Complete and well-calibrated |
 
-Composite threshold:
+Quality scores are descriptive metadata. They are useful for sorting and manual review, but Phase 4 row status is determined by stable issue severity:
 
-- Accept: `>= 3.5` and no hard rejection issues
-- Review: `>= 3.0` with fuzzy concerns, or strong content with one reviewable issue
-- Reject: `< 3.0` or any hard rejection issue
+- `filtered`: no row-level issues after deterministic gates
+- `review`: at least one review issue and no reject issue
+- `rejected`: at least one reject issue
 
 ## Manual Review Guidance
 
@@ -101,10 +101,6 @@ Use stable reason codes so later analysis is easy.
 | `tool_name_unknown` | Tool is absent from source text and allowlist |
 | `grounding_mismatch` | `grounding` field does not match `[GENERAL KNOWLEDGE]` tag usage |
 | `invented_indicator` | Concrete indicator absent from source |
-| `unsupported_claim` | Claim not supported by reasoning/source |
-| `low_quality_score` | Heuristic rubric score is below the configured threshold |
-| `low_specificity` | Too generic for useful training |
-| `low_operational_value` | Does not help a real workflow |
 | `duplicate_or_near_duplicate` | Redundant with existing pair |
 | `source_overrepresented` | Accepted only if needed for balance |
 
@@ -146,8 +142,6 @@ Run these after filtering:
   "category_distribution": {},
   "difficulty_distribution": {},
   "taxonomy_distribution": {},
-  "score_threshold": 3.5,
-  "review_threshold": 3.0,
   "dataset_audits": {}
 }
 ```

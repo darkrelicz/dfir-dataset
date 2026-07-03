@@ -4,7 +4,9 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from quality.schemas import QualityDecision, QualityIssue
-from quality.validators import distinctive_tokens, final_answer_text
+from quality.validators import distinctive_tokens
+from validation.reasoning import final_answer_text
+from validation.taxonomy import valid_taxonomy_refs_from_config
 
 DEFAULT_NEAR_DUPLICATE_THRESHOLD = 0.8
 DEFAULT_MAX_SOURCE_SHARE = 0.25
@@ -366,11 +368,3 @@ def balance_tolerance(quality_config: dict[str, Any]) -> float:
             "distribution_tolerance", DEFAULT_BALANCE_TOLERANCE
         )
     )
-
-
-def valid_taxonomy_refs_from_config(quality_config: dict[str, Any]) -> set[str]:
-    refs: set[str] = set()
-    domains = quality_config.get("taxonomy", {}).get("domains", {})
-    for domain in domains.values():
-        refs.update(str(value) for value in domain.get("ids", []))
-    return refs

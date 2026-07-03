@@ -175,17 +175,15 @@ def run_quality_filter(args) -> int:
         category_distribution=counts["category_distribution"],
         difficulty_distribution=counts["difficulty_distribution"],
         taxonomy_distribution=counts["taxonomy_distribution"],
-        score_threshold=float(
-            quality_config.get("scoring", {}).get("threshold", 3.5)
-        ),
-        review_threshold=float(
-            quality_config.get("scoring", {}).get("review_threshold", 3.0)
-        ),
         dataset_audits=dataset_audits,
         notes=[
-            "Phase 4 quality gate uses independent validators, not Phase 3 output validators.",
+            (
+                "Phase 4 does not call Phase 3 output validators; both stages "
+                "share pure validation primitives with separate stage policies."
+            ),
             "ATT&CK and ATLAS validation uses local STIX/YAML reference caches when present.",
             "Tool validation uses configs/quality.yaml as the allowlist source of truth.",
+            "Quality scores are emitted as metadata and do not gate rows.",
             "Reduced-pair subset run: historical 10k-15k filtered target is not expected.",
             "review_queue.jsonl is excluded from filtered training output until reviewed.",
         ],

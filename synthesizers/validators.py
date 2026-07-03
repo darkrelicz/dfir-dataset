@@ -14,39 +14,20 @@ from synthesizers.schemas import (
     ReasoningLinkIssue,
     ReasoningLinkValidation,
 )
+from validation.grounding import grounding_mismatch_message
+from validation.indicators import (
+    BASIC_INDICATOR_OPTIONS,
+    invented_indicators,
+    source_document_text,
+)
+from validation.mappings import ATLAS_ID_RE, MITRE_ID_RE
+from validation.reasoning import final_answer_text, validate_reasoning_structure
+from validation.taxonomy import valid_taxonomy_refs_from_config
 
-
-REASONING_BLOCK_RE = re.compile(r"<reasoning>\s*(.*?)\s*</reasoning>", re.DOTALL)
-EVIDENCE_RE = re.compile(r"^E(\d+):\s*(.*)$", re.MULTILINE)
-ANALYSIS_RE = re.compile(r"^A(\d+)\s+\[uses\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE)
-CONCLUSION_RE = re.compile(r"^C(\d+)\s+\[uses\s+([^\]]+)\].*$", re.MULTILINE)
-CAVEAT_RE = re.compile(r"^CV(\d+)\s+\[applies_to\s+([^\]]+)\]:\s*(.*)$", re.MULTILINE)
-REF_RE = re.compile(r"\b(?:E|A|C|CV)\d+\b")
 JSON_FENCE_RE = re.compile(
     r"\A\s*```[ \t]*(?:json)?[ \t]*\r?\n(?P<body>.*?)(?:\r?\n)?```\s*\Z",
     re.DOTALL | re.IGNORECASE,
 )
-GENERAL_KNOWLEDGE_RE = re.compile(r"\[GENERAL KNOWLEDGE\]", re.IGNORECASE)
-MITRE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?\??$")
-ATLAS_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?\??$")
-CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b", re.IGNORECASE)
-HASH_RE = re.compile(r"\b(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{40}|[a-fA-F0-9]{64})\b")
-IPV4_RE = re.compile(
-    r"\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}"
-    r"(?:25[0-5]|2[0-4]\d|1?\d?\d)\b"
-)
-DOMAIN_RE = re.compile(
-    r"\b(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
-    r"(?:com|net|org|io|gov|edu|mil|co|uk|ru|cn|de|jp|br|au|ca|fr|nl|"
-    r"info|biz|dev|cloud|app|tech|site|online)\b"
-)
-PLACEHOLDER_TEXT = {
-    "",
-    "...",
-    "[source-grounded evidence]",
-    "[analysis of evidence]",
-    "[conclusion]",
-}
 
 
 def validate_raw_corpus(raw_dir: Path) -> RawCorpusValidation:
@@ -114,115 +95,10 @@ def validate_raw_corpus(raw_dir: Path) -> RawCorpusValidation:
 
 
 def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
-    issues: list[ReasoningLinkIssue] = []
-    match = REASONING_BLOCK_RE.search(response)
-    if not match:
-        return ReasoningLinkValidation(
-            ok=False,
-            issues=[ReasoningLinkIssue(message="Missing <reasoning> block")],
-        )
-
-    block = match.group(1)
-    evidence_matches = EVIDENCE_RE.findall(block)
-    analysis_matches = ANALYSIS_RE.findall(block)
-    conclusion_matches = CONCLUSION_RE.findall(block)
-    caveat_matches = CAVEAT_RE.findall(block)
-    evidence_ids = [f"E{number}" for number, _ in evidence_matches]
-    analysis_ids = [f"A{number}" for number, _, _ in analysis_matches]
-    conclusion_ids = [f"C{number}" for number, _ in conclusion_matches]
-    caveat_ids = [f"CV{number}" for number, _, _ in caveat_matches]
-
-    evidence_set = set(evidence_ids)
-    analysis_set = set(analysis_ids)
-    conclusion_set = set(conclusion_ids)
-
-    if not evidence_ids:
-        issues.append(ReasoningLinkIssue(message="No evidence IDs found"))
-    if not analysis_ids:
-        issues.append(ReasoningLinkIssue(message="No analysis IDs found"))
-    if not conclusion_ids:
-        issues.append(ReasoningLinkIssue(message="No conclusion IDs found"))
-    if not caveat_ids:
-        issues.append(ReasoningLinkIssue(message="No caveat IDs found"))
-
-    for prefix, ids in (
-        ("evidence", evidence_ids),
-        ("analysis", analysis_ids),
-        ("conclusion", conclusion_ids),
-        ("caveat", caveat_ids),
-    ):
-        duplicate_ids = sorted({value for value in ids if ids.count(value) > 1})
-        if duplicate_ids:
-            issues.append(
-                ReasoningLinkIssue(
-                    message=f"Duplicate {prefix} IDs found: {duplicate_ids}"
-                )
-            )
-
-    for evidence_number, evidence_text in evidence_matches:
-        if evidence_text.strip().lower() in PLACEHOLDER_TEXT:
-            issues.append(
-                ReasoningLinkIssue(message=f"E{evidence_number} has empty evidence")
-            )
-
-    for analysis_number, refs_text, analysis_text in analysis_matches:
-        refs = set(REF_RE.findall(refs_text))
-        missing = sorted(ref for ref in refs if ref not in evidence_set)
-        if missing:
-            issues.append(
-                ReasoningLinkIssue(
-                    message=f"A{analysis_number} references missing evidence: {missing}"
-                )
-            )
-        if analysis_text.strip().lower() in PLACEHOLDER_TEXT:
-            issues.append(
-                ReasoningLinkIssue(message=f"A{analysis_number} has empty analysis")
-            )
-
-    for conclusion_number, refs_text in conclusion_matches:
-        refs = set(REF_RE.findall(refs_text))
-        has_evidence = bool(refs & evidence_set)
-        has_analysis = bool(refs & analysis_set)
-        missing = sorted(
-            ref
-            for ref in refs
-            if ref.startswith(("E", "A"))
-            and ref not in evidence_set
-            and ref not in analysis_set
-        )
-        if missing:
-            issues.append(
-                ReasoningLinkIssue(
-                    message=f"C{conclusion_number} references missing IDs: {missing}"
-                )
-            )
-        if not has_evidence or not has_analysis:
-            issues.append(
-                ReasoningLinkIssue(
-                    message=(
-                        f"C{conclusion_number} must reference at least one evidence "
-                        "ID and one analysis ID"
-                    )
-                )
-            )
-
-    for caveat_number, refs_text, caveat_text in caveat_matches:
-        refs = set(REF_RE.findall(refs_text))
-        missing = sorted(ref for ref in refs if ref not in conclusion_set)
-        if missing:
-            issues.append(
-                ReasoningLinkIssue(
-                    message=(
-                        f"CV{caveat_number} references missing conclusion: "
-                        f"{missing}"
-                    )
-                )
-            )
-        if caveat_text.strip().lower() in PLACEHOLDER_TEXT:
-            issues.append(
-                ReasoningLinkIssue(message=f"CV{caveat_number} has empty caveat")
-            )
-
+    issues = [
+        ReasoningLinkIssue(message=issue.message)
+        for issue in validate_reasoning_structure(response)
+    ]
     return ReasoningLinkValidation(
         ok=not issues,
         issues=issues,
@@ -230,10 +106,7 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
 
 
 def valid_taxonomy_refs_from_quality_config(quality_config: dict) -> set[str]:
-    refs: set[str] = set()
-    for domain in quality_config.get("taxonomy", {}).get("domains", {}).values():
-        refs.update(str(value) for value in domain.get("ids", []))
-    return refs
+    return valid_taxonomy_refs_from_config(quality_config)
 
 
 def validate_generated_pairs(
@@ -366,7 +239,7 @@ def _validate_pair_against_source(
     for issue in reasoning.issues:
         add(issue.message)
 
-    final_answer = _final_answer_text(pair.response)
+    final_answer = final_answer_text(pair.response)
     if not final_answer:
         add("Response is missing final answer text after </reasoning>")
 
@@ -389,10 +262,9 @@ def _validate_pair_against_source(
     if invalid_atlas:
         add(f"Invalid ATLAS technique IDs: {invalid_atlas}")
 
-    if pair.grounding == "source_only" and _has_general_knowledge_tag(pair):
-        add("grounding is source_only but response contains [GENERAL KNOWLEDGE]")
-    if pair.grounding == "source_plus_general" and not _has_general_knowledge_tag(pair):
-        add("grounding is source_plus_general but response has no [GENERAL KNOWLEDGE] tags")
+    grounding_issue = grounding_mismatch_message(pair.grounding, pair.response)
+    if grounding_issue:
+        add(grounding_issue)
 
     invented_indicators = _invented_indicators(pair, source_doc)
     if invented_indicators:
@@ -404,25 +276,12 @@ def _validate_pair_against_source(
     return issues
 
 
-def _final_answer_text(response: str) -> str:
-    closing = "</reasoning>"
-    if closing not in response:
-        return ""
-    return response.split(closing, 1)[1].strip()
-
-
-def _has_general_knowledge_tag(pair: InstructionPair) -> bool:
-    return bool(GENERAL_KNOWLEDGE_RE.search(pair.response))
-
-
 def _invented_indicators(pair: InstructionPair, source_doc: RawDocument) -> list[str]:
-    source_text = "\n".join(
-        [
-            source_doc.title,
-            source_doc.source_url,
-            source_doc.content_markdown,
-            json.dumps(source_doc.metadata, sort_keys=True),
-        ]
+    source_text = source_document_text(
+        source_doc.title,
+        source_doc.source_url,
+        source_doc.content_markdown,
+        source_doc.metadata,
     )
     output_text = "\n".join(
         [
@@ -433,16 +292,4 @@ def _invented_indicators(pair: InstructionPair, source_doc: RawDocument) -> list
             " ".join(pair.tools_referenced),
         ]
     )
-
-    source_indicators = _extract_concrete_indicators(source_text)
-    output_indicators = _extract_concrete_indicators(output_text)
-    return sorted(output_indicators - source_indicators)
-
-
-def _extract_concrete_indicators(text: str) -> set[str]:
-    indicators: set[str] = set()
-    indicators.update(value.upper() for value in CVE_RE.findall(text))
-    indicators.update(value.lower() for value in HASH_RE.findall(text))
-    indicators.update(IPV4_RE.findall(text))
-    indicators.update(value.lower() for value in DOMAIN_RE.findall(text))
-    return indicators
+    return invented_indicators(output_text, source_text, BASIC_INDICATOR_OPTIONS)

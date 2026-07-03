@@ -4,8 +4,8 @@
 
 - Review `data/quality/gemini_subset_1/review_queue.jsonl` before packaging, prioritizing unsupported claims, invented indicators, mapping inconsistencies, weak source specificity, and low operational value.
 - Review the 100-row manual sample at `data/quality/gemini_subset_1/manual_spot_check_sample.jsonl` and record pass/fail notes.
-- Tune Phase 4 thresholds in `configs/quality.yaml` only after reviewing concrete false positives and false negatives from the current subset.
-- Rerun Phase 4 quality filtering with `--log-level INFO` only after threshold or code changes.
+- Tune Phase 4 dedupe/balance thresholds in `configs/quality.yaml` only after reviewing concrete false positives and false negatives from the current subset.
+- Rerun Phase 4 quality filtering with `--log-level INFO` only after dedupe/balance threshold or code changes.
 - Start Phase 5 packaging from Phase 4 `filtered.jsonl`, never from Phase 3 `accepted.jsonl`.
 - Prepare the Phase 6 baseline evaluation set before LoRA SFT.
 
@@ -26,11 +26,11 @@
 
 ## Phase 4 Quality
 
-- Keep Phase 4 independent from Phase 3 generated-output validators. Implemented in `quality/`.
+- Keep Phase 4 independent as a stage while sharing pure validation primitives from `validation/`. Implemented in `quality/` with separate Phase 4 policy wrappers.
 - Deterministic checks for schema, source provenance, taxonomy validity, reasoning-link integrity, ATT&CK/ATLAS ID validity, tool names, invented indicators, and final-answer consistency are implemented. Review/tune them only after examining false positives.
-- Heuristic quality scoring for grounding, specificity, reasoning strength, caveat quality, operational usefulness, source balance, difficulty balance, and taxonomy coverage is implemented. Tune thresholds after reviewing the subset run.
-- Review unsupported-claim cases where a response claims `source_only` but uses domain knowledge without an explicit `[GENERAL KNOWLEDGE]` tag. Current code sends broad claim terms absent from the source to `review_queue.jsonl`.
-- Near-duplicate detection, source/category/difficulty/taxonomy audits, and manual spot-check sampling are implemented; tune thresholds in `configs/quality.yaml` after reviewing the subset run.
+- Heuristic quality scoring is emitted as metadata only. Row status is driven by deterministic reject/review issue severity, plus dataset gates for dedupe and source balance.
+- Review unsupported-claim cases manually or with an AI judge where a response appears to use domain knowledge without sufficient source support.
+- Near-duplicate detection, source/category/difficulty/taxonomy audits, and manual spot-check sampling are implemented; tune dedupe/balance thresholds in `configs/quality.yaml` after reviewing the subset run.
 - `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` are implemented via `scripts/quality_filter.py`.
 - Stage-level quality logs are implemented; keep `--log-level INFO` for long runs unless quiet output is explicitly needed.
 - Use AI-assisted judging and manual review for fuzzy quality issues such as weak reasoning or unsupported claims, not as the only quality gate.
