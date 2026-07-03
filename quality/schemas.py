@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Any
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 QualitySeverity = Literal["reject", "review"]
 QualityStatus = Literal["filtered", "rejected", "review"]
@@ -15,7 +13,7 @@ Grounding = Literal["source_only", "source_plus_general"]
 class QualityCandidate(BaseModel):
     """Candidate instruction pair entering Phase 4 quality gates."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
     instruction: str
     response: str
