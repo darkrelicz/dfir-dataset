@@ -3,10 +3,8 @@ import time
 from collections import Counter, defaultdict
 from typing import Any
 
-from quality.references import QualityReferences
 from quality.schemas import QualityDecision, QualityIssue
 from quality.validators import distinctive_tokens, final_answer_text
-
 
 DEFAULT_NEAR_DUPLICATE_THRESHOLD = 0.8
 DEFAULT_MAX_SOURCE_SHARE = 0.25
@@ -18,7 +16,6 @@ def apply_dataset_gates(
     records: list[dict[str, Any]],
     quality_config: dict[str, Any],
     task_config: dict[str, Any],
-    references: QualityReferences,
 ) -> dict[str, Any]:
     """Apply Phase 4 gates that require a dataset-wide view."""
 
@@ -61,30 +58,6 @@ def apply_dataset_gates(
     log_dataset_gate_complete("difficulty balance", stage_started)
 
     stage_started = time.perf_counter()
-    logger.info("Running dataset audit: ATT&CK tactic coverage")
-    attack_tactic_audit = attack_tactic_coverage_audit(records, references)
-    log_dataset_gate_complete(
-        "ATT&CK tactic coverage",
-        stage_started,
-        (
-            f"covered={attack_tactic_audit['covered_tactic_count']}/"
-            f"{attack_tactic_audit['expected_tactic_count']}"
-        ),
-    )
-
-    stage_started = time.perf_counter()
-    logger.info("Running dataset audit: ATLAS tactic coverage")
-    atlas_tactic_audit = atlas_tactic_coverage_audit(records, references)
-    log_dataset_gate_complete(
-        "ATLAS tactic coverage",
-        stage_started,
-        (
-            f"covered={atlas_tactic_audit['covered_tactic_count']}/"
-            f"{atlas_tactic_audit['expected_tactic_count']}"
-        ),
-    )
-
-    stage_started = time.perf_counter()
     logger.info("Running dataset audit: taxonomy coverage")
     taxonomy_audit = taxonomy_coverage_audit(records, quality_config)
     log_dataset_gate_complete(
@@ -101,17 +74,11 @@ def apply_dataset_gates(
         "source_balance": source_audit,
         "category_balance": category_audit,
         "difficulty_balance": difficulty_audit,
-        "attack_tactic_coverage": attack_tactic_audit,
-        "atlas_tactic_coverage": atlas_tactic_audit,
         "taxonomy_coverage": taxonomy_audit,
     }
 
 
-def log_dataset_gate_complete(
-    stage: str,
-    started_at: float,
-    detail: str | None = None,
-) -> None:
+def log_dataset_gate_complete(stage: str, started_at: float, detail: str | None = None) -> None:
     elapsed = time.perf_counter() - started_at
     if detail:
         logger.info("Completed dataset gate: %s in %.1fs (%s)", stage, elapsed, detail)
@@ -349,72 +316,6 @@ def taxonomy_coverage_audit(
         "density": density,
         "domain_summary": domain_summary,
     }
-
-
-def attack_tactic_coverage_audit(
-    records: list[dict[str, Any]],
-    references: QualityReferences,
-) -> dict[str, Any]:
-    counts: Counter[str] = Counter()
-    unknown_ids: Counter[str] = Counter()
-    for record in records:
-        if decision(record).status != "filtered":
-            continue
-        for value in normalized_ids(record["row"].get("mitre_techniques", [])):
-            tactics = references.attack_tactics_by_id.get(value)
-            if not tactics:
-                unknown_ids[value] += 1
-                continue
-            counts.update(tactics)
-
-    expected = sorted(references.attack_tactics)
-    covered = sorted(tactic for tactic in expected if counts[tactic] > 0)
-    missing = sorted(tactic for tactic in expected if counts[tactic] == 0)
-    return {
-        "expected_tactic_count": len(expected),
-        "covered_tactic_count": len(covered),
-        "missing_tactic_count": len(missing),
-        "covered_tactics": covered,
-        "missing_tactics": missing,
-        "counts": dict(sorted(counts.items())),
-        "unknown_technique_ids": dict(sorted(unknown_ids.items())),
-    }
-
-
-def atlas_tactic_coverage_audit(
-    records: list[dict[str, Any]],
-    references: QualityReferences,
-) -> dict[str, Any]:
-    counts: Counter[str] = Counter()
-    unknown_ids: Counter[str] = Counter()
-    for record in records:
-        if decision(record).status != "filtered":
-            continue
-        for value in normalized_ids(record["row"].get("atlas_techniques", [])):
-            tactics = references.atlas_tactics_by_id.get(value)
-            if not tactics:
-                unknown_ids[value] += 1
-                continue
-            counts.update(tactics)
-
-    expected = sorted(references.atlas_tactics)
-    covered = sorted(tactic for tactic in expected if counts[tactic] > 0)
-    missing = sorted(tactic for tactic in expected if counts[tactic] == 0)
-    return {
-        "expected_tactic_count": len(expected),
-        "covered_tactic_count": len(covered),
-        "missing_tactic_count": len(missing),
-        "covered_tactics": covered,
-        "missing_tactics": missing,
-        "counts": dict(sorted(counts.items())),
-        "unknown_technique_ids": dict(sorted(unknown_ids.items())),
-    }
-
-
-def normalized_ids(values: object) -> list[str]:
-    if not isinstance(values, list):
-        return []
-    return [str(value).rstrip("?") for value in values]
 
 
 def taxonomy_density(count: int, total_filtered: int) -> str:

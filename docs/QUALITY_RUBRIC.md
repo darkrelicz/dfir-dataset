@@ -8,7 +8,7 @@ This file is a reusable rubric and operating guide, not a live quality snapshot.
 
 ## Implementation Notes
 
-The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. It uses independent Phase 4 row validators, local ATT&CK/ATLAS STIX/YAML reference caches when present, raw-corpus fallback references, a configurable tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/tactic/taxonomy audits, and writes all required output files plus `quality_manifest.json`.
+The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. It uses independent Phase 4 row validators, local ATT&CK/ATLAS ID reference caches when present, raw-corpus fallback ID references, a config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and writes all required output files plus `quality_manifest.json`.
 
 The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 
@@ -117,8 +117,7 @@ Run these after filtering:
 | Task category distribution | Within agreed tolerance of `configs/task_categories.yaml` |
 | Difficulty distribution | Near configured target unless intentionally changed |
 | Source balance | No single source dominates the final dataset |
-| ATT&CK tactic coverage | All applicable tactics represented |
-| ATLAS coverage | AI/ML coverage documented honestly |
+| ATT&CK/ATLAS ID validity | Technique IDs are valid against local references |
 | Taxonomy heatmap | Covered, thin, and absent categories visible |
 | Duplicate audit | Sigma/Hayabusa and repeated advisory patterns checked |
 

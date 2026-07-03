@@ -23,7 +23,7 @@ Use these sources when preparing a run-specific coverage report:
 | `data/raw/collection_manifest.json` | Which raw collectors ran and how many documents each produced |
 | `data/synthesized/<run>/accepted.jsonl` | Which sources, categories, difficulties, techniques, and taxonomy refs synthesis produced |
 | `data/synthesized/<run>/rejected.jsonl` | Which prompts failed generation or Phase 3 validation |
-| `data/quality/<run>/quality_manifest.json` | Filtered/review/rejected counts, distributions, tactic coverage, and taxonomy coverage |
+| `data/quality/<run>/quality_manifest.json` | Filtered/review/rejected counts, source/category/difficulty distributions, and taxonomy coverage |
 | `data/quality/<run>/review_queue.jsonl` | Fuzzy quality issues requiring human or AI-assisted adjudication |
 | `configs/quality.yaml` | Valid taxonomy refs, coverage groupings, and quality thresholds |
 | `configs/task_categories.yaml` | Target category and difficulty distributions |
@@ -47,8 +47,7 @@ Check coverage along these dimensions:
 - Task category distribution: compare against `configs/task_categories.yaml`.
 - Difficulty distribution: compare against the configured junior/mid/senior target.
 - Taxonomy coverage: report covered, thin, and absent taxonomy IDs from `configs/quality.yaml`.
-- ATT&CK coverage: summarize tactic and technique coverage from the quality manifest.
-- ATLAS coverage: summarize AI/ML tactic and technique coverage from the quality manifest.
+- ATT&CK/ATLAS mapping health: summarize valid technique IDs and mapping-related review/rejection pressure.
 - Review pressure: identify sources or categories that mostly route to `review_queue.jsonl`.
 - Rejection pressure: identify sources or categories with high hard-rejection rates.
 

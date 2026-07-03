@@ -14,7 +14,6 @@ from quality.validators import validate_quality_row
 from synthesizers.io import load_raw_documents
 from utils.io import append_jsonl, load_yaml, write_json
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,22 +51,14 @@ def run_quality_filter(args) -> int:
         if path.exists() and not args.append:
             path.unlink()
         path.touch(exist_ok=True)
-    log_stage_complete(
-        "prepared output files",
-        stage_started,
-        f"append={args.append}",
-    )
+    log_stage_complete("prepared output files", stage_started, f"append={args.append}")
 
     stage_started = time.perf_counter()
     raw_docs_by_id = {doc.doc_id: doc for doc in load_raw_documents(raw_dir)}
-    log_stage_complete(
-        "loaded raw documents",
-        stage_started,
-        f"documents={len(raw_docs_by_id)}",
-    )
+    log_stage_complete("loaded raw documents", stage_started, f"documents={len(raw_docs_by_id)}")
 
     stage_started = time.perf_counter()
-    references = build_quality_references(raw_docs_by_id, quality_config, raw_dir)
+    references = build_quality_references(quality_config, raw_dir)
     log_stage_complete(
         "built quality references",
         stage_started,
@@ -127,14 +118,6 @@ def run_quality_filter(args) -> int:
                 }
             )
             row_status_counts[decision.status] += 1
-            if total_pairs % 1000 == 0:
-                logger.info(
-                    "Validated %s row(s): filtered=%s review=%s rejected=%s",
-                    total_pairs,
-                    row_status_counts["filtered"],
-                    row_status_counts["review"],
-                    row_status_counts["rejected"],
-                )
 
     log_stage_complete(
         "completed row-level quality validation",
@@ -152,7 +135,6 @@ def run_quality_filter(args) -> int:
         records,
         quality_config,
         task_config,
-        references,
     )
     log_stage_complete("completed dataset-level quality gates", stage_started)
 
@@ -203,6 +185,7 @@ def run_quality_filter(args) -> int:
         notes=[
             "Phase 4 quality gate uses independent validators, not Phase 3 output validators.",
             "ATT&CK and ATLAS validation uses local STIX/YAML reference caches when present.",
+            "Tool validation uses configs/quality.yaml as the allowlist source of truth.",
             "Reduced-pair subset run: historical 10k-15k filtered target is not expected.",
             "review_queue.jsonl is excluded from filtered training output until reviewed.",
         ],
@@ -223,11 +206,7 @@ def run_quality_filter(args) -> int:
     return 0
 
 
-def log_stage_complete(
-    stage: str,
-    started_at: float,
-    detail: str | None = None,
-) -> None:
+def log_stage_complete(stage: str, started_at: float, detail: str | None = None) -> None:
     elapsed = time.perf_counter() - started_at
     if detail:
         logger.info("%s in %.1fs (%s)", stage, elapsed, detail)

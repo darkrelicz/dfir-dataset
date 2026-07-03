@@ -30,7 +30,7 @@
 - Deterministic checks for schema, source provenance, taxonomy validity, reasoning-link integrity, ATT&CK/ATLAS ID validity, tool names, invented indicators, and final-answer consistency are implemented. Review/tune them only after examining false positives.
 - Heuristic quality scoring for grounding, specificity, reasoning strength, caveat quality, operational usefulness, source balance, difficulty balance, and taxonomy coverage is implemented. Tune thresholds after reviewing the subset run.
 - Review unsupported-claim cases where a response claims `source_only` but uses domain knowledge without an explicit `[GENERAL KNOWLEDGE]` tag. Current code sends broad claim terms absent from the source to `review_queue.jsonl`.
-- Near-duplicate detection, source/category/difficulty/tactic/taxonomy audits, and manual spot-check sampling are implemented; tune thresholds in `configs/quality.yaml` after reviewing the subset run.
+- Near-duplicate detection, source/category/difficulty/taxonomy audits, and manual spot-check sampling are implemented; tune thresholds in `configs/quality.yaml` after reviewing the subset run.
 - `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` are implemented via `scripts/quality_filter.py`.
 - Stage-level quality logs are implemented; keep `--log-level INFO` for long runs unless quiet output is explicitly needed.
 - Use AI-assisted judging and manual review for fuzzy quality issues such as weak reasoning or unsupported claims, not as the only quality gate.
