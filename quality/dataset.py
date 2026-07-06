@@ -115,14 +115,12 @@ def apply_near_duplicate_gate(
         ),
         reverse=True,
     )
-    kept: set[int] = set()
     inverted_index: dict[str, list[int]] = defaultdict(list)
     duplicate_pairs: list[dict[str, Any]] = []
 
     for index in ordered:
         tokens = token_sets[index]
         if len(tokens) < 8:
-            kept.add(index)
             for token in tokens:
                 inverted_index[token].append(index)
             continue
@@ -166,7 +164,6 @@ def apply_near_duplicate_gate(
             )
             continue
 
-        kept.add(index)
         for token in tokens:
             inverted_index[token].append(index)
 
@@ -290,13 +287,6 @@ def taxonomy_coverage_audit(
 
     covered = sorted(ref for ref in configured_refs if counts[ref] > 0)
     missing = sorted(ref for ref in configured_refs if counts[ref] == 0)
-    total_filtered = sum(
-        1 for record in records if decision(record).status == "filtered"
-    )
-    density = {
-        ref: taxonomy_density(counts[ref], total_filtered)
-        for ref in configured_refs
-    }
     domain_summary: dict[str, dict[str, Any]] = {}
     for domain, config in quality_config.get("taxonomy", {}).get("domains", {}).items():
         ids = [str(value) for value in config.get("ids", [])]
@@ -315,20 +305,8 @@ def taxonomy_coverage_audit(
         "covered_refs": covered,
         "missing_refs": missing,
         "counts": dict(sorted(counts.items())),
-        "density": density,
         "domain_summary": domain_summary,
     }
-
-
-def taxonomy_density(count: int, total_filtered: int) -> str:
-    if count == 0 or total_filtered == 0:
-        return "absent"
-    share = count / total_filtered
-    if count < 5 or share < 0.005:
-        return "thin"
-    if count < 25 or share < 0.025:
-        return "moderate"
-    return "dense"
 
 
 def record_tokens(record: dict[str, Any]) -> set[str]:

@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-from collectors.schemas import RawDocument
+from validation.taxonomy import get_taxonomy_refs_from_config
 
 ATTACK_ID_RE = re.compile(r"\bT\d{4}(?:\.\d{3})?\b")
 ATLAS_ID_RE = re.compile(r"\bAML\.T\d{4}(?:\.\d{3})?\b")
@@ -24,9 +24,9 @@ class QualityReferences:
 
 def build_quality_references(quality_config: dict[str, Any], raw_dir: Path) -> QualityReferences:
     references = QualityReferences()
-    references.taxonomy_refs = get_taxonomy_refs_from_quality_config(quality_config)
+    references.taxonomy_refs = get_taxonomy_refs_from_config(quality_config)
     references.tool_allowlist = get_configured_tool_allowlist(quality_config)
-    
+
     add_attack_ids_from_stix_cache(raw_dir, references)
     add_atlas_ids_from_stix_cache(raw_dir, references)
 
@@ -121,10 +121,3 @@ def normalize_tool_name(name: str) -> str:
     if lowered.endswith(".exe"):
         lowered = lowered[:-4]
     return lowered
-
-
-def get_taxonomy_refs_from_quality_config(quality_config: dict[str, Any]) -> set[str]:
-    refs: set[str] = set()
-    for domain in quality_config.get("taxonomy", {}).get("domains", {}).values():
-        refs.update(str(value) for value in domain.get("ids", []))
-    return refs

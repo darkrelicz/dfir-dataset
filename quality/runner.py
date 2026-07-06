@@ -96,7 +96,10 @@ def run_quality_filter(args) -> int:
                 records.append(
                     {
                         "row": {},
-                        "decision": rejected_decision([issue]),
+                        "decision": QualityDecision(
+                            status="rejected",
+                            issues=[issue],
+                        ),
                         "line_number": line_number,
                     }
                 )
@@ -183,7 +186,10 @@ def run_quality_filter(args) -> int:
             ),
             "ATT&CK and ATLAS validation uses local STIX/YAML reference caches when present.",
             "Tool validation uses configs/quality.yaml as the allowlist source of truth.",
-            "Quality scores are emitted as metadata and do not gate rows.",
+            (
+                "Quality scores are emitted as metadata and used only to rank "
+                "rows for duplicate retention and source-balance review."
+            ),
             "Reduced-pair subset run: historical 10k-15k filtered target is not expected.",
             "review_queue.jsonl is excluded from filtered training output until reviewed.",
         ],
@@ -210,10 +216,6 @@ def log_stage_complete(stage: str, started_at: float, detail: str | None = None)
         logger.info("%s in %.1fs (%s)", stage, elapsed, detail)
     else:
         logger.info("%s in %.1fs", stage, elapsed)
-
-
-def rejected_decision(issues: list[QualityIssue]) -> QualityDecision:
-    return QualityDecision(status="rejected", issues=issues)
 
 
 def write_quality_outputs(

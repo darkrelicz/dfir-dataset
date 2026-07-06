@@ -8,6 +8,7 @@ from collectors.schemas import RawDocument
 from quality.references import QualityReferences, normalize_tool_name
 from quality.schemas import (QualityCandidate, QualityDecision, QualityIssue,
                              QualityScore)
+from utils.text import count_words
 from validation.grounding import grounding_mismatch_message
 from validation.indicators import invented_indicators, source_document_text
 from validation.mappings import (ATLAS_ID_ANYWHERE_RE, ATLAS_ID_RE,
@@ -358,11 +359,11 @@ def score_candidate(
     specificity = 5.0 if has_source_specific_overlap(final_answer_text(candidate.response), source_doc) else 2.5
 
     completeness = 5.0
-    if word_count(final_answer_text(candidate.response)) < MIN_FINAL_ANSWER_WORDS:
+    if count_words(final_answer_text(candidate.response)) < MIN_FINAL_ANSWER_WORDS:
         completeness -= 1.5
     if not caveat_texts(candidate.response):
         completeness -= 1.0
-    if word_count(candidate.response) > MAX_RESPONSE_WORDS:
+    if count_words(candidate.response) > MAX_RESPONSE_WORDS:
         completeness -= 0.75
 
     dimensions = {
@@ -395,10 +396,6 @@ def find_invented_indicators(candidate: QualityCandidate, source_doc: RawDocumen
         ]
     )
     return invented_indicators(output_text, source_corpus_text(source_doc))
-
-
-def word_count(value: str) -> int:
-    return len(value.split())
 
 
 def source_corpus_text(source_doc: RawDocument) -> str:
