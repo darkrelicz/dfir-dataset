@@ -45,7 +45,7 @@ def apply_dataset_gates(
         records,
         field="category",
         targets=task_config.get("distribution", {}).get("category_targets", {}),
-        tolerance=balance_tolerance(quality_config),
+        tolerance=get_tolerance(quality_config),
     )
     log_dataset_gate_complete("category balance", stage_started)
 
@@ -55,7 +55,7 @@ def apply_dataset_gates(
         records,
         field="difficulty",
         targets=task_config.get("distribution", {}).get("difficulty_targets", {}),
-        tolerance=balance_tolerance(quality_config),
+        tolerance=get_tolerance(quality_config),
     )
     log_dataset_gate_complete("difficulty balance", stage_started)
 
@@ -340,7 +340,7 @@ def score_total(record: dict[str, Any]) -> float:
     return score.total
 
 
-def balance_tolerance(quality_config: dict[str, Any]) -> float:
+def get_tolerance(quality_config: dict[str, Any]) -> float:
     return float(
         quality_config.get("balance", {}).get(
             "distribution_tolerance", DEFAULT_BALANCE_TOLERANCE
