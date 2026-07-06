@@ -95,6 +95,36 @@ scoring:
     specificity: 0.15
     completeness: 0.15
 
+heuristics:
+  generic_penalty_terms:
+    - "best practices"
+    - "consult your security team"
+    - "follow best practices"
+    - "further analysis is needed"
+    - "further investigation is needed"
+    - "more investigation is needed"
+    - "review logs"
+    - "check logs"
+    - "suspicious activity"
+    - "this may indicate malicious activity"
+  operational_verbs:
+    - acquire
+    - collect
+    - compare
+    - confirm
+    - correlate
+    - decode
+    - extract
+    - inspect
+    - isolate
+    - pivot
+    - preserve
+    - query
+    - review
+    - scope
+    - triage
+    - validate
+
 reasoning:
   min_steps: 4
   max_steps: 24

@@ -61,6 +61,7 @@ def run_quality_filter(args) -> int:
         ),
     )
     valid_categories = set(task_config.get("categories", {}))
+    category_configs = task_config.get("categories", {})
 
     created_at = datetime.now(timezone.utc)
     run_id = f"quality-{created_at.strftime('%Y%m%dT%H%M%SZ')}"
@@ -73,6 +74,7 @@ def run_quality_filter(args) -> int:
         references,
         valid_categories,
         quality_config,
+        category_configs,
     )
 
     log_stage_complete(
@@ -157,6 +159,7 @@ def validate_input_records(
     references: QualityReferences,
     valid_categories: set[str],
     quality_config: dict[str, Any],
+    category_configs: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], Counter[str], int]:
     records: list[dict[str, Any]] = []
     status_counts: Counter[str] = Counter()
@@ -175,6 +178,7 @@ def validate_input_records(
                 references,
                 valid_categories,
                 quality_config,
+                category_configs,
             )
             records.append(
                 {
@@ -195,6 +199,7 @@ def validate_input_line(
     references: QualityReferences,
     valid_categories: set[str],
     quality_config: dict[str, Any],
+    category_configs: dict[str, Any],
 ) -> tuple[dict[str, Any], QualityDecision]:
     try:
         row = json.loads(line)
@@ -220,6 +225,7 @@ def validate_input_line(
         references,
         valid_categories,
         quality_config,
+        category_configs,
     )
     return row, decision
 
@@ -262,6 +268,10 @@ def build_quality_manifest(
             (
                 "Quality scores are emitted as metadata and used only to rank "
                 "rows for duplicate retention and source-balance review."
+            ),
+            (
+                "Heuristic scoring uses configs/quality.yaml and task category "
+                "quality_signals from configs/task_categories.yaml."
             ),
             "Reduced-pair subset run: historical 10k-15k filtered target is not expected.",
             "review_queue.jsonl is excluded from filtered training output until reviewed.",

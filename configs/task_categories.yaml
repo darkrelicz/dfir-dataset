@@ -6,30 +6,85 @@ categories:
   artifact_analysis:
     description: "Interpret forensic tool output, identify anomalies, explain what artifacts mean"
     prompt_template: "artifact_analysis.md"
+    quality_signals:
+      - anomaly
+      - artifact
+      - evidence
+      - field
+      - file
+      - log
+      - parse
+      - path
+      - timeline
+      - value
     absorbs: [AF1, AF3, A2, A4]  # Anti-forensics detection, AI app/infra forensics
     shepherd_alignment: ["Memory Agent", "Windows Event Log Agent"]
 
   ttp_identification:
     description: "Map observed behaviors to MITRE ATT&CK / ATLAS techniques, identify attack chain stages"
     prompt_template: "ttp_identification.md"
+    quality_signals:
+      - attack
+      - atlas
+      - behavior
+      - candidate
+      - chain
+      - confidence
+      - mapping
+      - mitre
+      - tactic
+      - technique
     absorbs: [A1, A3, TI1]  # AI attacks, AI supply chain, threat intel ops
     shepherd_alignment: ["All specialist agents"]
 
   triage_and_hunting:
     description: "Prioritize investigation steps, recommend evidence collection, proactive threat hunting"
     prompt_template: "triage_and_hunting.md"
+    quality_signals:
+      - collect
+      - corroborate
+      - evidence
+      - hunt
+      - investigate
+      - pivot
+      - prioritize
+      - review
+      - scope
+      - triage
     absorbs: [SC1]  # Supply chain triage
     shepherd_alignment: ["Orchestrator", "All specialist agents"]
 
   detection_engineering:
     description: "Write/interpret Sigma rules, explain detection logic, translate query languages"
     prompt_template: "detection_engineering.md"
+    quality_signals:
+      - coverage
+      - detection
+      - false positive
+      - logic
+      - query
+      - rule
+      - sigma
+      - telemetry
+      - translate
+      - tuning
     absorbs: [S1, S3]  # SIEM queries, detection coverage
     shepherd_alignment: ["Future detection capability"]
 
   report_generation:
     description: "Produce evidence-cited IR reports, calibrate confidence, flag overclaims"
     prompt_template: "report_generation.md"
+    quality_signals:
+      - caveat
+      - confidence
+      - evidence
+      - finding
+      - impact
+      - limitation
+      - overclaim
+      - report
+      - summary
+      - uncertainty
     absorbs: []
     shepherd_alignment: ["Report Agent", "Reviewer Agent"]
 

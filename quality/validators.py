@@ -10,7 +10,8 @@ from quality.schemas import (QualityCandidate, QualityDecision, QualityIssue,
                              QualityScore)
 from utils.text import count_words
 from validation.grounding import grounding_mismatch_message
-from validation.indicators import invented_indicators, source_document_text
+from validation.indicators import (extract_concrete_indicators,
+                                   invented_indicators, source_document_text)
 from validation.mappings import (ATLAS_ID_ANYWHERE_RE, ATLAS_ID_RE,
                                  MITRE_ID_ANYWHERE_RE, MITRE_ID_RE,
                                  normalized_mapping_id)
@@ -20,6 +21,8 @@ from validation.reasoning import (ReasoningValidationOptions, caveat_texts,
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.\\/-]{2,}")
 MAX_RESPONSE_WORDS = 1200
+LONG_RESPONSE_WORDS = 900
+PREFERRED_RESPONSE_WORDS = 600
 MIN_FINAL_ANSWER_WORDS = 25
 STOPWORDS = {
     "about",
@@ -59,6 +62,7 @@ def validate_row_quality(
     references: QualityReferences,
     valid_categories: set[str],
     quality_config: Mapping[str, Any] | None = None,
+    category_configs: Mapping[str, Any] | None = None,
 ) -> QualityDecision:
     """Run row-level quality checks"""
 
@@ -90,24 +94,8 @@ def validate_row_quality(
             ],
         )
 
-    if candidate.source != source_doc.source:
-        issues.append(
-            QualityIssue(
-                code="source_mismatch",
-                severity="reject",
-                message=f"source mismatch: {candidate.source} != {source_doc.source}",
-            )
-        )
-
-    if candidate.category not in valid_categories:
-        issues.append(
-            QualityIssue(
-                code="category_invalid",
-                severity="reject",
-                message=f"Invalid category: {candidate.category}",
-            )
-        )
-
+    issues.extend(validate_source(candidate, source_doc.source))
+    issues.extend(validate_category(candidate, valid_categories))
     issues.extend(validate_taxonomy(candidate, references.taxonomy_refs))
     issues.extend(validate_mapping_ids(candidate, references))
     issues.extend(validate_tools(candidate, source_doc, references))
@@ -115,7 +103,13 @@ def validate_row_quality(
     issues.extend(validate_grounding(candidate))
     issues.extend(validate_source_grounding(candidate, source_doc))
 
-    score = score_candidate(candidate, source_doc, issues, quality_config or {})
+    score = score_candidate(
+        candidate,
+        source_doc,
+        issues,
+        quality_config or {},
+        category_configs or {},
+    )
 
     if any(issue.severity == "reject" for issue in issues):
         return QualityDecision(status="rejected", issues=issues, score=score)
@@ -124,10 +118,33 @@ def validate_row_quality(
     return QualityDecision(status="filtered", score=score)
 
 
-def validate_taxonomy(
-    candidate: QualityCandidate,
-    valid_taxonomy_refs: set[str],
-) -> list[QualityIssue]:
+def validate_source(candidate: QualityCandidate, doc_source: str) -> list[QualityIssue]:
+    issues: list[QualityIssue] = []
+    if candidate.source != doc_source:
+        issues.append(
+            QualityIssue(
+                code="source_mismatch",
+                severity="reject",
+                message=f"source mismatch: {candidate.source} != {doc_source}",
+            )
+        )
+    return issues
+
+
+def validate_category(candidate: QualityCandidate, valid_categories: set[str]) -> list[QualityIssue]:
+    issues: list[QualityIssue] = []
+    if candidate.category not in valid_categories:
+        issues.append(
+            QualityIssue(
+                code="category_invalid",
+                severity="reject",
+                message=f"Invalid category: {candidate.category}",
+            )
+        )
+    return issues
+
+
+def validate_taxonomy(candidate: QualityCandidate, valid_taxonomy_refs: set[str]) -> list[QualityIssue]:
     issues: list[QualityIssue] = []
     if not candidate.taxonomy_refs:
         issues.append(
@@ -149,10 +166,7 @@ def validate_taxonomy(
     return issues
 
 
-def validate_mapping_ids(
-    candidate: QualityCandidate,
-    references: QualityReferences,
-) -> list[QualityIssue]:
+def validate_mapping_ids(candidate: QualityCandidate, references: QualityReferences) -> list[QualityIssue]:
     issues: list[QualityIssue] = []
     invalid_mitre = [
         value for value in candidate.mitre_techniques if not MITRE_ID_RE.match(value)
@@ -275,10 +289,7 @@ def validate_tools(
     return issues
 
 
-def validate_reasoning(
-    response: str,
-    quality_config: Mapping[str, Any] | None = None,
-) -> list[QualityIssue]:
+def validate_reasoning(response: str, quality_config: Mapping[str, Any]) -> list[QualityIssue]:
     reasoning_config = (quality_config or {}).get("reasoning", {})
     min_steps = int(reasoning_config.get("min_steps", 4))
     max_steps = int(reasoning_config.get("max_steps", 24))
@@ -317,10 +328,7 @@ def validate_grounding(candidate: QualityCandidate) -> list[QualityIssue]:
     return []
 
 
-def validate_source_grounding(
-    candidate: QualityCandidate,
-    source_doc: RawDocument,
-) -> list[QualityIssue]:
+def validate_source_grounding(candidate: QualityCandidate, source_doc: RawDocument) -> list[QualityIssue]:
     issues: list[QualityIssue] = []
 
     invented = find_invented_indicators(candidate, source_doc)
@@ -342,6 +350,7 @@ def score_candidate(
     source_doc: RawDocument,
     issues: list[QualityIssue],
     quality_config: Mapping[str, Any],
+    category_configs: Mapping[str, Any],
 ) -> QualityScore:
     hard_codes = {issue.code for issue in issues if issue.severity == "reject"}
 
@@ -355,16 +364,27 @@ def score_candidate(
     if "reasoning_links_invalid" in hard_codes:
         reasoning_quality = 1.0
 
-    operational_relevance = 5.0 if has_operational_signal(candidate) else 2.5
-    specificity = 5.0 if has_source_specific_overlap(final_answer_text(candidate.response), source_doc) else 2.5
+    final_answer = final_answer_text(candidate.response)
+    operational_relevance = score_operational_relevance(
+        candidate,
+        final_answer,
+        quality_config,
+        category_configs,
+    )
+    specificity = score_specificity(final_answer, source_doc)
 
     completeness = 5.0
-    if count_words(final_answer_text(candidate.response)) < MIN_FINAL_ANSWER_WORDS:
+    if count_words(final_answer) < MIN_FINAL_ANSWER_WORDS:
         completeness -= 1.5
     if not caveat_texts(candidate.response):
         completeness -= 1.0
-    if count_words(candidate.response) > MAX_RESPONSE_WORDS:
+    response_words = count_words(candidate.response)
+    if response_words > MAX_RESPONSE_WORDS:
+        completeness -= 1.25
+    elif response_words > LONG_RESPONSE_WORDS:
         completeness -= 0.75
+    elif response_words > PREFERRED_RESPONSE_WORDS:
+        completeness -= 0.25
 
     dimensions = {
         "factual_accuracy": clamp_score(factual_accuracy),
@@ -407,12 +427,27 @@ def source_corpus_text(source_doc: RawDocument) -> str:
     )
 
 
-def has_source_specific_overlap(final_answer: str, source_doc: RawDocument) -> bool:
+def score_specificity(final_answer: str, source_doc: RawDocument) -> float:
     if not final_answer:
-        return False
+        return 1.0
+
     source_tokens = distinctive_tokens(source_corpus_text(source_doc))
     answer_tokens = distinctive_tokens(final_answer)
-    return bool(source_tokens & answer_tokens)
+    overlap_count = len(source_tokens & answer_tokens)
+    concrete_count = len(extract_concrete_indicators(final_answer))
+
+    score = 2.0
+    if overlap_count >= 1:
+        score = 3.0
+    if overlap_count >= 3:
+        score = 4.0
+    if overlap_count >= 6:
+        score = 4.5
+    if concrete_count >= 1:
+        score += 0.5
+    if concrete_count >= 3:
+        score += 0.25
+    return clamp_score(score)
 
 
 def distinctive_tokens(text: str) -> set[str]:
@@ -425,58 +460,74 @@ def distinctive_tokens(text: str) -> set[str]:
     return tokens
 
 
-def has_operational_signal(candidate: QualityCandidate) -> bool:
-    text = final_answer_text(candidate.response).lower()
+def score_operational_relevance(
+    candidate: QualityCandidate,
+    final_answer: str,
+    quality_config: Mapping[str, Any],
+    category_configs: Mapping[str, Any],
+) -> float:
+    text = final_answer.lower()
     if not text:
+        return 1.0
+
+    heuristics_config = quality_config.get("heuristics", {})
+    category_terms = category_quality_terms(candidate.category, category_configs)
+    verb_terms = configured_terms(heuristics_config, "operational_verbs")
+    generic_terms = configured_terms(heuristics_config, "generic_penalty_terms")
+
+    signal_count = count_matching_terms(text, category_terms)
+    verb_count = count_matching_terms(text, verb_terms)
+    generic_count = count_matching_terms(text, generic_terms)
+
+    score = 2.0
+    if signal_count >= 1:
+        score += 1.0
+    if signal_count >= 2:
+        score += 0.75
+    if signal_count >= 4:
+        score += 0.5
+    if verb_count >= 1:
+        score += 0.5
+    if verb_count >= 3:
+        score += 0.25
+    score -= min(generic_count, 3) * 0.4
+    return clamp_score(score)
+
+
+def category_quality_terms(
+    category: str,
+    category_configs: Mapping[str, Any],
+) -> set[str]:
+    category_config = category_configs.get(category, {})
+    if not isinstance(category_config, Mapping):
+        return set()
+
+    terms = configured_terms(category_config, "quality_signals")
+    description = str(category_config.get("description") or "")
+    terms.update(distinctive_tokens(description))
+    return terms
+
+
+def configured_terms(config: Any, key: str) -> set[str]:
+    if not isinstance(config, Mapping):
+        return set()
+    values = config.get(key, [])
+    if not isinstance(values, (list, tuple, set)):
+        return set()
+    return {str(value).strip().lower() for value in values if str(value).strip()}
+
+
+def count_matching_terms(text: str, terms: set[str]) -> int:
+    tokens = {value.lower() for value in TOKEN_RE.findall(text)}
+    return sum(1 for term in terms if term_matches(text, tokens, term))
+
+
+def term_matches(text: str, tokens: set[str], term: str) -> bool:
+    if not term:
         return False
-    category_signals = {
-        "artifact_analysis": (
-            "artifact",
-            "path",
-            "field",
-            "log",
-            "evidence",
-            "parse",
-            "timeline",
-        ),
-        "ttp_identification": (
-            "attack",
-            "mitre",
-            "technique",
-            "candidate",
-            "mapping",
-            "tactic",
-        ),
-        "triage_and_hunting": (
-            "check",
-            "collect",
-            "corroborate",
-            "hunt",
-            "investigate",
-            "pivot",
-            "review",
-            "triage",
-        ),
-        "detection_engineering": (
-            "detection",
-            "false positive",
-            "logic",
-            "query",
-            "rule",
-            "telemetry",
-            "tuning",
-        ),
-        "report_generation": (
-            "confidence",
-            "caveat",
-            "evidence",
-            "finding",
-            "report",
-            "summary",
-        ),
-    }
-    signals = category_signals.get(candidate.category, ())
-    return any(signal in text for signal in signals)
+    if " " in term:
+        return term in text
+    return term in tokens
 
 
 def clamp_score(value: float) -> float:

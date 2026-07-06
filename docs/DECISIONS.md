@@ -27,8 +27,8 @@
 ## Taxonomy And Config Separation
 
 - `docs/TAXONOMY.md` is the human-readable 57-category DFIR artifact taxonomy.
-- `configs/quality.yaml` is the machine-readable taxonomy validation and coverage map.
-- `configs/task_categories.yaml` defines the five model behavior categories used for synthesis.
+- `configs/quality.yaml` is the machine-readable taxonomy validation, coverage map, scoring weights, no-API heuristic terms, and dedupe/balance policy.
+- `configs/task_categories.yaml` defines the five model behavior categories used for synthesis and carries category-specific `quality_signals` for Phase 4 operational-relevance scoring.
 - `configs/source_profiles.yaml` defines Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 
 ## Product Shape
@@ -86,9 +86,10 @@
 
 - Phase 4 quality validation should be primarily deterministic and heuristic, with AI-assisted judging and manual review used for fuzzy quality issues such as weak reasoning or unsupported claims.
 - Phase 4 must not depend on Phase 3's generated-output validators for differentiation. Phase 3 and Phase 4 share pure validation primitives in `validation/`, but each stage keeps its own policy wrapper. Phase 4 has row-level gates for schema, source provenance, taxonomy refs, ATT&CK/ATLAS IDs, reasoning links, grounding, invented indicators, source specificity, operational value, and rubric scoring, plus dataset-level gates for near-duplicates and distribution audits. Only `filtered.jsonl` is eligible for Phase 5 packaging.
-- Phase 4 ATT&CK/ATLAS validation uses local reference caches when present (`data/raw/.cache/enterprise-attack.json` and `data/raw/.repos/atlas-data/dist/ATLAS.yaml`) with raw-corpus fallbacks. This keeps validation reproducible and offline while avoiding false rejections from the reduced prompt subset.
+- Do not add embedding or evaluator-model scoring to the current timeline unless the cost and latency budget changes. Phase 4 scoring should remain transparent and no-API: operational relevance comes from task-category `quality_signals`, task descriptions, configured operational verbs, and configured generic-answer penalties; specificity comes from source-token overlap and concrete artifact counts; completeness uses caveat presence and response-length tiers.
+- Phase 4 ATT&CK/ATLAS validation uses local reference caches when present (`data/raw/.cache/enterprise-attack.json` and `data/raw/.repos/atlas-data/dist/ATLAS.yaml`). Keep those caches with the raw data for reproducible offline validation.
 - The old `10k-15k` filtered-pair target belongs to the full-synthesis plan. Under the shortened timeline and reduced subset budget, the gate should optimize for coverage, factuality, and reviewability rather than forcing the old pair count.
-- Phase 4 should expose sub-stage progress through normal Python logging. `scripts/quality_filter.py` defaults to `--log-level INFO` and logs config loading, output preparation, raw/reference loading, row-validation progress, dataset audits, JSONL writes, manual spot-check sampling, and manifest writing.
+- Phase 4 should expose sub-stage progress through normal Python logging. `scripts/quality_filter.py` configures INFO logging by default and logs config loading, output preparation, raw/reference loading, row-validation progress, dataset audits, JSONL writes, manual spot-check sampling, and manifest writing.
 - Phase 5 packaging consumes Phase 4 filtered output, not raw Phase 3 `accepted.jsonl`.
 
 ## Training And Hosting
