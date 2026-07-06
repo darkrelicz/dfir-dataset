@@ -8,7 +8,7 @@ This file is a reusable rubric and operating guide, not a live quality snapshot.
 
 ## Implementation Notes
 
-The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. It does not call Phase 3's generated-output validators. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local ATT&CK/ATLAS ID reference checks, raw-corpus fallback ID references, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`.
+The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local ATT&CK/ATLAS ID reference checks, raw-corpus fallback ID references, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`.
 
 The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 

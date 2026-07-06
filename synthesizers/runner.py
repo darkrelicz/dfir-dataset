@@ -10,26 +10,16 @@ from rich.console import Console
 
 from synthesizers.clients.base import ModelClient, ModelResponse
 from synthesizers.planner import build_prompt_plan
-from synthesizers.run_state import (
-    build_run_id,
-    completed_prompt_ids,
-    prompt_hashes,
-    prompt_record_row,
-    prompt_run_fields,
-)
-from synthesizers.schemas import (
-    GeneratedPairValidation,
-    GenerationManifest,
-    PromptRecord,
-)
-from synthesizers.validators import (
-    valid_taxonomy_refs_from_quality_config,
-    validate_generated_pairs,
-    validate_raw_corpus,
-)
+from synthesizers.run_state import (build_run_id, completed_prompt_ids,
+                                    prompt_hashes, prompt_record_row,
+                                    prompt_run_fields)
+from synthesizers.schemas import (GeneratedPairValidation, GenerationManifest,
+                                  PromptRecord)
+from synthesizers.validators import (validate_generated_pairs,
+                                     validate_raw_corpus)
 from utils.io import append_jsonl, load_yaml, write_json, write_jsonl
 from utils.text import safe_filename
-
+from validation.taxonomy import get_taxonomy_refs_from_config
 
 CIRCUIT_BREAKER_MODES = {"full", "subset"}
 
@@ -348,7 +338,7 @@ def run_generation(args: argparse.Namespace) -> int:
         synthesis_config["model"],
         synthesis_config.get("generation", {}),
     )
-    valid_taxonomy_refs = valid_taxonomy_refs_from_quality_config(quality_config)
+    valid_taxonomy_refs = get_taxonomy_refs_from_config(quality_config)
     generation_config = synthesis_config.get("generation", {})
     retry_settings = retry_settings_from_generation_config(generation_config)
     validation_retries = validation_retries_from_generation_config(generation_config)

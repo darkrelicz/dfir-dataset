@@ -205,11 +205,7 @@ def validate_reasoning_structure(
                 )
             )
 
-    for conclusion_number, _, confidence, conclusion_text in confidence_matches:
-        if confidence.lower() not in {"high", "medium", "low"}:
-            issues.append(
-                ReasoningIssue(message=f"C{conclusion_number} has invalid confidence")
-            )
+    for conclusion_number, _, conclusion_text in confidence_matches:
         if conclusion_text.strip().lower() in PLACEHOLDER_TEXT:
             issues.append(
                 ReasoningIssue(message=f"C{conclusion_number} has empty conclusion")

@@ -4,25 +4,16 @@ from pathlib import Path
 
 from collectors.schemas import RawDocument
 from synthesizers.io import raw_jsonl_paths
-from synthesizers.schemas import (
-    GeneratedPairIssue,
-    GeneratedPairValidation,
-    InstructionPair,
-    PromptRecord,
-    RawCorpusIssue,
-    RawCorpusValidation,
-    ReasoningLinkIssue,
-    ReasoningLinkValidation,
-)
+from synthesizers.schemas import (GeneratedPairIssue, GeneratedPairValidation,
+                                  InstructionPair, PromptRecord,
+                                  RawCorpusIssue, RawCorpusValidation,
+                                  ReasoningLinkIssue, ReasoningLinkValidation)
 from validation.grounding import grounding_mismatch_message
-from validation.indicators import (
-    BASIC_INDICATOR_OPTIONS,
-    invented_indicators,
-    source_document_text,
-)
+from validation.indicators import (BASIC_INDICATOR_OPTIONS,
+                                   invented_indicators, source_document_text)
 from validation.mappings import ATLAS_ID_RE, MITRE_ID_RE
-from validation.reasoning import final_answer_text, validate_reasoning_structure
-from validation.taxonomy import valid_taxonomy_refs_from_config
+from validation.reasoning import (final_answer_text,
+                                  validate_reasoning_structure)
 
 JSON_FENCE_RE = re.compile(
     r"\A\s*```[ \t]*(?:json)?[ \t]*\r?\n(?P<body>.*?)(?:\r?\n)?```\s*\Z",
@@ -103,10 +94,6 @@ def validate_reasoning_links(response: str) -> ReasoningLinkValidation:
         ok=not issues,
         issues=issues,
     )
-
-
-def valid_taxonomy_refs_from_quality_config(quality_config: dict) -> set[str]:
-    return valid_taxonomy_refs_from_config(quality_config)
 
 
 def validate_generated_pairs(

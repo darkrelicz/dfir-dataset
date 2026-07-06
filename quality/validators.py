@@ -6,25 +6,16 @@ from pydantic import ValidationError
 
 from collectors.schemas import RawDocument
 from quality.references import QualityReferences, normalize_tool_name
-from quality.schemas import QualityCandidate, QualityDecision, QualityIssue, QualityScore
+from quality.schemas import (QualityCandidate, QualityDecision, QualityIssue,
+                             QualityScore)
 from validation.grounding import grounding_mismatch_message
-from validation.indicators import (
-    invented_indicators as find_invented_indicators,
-    source_document_text,
-)
-from validation.mappings import (
-    ATLAS_ID_ANYWHERE_RE,
-    ATLAS_ID_RE,
-    MITRE_ID_ANYWHERE_RE,
-    MITRE_ID_RE,
-    normalized_mapping_id,
-)
-from validation.reasoning import (
-    ReasoningValidationOptions,
-    caveat_texts,
-    final_answer_text,
-    validate_reasoning_structure,
-)
+from validation.indicators import invented_indicators, source_document_text
+from validation.mappings import (ATLAS_ID_ANYWHERE_RE, ATLAS_ID_RE,
+                                 MITRE_ID_ANYWHERE_RE, MITRE_ID_RE,
+                                 normalized_mapping_id)
+from validation.reasoning import (ReasoningValidationOptions, caveat_texts,
+                                  final_answer_text,
+                                  validate_reasoning_structure)
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.\\/-]{2,}")
 MAX_RESPONSE_WORDS = 1200
@@ -331,7 +322,7 @@ def validate_source_grounding(
 ) -> list[QualityIssue]:
     issues: list[QualityIssue] = []
 
-    invented = invented_indicators(candidate, source_doc)
+    invented = find_invented_indicators(candidate, source_doc)
     if invented:
         severity = "review" if candidate.grounding == "source_plus_general" else "reject"
         issues.append(
@@ -393,7 +384,7 @@ def score_candidate(
     return QualityScore(**dimensions, total=round(total, 3))
 
 
-def invented_indicators(candidate: QualityCandidate, source_doc: RawDocument) -> list[str]:
+def find_invented_indicators(candidate: QualityCandidate, source_doc: RawDocument) -> list[str]:
     output_text = "\n".join(
         [
             candidate.instruction,
@@ -403,7 +394,7 @@ def invented_indicators(candidate: QualityCandidate, source_doc: RawDocument) ->
             " ".join(candidate.tools_referenced),
         ]
     )
-    return find_invented_indicators(output_text, source_corpus_text(source_doc))
+    return invented_indicators(output_text, source_corpus_text(source_doc))
 
 
 def word_count(value: str) -> int:

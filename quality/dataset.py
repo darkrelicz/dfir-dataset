@@ -6,7 +6,7 @@ from typing import Any
 from quality.schemas import QualityDecision, QualityIssue
 from quality.validators import distinctive_tokens
 from validation.reasoning import final_answer_text
-from validation.taxonomy import valid_taxonomy_refs_from_config
+from validation.taxonomy import get_taxonomy_refs_from_config
 
 DEFAULT_NEAR_DUPLICATE_THRESHOLD = 0.8
 DEFAULT_MAX_SOURCE_SHARE = 0.25
@@ -279,7 +279,7 @@ def taxonomy_coverage_audit(
     records: list[dict[str, Any]],
     quality_config: dict[str, Any],
 ) -> dict[str, Any]:
-    configured_refs = sorted(valid_taxonomy_refs_from_config(quality_config))
+    configured_refs = sorted(get_taxonomy_refs_from_config(quality_config))
     counts: Counter[str] = Counter()
     for record in records:
         if decision(record).status != "filtered":
