@@ -53,14 +53,14 @@ STOPWORDS = {
 }
 
 
-def validate_quality_row(
+def validate_row_quality(
     row: Mapping[str, object],
     raw_docs_by_id: Mapping[str, RawDocument],
     references: QualityReferences,
     valid_categories: set[str],
     quality_config: Mapping[str, Any] | None = None,
 ) -> QualityDecision:
-    """Run Phase 4 row-level gates without calling Phase 3 output validators."""
+    """Run row-level quality checks"""
 
     issues: list[QualityIssue] = []
     try:

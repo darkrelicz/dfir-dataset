@@ -7,10 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from collectors.schemas import RawDocument
 from quality.dataset import apply_dataset_gates
-from quality.references import build_quality_references
+from quality.references import QualityReferences, build_quality_references
 from quality.schemas import QualityDecision, QualityIssue, QualityManifest
-from quality.validators import validate_quality_row
+from quality.validators import validate_row_quality
 from synthesizers.io import load_raw_documents
 from utils.io import append_jsonl, load_yaml, write_json
 
@@ -40,17 +41,7 @@ def run_quality_filter(args) -> int:
     )
 
     stage_started = time.perf_counter()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_paths = {
-        "filtered": output_dir / "filtered.jsonl",
-        "rejected": output_dir / "rejected.jsonl",
-        "review": output_dir / "review_queue.jsonl",
-    }
-    for name in ("filtered.jsonl", "rejected.jsonl", "review_queue.jsonl"):
-        path = output_dir / name
-        if path.exists() and not args.append:
-            path.unlink()
-        path.touch(exist_ok=True)
+    output_paths = prepare_output_files(output_dir, append=args.append)
     log_stage_complete("prepared output files", stage_started, f"append={args.append}")
 
     stage_started = time.perf_counter()
@@ -74,53 +65,15 @@ def run_quality_filter(args) -> int:
     created_at = datetime.now(timezone.utc)
     run_id = f"quality-{created_at.strftime('%Y%m%dT%H%M%SZ')}"
 
-    total_pairs = 0
-    row_status_counts: Counter[str] = Counter()
-    records: list[dict[str, Any]] = []
-
     stage_started = time.perf_counter()
     logger.info("Starting row-level quality validation")
-    with input_path.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, 1):
-            if not line.strip():
-                continue
-            total_pairs += 1
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError as exc:
-                issue = QualityIssue(
-                    code="schema_invalid",
-                    severity="reject",
-                    message=f"Invalid JSON at line {line_number}: {exc}",
-                )
-                records.append(
-                    {
-                        "row": {},
-                        "decision": QualityDecision(
-                            status="rejected",
-                            issues=[issue],
-                        ),
-                        "line_number": line_number,
-                    }
-                )
-                row_status_counts["rejected"] += 1
-                continue
-
-            decision = validate_quality_row(
-                row,
-                raw_docs_by_id,
-                references,
-                valid_categories,
-                quality_config,
-            )
-            records.append(
-                {
-                    "row": row,
-                    "decision": decision,
-                    "line_number": line_number,
-                }
-            )
-            row_status_counts[decision.status] += 1
+    records, row_status_counts, total_pairs = validate_input_records(
+        input_path,
+        raw_docs_by_id,
+        references,
+        valid_categories,
+        quality_config,
+    )
 
     log_stage_complete(
         "completed row-level quality validation",
@@ -134,11 +87,7 @@ def run_quality_filter(args) -> int:
 
     stage_started = time.perf_counter()
     logger.info("Starting dataset-level quality gates")
-    dataset_audits = apply_dataset_gates(
-        records,
-        quality_config,
-        task_config,
-    )
+    dataset_audits = apply_dataset_gates(records, quality_config, task_config)
     log_stage_complete("completed dataset-level quality gates", stage_started)
 
     stage_started = time.perf_counter()
@@ -162,7 +111,131 @@ def run_quality_filter(args) -> int:
         f"rows={spot_check['actual_sample_size']} path={spot_check['path']}",
     )
 
-    manifest = QualityManifest(
+    manifest = build_quality_manifest(
+        run_id=run_id,
+        input_path=input_path,
+        raw_dir=raw_dir,
+        output_dir=output_dir,
+        created_at=created_at,
+        total_pairs=total_pairs,
+        counts=counts,
+        dataset_audits=dataset_audits,
+    )
+    stage_started = time.perf_counter()
+    write_json(output_dir / "quality_manifest.json", manifest.model_dump(mode="json"))
+    log_stage_complete(
+        "wrote quality manifest",
+        stage_started,
+        f"path={output_dir / 'quality_manifest.json'}",
+    )
+    log_stage_complete("completed Phase 4 quality filter", overall_started)
+    print(
+        f"Quality filter complete: filtered={counts['filtered_pairs']}, "
+        f"review={counts['review_pairs']}, rejected={counts['rejected_pairs']}, "
+        f"total={total_pairs}"
+    )
+    return 0
+
+
+def prepare_output_files(output_dir: Path, *, append: bool) -> dict[str, Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_paths = {
+        "filtered": output_dir / "filtered.jsonl",
+        "rejected": output_dir / "rejected.jsonl",
+        "review": output_dir / "review_queue.jsonl",
+    }
+    for path in output_paths.values():
+        if path.exists() and not append:
+            path.unlink()
+        path.touch(exist_ok=True)
+    return output_paths
+
+
+def validate_input_records(
+    input_path: Path,
+    raw_docs_by_id: dict[str, RawDocument],
+    references: QualityReferences,
+    valid_categories: set[str],
+    quality_config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], Counter[str], int]:
+    records: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+    total_pairs = 0
+
+    with input_path.open("r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, 1):
+            if not line.strip():
+                continue
+
+            total_pairs += 1
+            row, decision = validate_input_line(
+                line,
+                line_number,
+                raw_docs_by_id,
+                references,
+                valid_categories,
+                quality_config,
+            )
+            records.append(
+                {
+                    "row": row,
+                    "decision": decision,
+                    "line_number": line_number,
+                }
+            )
+            status_counts[decision.status] += 1
+
+    return records, status_counts, total_pairs
+
+
+def validate_input_line(
+    line: str,
+    line_number: int,
+    raw_docs_by_id: dict[str, RawDocument],
+    references: QualityReferences,
+    valid_categories: set[str],
+    quality_config: dict[str, Any],
+) -> tuple[dict[str, Any], QualityDecision]:
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError as exc:
+        issue = QualityIssue(
+            code="schema_invalid",
+            severity="reject",
+            message=f"Invalid JSON at line {line_number}: {exc}",
+        )
+        return {}, QualityDecision(status="rejected", issues=[issue])
+
+    if not isinstance(row, dict):
+        issue = QualityIssue(
+            code="schema_invalid",
+            severity="reject",
+            message=f"Expected JSON object at line {line_number}",
+        )
+        return {}, QualityDecision(status="rejected", issues=[issue])
+
+    decision = validate_row_quality(
+        row,
+        raw_docs_by_id,
+        references,
+        valid_categories,
+        quality_config,
+    )
+    return row, decision
+
+
+def build_quality_manifest(
+    *,
+    run_id: str,
+    input_path: Path,
+    raw_dir: Path,
+    output_dir: Path,
+    created_at: datetime,
+    total_pairs: int,
+    counts: dict[str, Any],
+    dataset_audits: dict[str, Any],
+) -> QualityManifest:
+    return QualityManifest(
         run_id=run_id,
         input_path=str(input_path),
         raw_dir=str(raw_dir),
@@ -194,20 +267,6 @@ def run_quality_filter(args) -> int:
             "review_queue.jsonl is excluded from filtered training output until reviewed.",
         ],
     )
-    stage_started = time.perf_counter()
-    write_json(output_dir / "quality_manifest.json", manifest.model_dump(mode="json"))
-    log_stage_complete(
-        "wrote quality manifest",
-        stage_started,
-        f"path={output_dir / 'quality_manifest.json'}",
-    )
-    log_stage_complete("completed Phase 4 quality filter", overall_started)
-    print(
-        f"Quality filter complete: filtered={counts['filtered_pairs']}, "
-        f"review={counts['review_pairs']}, rejected={counts['rejected_pairs']}, "
-        f"total={total_pairs}"
-    )
-    return 0
 
 
 def log_stage_complete(stage: str, started_at: float, detail: str | None = None) -> None:
@@ -245,18 +304,12 @@ def write_quality_outputs(
                 difficulty_distribution,
                 taxonomy_distribution,
             )
-            append_jsonl(
-                output_paths["filtered"],
-                quality_row(row, run_id, decision),
-            )
+            append_jsonl(output_paths["filtered"], quality_row(row, run_id, decision))
         elif decision.status == "review":
             review_pairs += 1
             for issue in decision.issues:
                 review_counts[issue.code] += 1
-            append_jsonl(
-                output_paths["review"],
-                quality_row(row, run_id, decision),
-            )
+            append_jsonl(output_paths["review"], quality_row(row, run_id, decision))
         else:
             rejected_pairs += 1
             for issue in decision.issues:
