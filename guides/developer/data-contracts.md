@@ -1,0 +1,140 @@
+# Data Contracts
+
+The pipeline is held together by a few stable Pydantic and JSONL contracts.
+
+<puml src="../diagrams/raw-document-class.puml" alt="Class diagram for core data contracts" width="900" />
+
+## RawDocument
+
+Defined in `collectors/schemas.py`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `doc_id` | `str` | Stable source-specific ID. Must not depend on run order. |
+| `source` | `str` | Source key such as `mitre_attack`. |
+| `source_url` | `str` | Upstream source URL or public documentation URL. |
+| `title` | `str` | Human-readable title. |
+| `date_collected` | `date` | Collection date. |
+| `date_published` | `datetime or None` | Upstream publication date when available. |
+| `content_type` | `str` | Specific content label used by synthesis policy. |
+| `content_markdown` | `str` | Normalized full source content. |
+| `metadata` | `dict[str, Any]` | Source-specific structured metadata. |
+| `word_count` | `int` | Count from `utils.text.count_words`. |
+
+## CollectionManifest
+
+Each collector returns a manifest entry with:
+
+* collector class name;
+* package version;
+* source URL;
+* collection timestamp;
+* document count;
+* errors and warnings;
+* duration.
+
+`scripts.collect_all` writes the combined list to
+`data/raw/collection_manifest.json`.
+
+## PromptRecord
+
+Defined in `synthesizers/schemas.py`.
+
+Prompt records represent one model call for one raw document:
+
+* `prompt_id`
+* `source_doc_id`
+* `source`
+* `source_type`
+* `content_type`
+* `category`
+* `difficulty`
+* `pairs_requested`
+* `taxonomy_refs`
+* `prompt`
+
+`synthesizers.run_state.prompt_record_row` adds `prompt_hash` before writing
+`prompts.jsonl`.
+
+## InstructionPair
+
+Defined in `synthesizers/schemas.py` with `extra="forbid"`.
+
+| Field | Notes |
+|---|---|
+| `instruction` | Analyst-facing task prompt. |
+| `response` | Must begin with canonical `<reasoning>` and end with a final answer. |
+| `category` | Normalized from the prompt record in Phase 3 validation. |
+| `difficulty` | `junior`, `mid`, or `senior`; normalized from prompt record. |
+| `confidence` | `high`, `medium`, or `low`. |
+| `mitre_techniques` | ATT&CK technique IDs only, optional `?` suffix. |
+| `atlas_techniques` | ATLAS technique IDs only, optional `?` suffix. |
+| `tools_referenced` | Tool names used for quality allowlist/source checks. |
+| `source_doc_id` | Normalized from prompt record. |
+| `source` | Normalized from prompt record. |
+| `taxonomy_refs` | Normalized from prompt record. |
+| `grounding` | `source_only` or `source_plus_general`. |
+
+Phase 3 overwrites deterministic provenance fields from `PromptRecord` before
+schema validation, because the teacher model should not be trusted for those
+values.
+
+## QualityCandidate And QualityDecision
+
+`QualityCandidate` is the Phase 4 input schema. It mirrors `InstructionPair`,
+but ignores extra fields because Phase 3 rows include run metadata.
+
+`QualityDecision` contains:
+
+* `status`: `filtered`, `review`, or `rejected`;
+* `issues`: deterministic and heuristic issue codes;
+* `score`: a `QualityScore` with five dimensions and total.
+
+## Packaged Record
+
+The current package format is `messages_jsonl`.
+
+```json
+{
+  "id": "dfir-000001",
+  "messages": [
+    {"role": "system", "content": "You are Shepherd, a DFIR AI assistant..."},
+    {"role": "user", "content": "..."},
+    {"role": "assistant", "content": "..."}
+  ],
+  "metadata": {
+    "source_doc_id": "...",
+    "source": "...",
+    "category": "...",
+    "difficulty": "...",
+    "confidence": "...",
+    "taxonomy_refs": [],
+    "mitre_techniques": [],
+    "atlas_techniques": [],
+    "tools_referenced": [],
+    "grounding": "...",
+    "quality_status": "...",
+    "quality_issues": [],
+    "quality_score": {},
+    "reasoning_style": "reasoning",
+    "response_transform": "none",
+    "run_id": "...",
+    "prompt_id": "...",
+    "prompt_hash": "...",
+    "pair_index": 0,
+    "model": "...",
+    "generated_at": "...",
+    "quality_run_id": "...",
+    "source_pair_key": "prompt-id:0"
+  }
+}
+```
+
+## Manifest Contracts
+
+| Manifest | Writer | Purpose |
+|---|---|---|
+| `collection_manifest.json` | `scripts.collect_all` | Raw collection summary. |
+| `generation_manifest.json` | `synthesizers.runner` | Prompt/generation run summary. |
+| `quality_manifest.json` | `quality.runner` | Quality counts, distributions, and audits. |
+| `packaging_manifest.json` | `dataset_packaging.runner` | Split counts, response styles, and leakage check. |

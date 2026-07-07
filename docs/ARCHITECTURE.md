@@ -2,7 +2,7 @@
 
 ## Current Project Type
 
-This repository is a Python dataset pipeline, not a website application. No frontend framework, browser routing layer, CSS system, or UI component tree is currently present.
+This repository is a Python dataset pipeline. The primary product code is not a frontend application, browser routing layer, CSS system, or UI component tree. The `guides/` directory is a separate MarkBind documentation site used for successor-facing GitHub Pages documentation.
 
 ## Runtime And Frameworks
 
@@ -31,6 +31,8 @@ This repository is a Python dataset pipeline, not a website application. No fron
 - `dataset_packaging/`: Phase 5 local dataset packaging for Unsloth/GLM SFT. It reads Phase 4 filtered and review rows directly, converts configured rows into direct-answer examples, splits by `source_doc_id`, and writes chat JSONL plus a small packaging manifest.
 - `scripts/package_dataset.py`: Thin CLI for running Phase 5 packaging from `configs/packaging.yaml`; configures `INFO` stage logs by default.
 - `docs/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
+- `guides/`: Self-contained MarkBind documentation site for user/developer guides, PlantUML source diagrams, current implementation notes, and suggested improvements. Built locally with `npm run build` from inside `guides/`.
+- `.github/workflows/deploy-guides.yml`: GitHub Pages workflow for building `guides/` with MarkBind and deploying the generated `guides/_site` artifact.
 - `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
 
 The project plan's packaging phase is implemented as `dataset_packaging/` rather than `packaging/` to avoid shadowing Python's common third-party `packaging` library. Planned but not yet implemented packages from the project plan: `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.

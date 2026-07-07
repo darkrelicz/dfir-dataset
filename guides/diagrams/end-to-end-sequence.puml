@@ -1,0 +1,55 @@
+@startuml
+title End-to-End Dataset Factory Sequence
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant "scripts.collect_all" as CollectCLI
+participant "Collectors" as Collectors
+database "data/raw" as Raw
+participant "scripts.synthesize" as SynthCLI
+participant "Planner + PromptBuilder" as Planner
+participant "GeminiClient" as Gemini
+participant "Phase 3 validators" as V3
+database "data/synthesized/<run>" as SynthOut
+participant "scripts.quality_filter" as QualityCLI
+participant "Phase 4 quality" as Quality
+database "data/quality/<run>" as QualityOut
+participant "scripts.package_dataset" as PackageCLI
+participant "Packager" as Packager
+database "data/packaged/<run>" as PackageOut
+
+Maintainer -> CollectCLI: python -m scripts.collect_all
+CollectCLI -> Collectors: run selected or all collectors
+Collectors -> Raw: write <source>/<source>.jsonl
+Collectors -> Raw: write collection_manifest.json
+
+Maintainer -> SynthCLI: validate-raw
+SynthCLI -> Raw: read raw JSONL
+SynthCLI -> Maintainer: report file, document, issue counts
+
+Maintainer -> SynthCLI: run --mode subset
+SynthCLI -> Planner: select docs and assign category/difficulty
+Planner -> Raw: load RawDocument rows
+Planner -> Planner: apply source profiles and compactors
+Planner -> Gemini: one prompt at a time
+Gemini -> V3: structured JSON output
+V3 -> V3: schema, reasoning, grounding, indicators, mappings
+V3 -> SynthOut: accepted.jsonl or rejected.jsonl
+Gemini -> SynthOut: raw_outputs.jsonl
+SynthCLI -> SynthOut: prompts.jsonl and generation_manifest.json
+
+Maintainer -> QualityCLI: quality_filter
+QualityCLI -> Quality: validate candidate pairs
+Quality -> Raw: load source documents
+Quality -> Quality: row gates, scoring, dataset gates
+Quality -> QualityOut: filtered, review, rejected, sample, manifest
+
+Maintainer -> PackageCLI: package_dataset
+PackageCLI -> Packager: load filtered + review rows
+Packager -> Packager: strip reasoning for review rows
+Packager -> Packager: split by source_doc_id
+Packager -> PackageOut: train, validation, test, manifest
+
+@enduml

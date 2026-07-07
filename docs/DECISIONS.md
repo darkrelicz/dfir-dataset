@@ -35,6 +35,8 @@
 
 - This repository is a Python data pipeline.
 - Shared `utils/` helpers should remain low-level and domain-neutral: serialization, text normalization, stable IDs, simple coercions, ordered threshold checks, Markdown frontmatter parsing, and generic Git source helpers. Source-specific parsing should stay inside collectors or synthesizer modules.
+- Successor-facing website documentation lives in `guides/` as a self-contained MarkBind project. It should document the current codebase first, keep suggested improvements separate, and use PlantUML source files for architecture/UML diagrams.
+- GitHub Pages deployment support lives in `.github/workflows/deploy-guides.yml` and builds the MarkBind site from `guides/`. The current `guides/site.json` `baseUrl` is `/dfir-dataset` and should be changed if the repository name or Pages hosting shape changes.
 
 ## Phase 3 Guardrails
 

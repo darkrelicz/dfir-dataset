@@ -1,0 +1,14 @@
+{
+  "name": "dfir-dataset-guides",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MarkBind successor guides for the Shepherd DFIR dataset factory.",
+  "scripts": {
+    "build": "markbind build",
+    "serve": "markbind serve",
+    "deploy": "markbind deploy"
+  },
+  "devDependencies": {
+    "markbind-cli": "7.1.1"
+  }
+}
