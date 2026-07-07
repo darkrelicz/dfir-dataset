@@ -2,7 +2,7 @@
 
 ## Durable Project State
 
-- Durable project context lives in `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TODO.md`, and this file.
+- Durable project context lives in `project_state/PROJECT_BRIEF.md`, `project_state/ARCHITECTURE.md`, `project_state/DESIGN_SYSTEM.md`, `project_state/TODO.md`, and this file.
 - Do not rely on chat history for project memory. Update these files when project direction, architecture, design rules, tasks, or major decisions change.
 
 ## Data Model
@@ -26,7 +26,7 @@
 
 ## Taxonomy And Config Separation
 
-- `docs/TAXONOMY.md` is the human-readable 57-category DFIR artifact taxonomy.
+- `project_state/TAXONOMY.md` is the human-readable 57-category DFIR artifact taxonomy.
 - `configs/quality.yaml` is the machine-readable taxonomy validation, coverage map, scoring weights, no-API heuristic terms, and dedupe/balance policy.
 - `configs/task_categories.yaml` defines the five model behavior categories used for synthesis and carries category-specific `quality_signals` for Phase 4 operational-relevance scoring.
 - `configs/source_profiles.yaml` defines Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
@@ -35,8 +35,8 @@
 
 - This repository is a Python data pipeline.
 - Shared `utils/` helpers should remain low-level and domain-neutral: serialization, text normalization, stable IDs, simple coercions, ordered threshold checks, Markdown frontmatter parsing, and generic Git source helpers. Source-specific parsing should stay inside collectors or synthesizer modules.
-- Successor-facing website documentation lives in `guides/` as a self-contained MarkBind project. It should document the current codebase first, keep suggested improvements separate, and use PlantUML source files for architecture/UML diagrams.
-- GitHub Pages deployment support lives in `.github/workflows/deploy-guides.yml` and builds the MarkBind site from `guides/`. The current `guides/site.json` `baseUrl` is `/dfir-dataset` and should be changed if the repository name or Pages hosting shape changes.
+- Successor-facing website documentation lives in `docs/` as a self-contained MarkBind project. It should document the current codebase first, keep suggested improvements separate, and use PlantUML source files for architecture/UML diagrams.
+- GitHub Pages deployment support lives in `.github/workflows/deploy-guides.yml` and builds the MarkBind site from `docs/`. The current `docs/site.json` `baseUrl` is `/dfir-dataset` and should be changed if the repository name or Pages hosting shape changes.
 
 ## Phase 3 Guardrails
 

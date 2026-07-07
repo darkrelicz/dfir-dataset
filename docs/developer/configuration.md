@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Configuration
 
 The project keeps policy in YAML where practical. Python should implement

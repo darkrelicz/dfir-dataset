@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Developer Guides
 
 Use this section when changing code, adding sources, tuning prompts, or
@@ -15,7 +20,7 @@ Recommended reading order:
 8. [Extension Points](extension-points.md)
 
 The [Diagrams](diagrams.md) page renders every PlantUML diagram from
-`guides/diagrams/`.
+`docs/diagrams/`.
 
 Future work belongs in [Suggested Improvements](suggested-improvements.md), not
 mixed into the current-implementation pages.

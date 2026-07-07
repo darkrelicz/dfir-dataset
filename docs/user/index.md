@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # User Guides
 
 Use this section when you need to operate the dataset factory without changing

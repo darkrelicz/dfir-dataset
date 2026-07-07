@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Architecture
 
 This repository is a Python dataset pipeline. It is not a product frontend, API
@@ -35,8 +40,8 @@ server, or model-serving runtime.
 | `scripts/` | Thin CLI entrypoints that dispatch to package runners. |
 | `utils/` | Low-level helpers for IO, text normalization, Markdown frontmatter, and git URLs. |
 | `configs/` | Machine-readable policy and pipeline settings. |
-| `docs/` | Durable project memory and operating guides. |
-| `guides/` | This MarkBind successor guide site. |
+| `project_state/` | Durable project memory and operating guides. |
+| `docs/` | This MarkBind successor guide site. |
 
 ## Pipeline Phases
 

@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Data Contracts
 
 The pipeline is held together by a few stable Pydantic and JSONL contracts.

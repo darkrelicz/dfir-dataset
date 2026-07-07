@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Shepherd DFIR Dataset Guides
 
 This MarkBind site is the successor-facing guide for the Shepherd DFIR dataset
@@ -5,12 +10,12 @@ factory. It documents the current implementation first, then separates future
 improvement ideas into their own section.
 
 The source of truth for project state remains the durable memory documents under
-`../docs/`, especially:
+`../project_state/`, especially:
 
-* `../docs/PROJECT_BRIEF.md`
-* `../docs/ARCHITECTURE.md`
-* `../docs/DECISIONS.md`
-* `../docs/TODO.md`
+* `../project_state/PROJECT_BRIEF.md`
+* `../project_state/ARCHITECTURE.md`
+* `../project_state/DECISIONS.md`
+* `../project_state/TODO.md`
 
 These guides make that state easier to navigate, but they should not replace
 the generated manifests under `../data/`.

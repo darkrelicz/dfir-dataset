@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Quick Start
 
 ## Python Environment
@@ -43,18 +48,18 @@ run unless the project state docs are updated.
 
 ## Guides Site
 
-The guides site is self-contained under `guides/`.
+The guides site is self-contained under `docs/`.
 
 ```bash
-cd guides
+cd docs
 npm install
 npm run serve
 ```
 
-A static build writes HTML to `guides/_site/`:
+A static build writes HTML to `docs/_site/`:
 
 ```bash
-cd guides
+cd docs
 npm run build
 ```
 

@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Quality And Packaging
 
 Phase 4 and Phase 5 turn candidate generated pairs into local SFT-ready JSONL.

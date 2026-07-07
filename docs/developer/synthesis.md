@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Synthesis
 
 Phase 3 converts validated raw documents into candidate instruction-response

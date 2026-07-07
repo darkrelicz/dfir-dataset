@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Source Guide
 
 The selected scope is Core + Tier 1 + Tier 2: all 16 collectors in

@@ -7,7 +7,7 @@ on:
       - master
       - guides
     paths:
-      - "guides/**"
+      - "docs/**"
       - ".github/workflows/deploy-guides.yml"
   workflow_dispatch:
 
@@ -35,17 +35,17 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: guides/package-lock.json
+          cache-dependency-path: docs/package-lock.json
 
       - name: Install PlantUML prerequisites
         run: sudo apt-get update && sudo apt-get install -y default-jre graphviz
 
       - name: Install MarkBind dependencies
-        working-directory: guides
+        working-directory: docs
         run: npm ci
 
       - name: Build guides
-        working-directory: guides
+        working-directory: docs
         env:
           JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
         run: npm run build
@@ -53,7 +53,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: guides/_site
+          path: docs/_site
 
   deploy:
     runs-on: ubuntu-latest

@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Packaging
 
 Phase 5 exports local chat JSONL for the current Unsloth/GLM training path.

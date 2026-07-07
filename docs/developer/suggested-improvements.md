@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Suggested Improvements
 
 This page intentionally separates future recommendations from current
@@ -19,7 +24,8 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-Record results in `docs/TRAINING_RECIPE.md` and update `docs/TODO.md`.
+Record results in `project_state/TRAINING_RECIPE.md` and update
+`project_state/TODO.md`.
 
 ### Add Tests
 
@@ -104,8 +110,8 @@ Known weak areas:
 
 ### Generate A Run-Specific Dataset Card
 
-`docs/DATASET_CARD.md` is currently a template. Generate or fill a run-specific
-card from:
+`project_state/DATASET_CARD.md` is currently a template. Generate or fill a
+run-specific card from:
 
 * raw collection manifest;
 * generation manifest;
@@ -115,7 +121,7 @@ card from:
 ### Add Hugging Face Export Only If Hosting Decision Changes
 
 Current hosting is local-only on DGX Sparks storage. Do not add Hugging Face
-upload logic unless `docs/DECISIONS.md` changes.
+upload logic unless `project_state/DECISIONS.md` changes.
 
 ### Add Model-Specific Export Adapters
 

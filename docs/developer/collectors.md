@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Collectors
 
 Collectors normalize upstream DFIR/security sources into the shared

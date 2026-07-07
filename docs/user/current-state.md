@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Current Project State
 
 This page reflects the latest repository state inspected on 2026-07-07. The
@@ -7,7 +12,7 @@ generated manifests remain the authoritative record for run-specific counts.
 
 | Phase | Status | Current Artifact |
 |---|---|---|
-| Phase 1 taxonomy | Complete for current scope | `docs/TAXONOMY.md`, `configs/quality.yaml` |
+| Phase 1 taxonomy | Complete for current scope | `project_state/TAXONOMY.md`, `configs/quality.yaml` |
 | Phase 2 collection | Complete for Core + Tier 1 + Tier 2 | `data/raw/collection_manifest.json` |
 | Phase 3 synthesis | Complete for reduced subset | `data/synthesized/gemini_subset_1/` |
 | Phase 4 quality | Complete by time-boxed acceptance | `data/quality/gemini_subset_1/` |

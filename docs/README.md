@@ -6,7 +6,7 @@ developer documentation.
 ## Local setup
 
 ```bash
-cd guides
+cd docs
 npm install
 npm run serve
 ```
@@ -14,11 +14,11 @@ npm run serve
 For a static build:
 
 ```bash
-cd guides
+cd docs
 npm run build
 ```
 
-The generated site is written to `guides/_site/`.
+The generated site is written to `docs/_site/`.
 
 ## GitHub Pages
 

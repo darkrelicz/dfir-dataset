@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Running The Pipeline
 
 This page documents the existing command path. It does not introduce new
@@ -127,4 +132,5 @@ data/packaged/gemini_subset_1/packaging_manifest.json
 
 Phase 6 is not implemented in this repository yet. Use the packaged split files
 for baseline evaluation and Unsloth LoRA SFT, then record the exact training
-configuration and results in `docs/TRAINING_RECIPE.md` and `docs/TODO.md`.
+configuration and results in `project_state/TRAINING_RECIPE.md` and
+`project_state/TODO.md`.

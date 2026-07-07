@@ -114,9 +114,9 @@ content_type_profiles:
 
 ## Documentation Updates
 
-- [ ] `docs/ARCHITECTURE.md`: add source to pipeline layout or generated state.
-- [ ] `docs/DECISIONS.md`: record any durable source-specific decision.
-- [ ] `docs/TODO.md`: add follow-up work if collection, synthesis, quality, or packaging remains incomplete.
+- [ ] `project_state/ARCHITECTURE.md`: add source to pipeline layout or generated state.
+- [ ] `project_state/DECISIONS.md`: record any durable source-specific decision.
+- [ ] `project_state/TODO.md`: add follow-up work if collection, synthesis, quality, or packaging remains incomplete.
 - [ ] Handover guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, dataset-card template, quality rubric, or training recipe.
 
 ## New Source Review

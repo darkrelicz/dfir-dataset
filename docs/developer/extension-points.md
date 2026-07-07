@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Extension Points
 
 Use this page when adding sources, prompt behavior, validators, or packaging
@@ -112,8 +117,8 @@ If adding another format:
 
 After structural changes, update:
 
-* `docs/PROJECT_BRIEF.md` for product intent or phase state;
-* `docs/ARCHITECTURE.md` for implementation structure;
-* `docs/DECISIONS.md` for durable choices;
-* `docs/TODO.md` for active next work;
-* this `guides/` site for successor-facing user/developer details.
+* `project_state/PROJECT_BRIEF.md` for product intent or phase state;
+* `project_state/ARCHITECTURE.md` for implementation structure;
+* `project_state/DECISIONS.md` for durable choices;
+* `project_state/TODO.md` for active next work;
+* this `docs/` site for successor-facing user/developer details.

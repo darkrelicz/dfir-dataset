@@ -1,3 +1,8 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
 # Project State Memory
 
 The project must not rely on chat history as durable memory. Current state,
@@ -7,11 +12,11 @@ decisions, and TODOs belong in repository documents.
 
 | File | Role |
 |---|---|
-| `docs/PROJECT_BRIEF.md` | Product intent, phase status, current run state, and success criteria. |
-| `docs/ARCHITECTURE.md` | Current codebase structure and implementation architecture. |
-| `docs/DECISIONS.md` | Durable decisions and accepted risks. |
-| `docs/TODO.md` | Active and deferred work. |
-| `docs/DESIGN_SYSTEM.md` | Documentation and CLI presentation rules. |
+| `project_state/PROJECT_BRIEF.md` | Product intent, phase status, current run state, and success criteria. |
+| `project_state/ARCHITECTURE.md` | Current codebase structure and implementation architecture. |
+| `project_state/DECISIONS.md` | Durable decisions and accepted risks. |
+| `project_state/TODO.md` | Active and deferred work. |
+| `project_state/DESIGN_SYSTEM.md` | Documentation and CLI presentation rules. |
 
 Generated manifests are canonical for run-specific counts:
 
@@ -24,19 +29,19 @@ Generated manifests are canonical for run-specific counts:
 
 These files are reusable guides or templates, not live status pages:
 
-* `docs/HANDOVER.md`
-* `docs/ADDING_SOURCES.md`
-* `docs/COVERAGE_MAP.md`
-* `docs/DATASET_CARD.md`
-* `docs/PROMPT_GUIDE.md`
-* `docs/QUALITY_RUBRIC.md`
-* `docs/TRAINING_RECIPE.md`
+* `project_state/HANDOVER.md`
+* `project_state/ADDING_SOURCES.md`
+* `project_state/COVERAGE_MAP.md`
+* `project_state/DATASET_CARD.md`
+* `project_state/PROMPT_GUIDE.md`
+* `project_state/QUALITY_RUBRIC.md`
+* `project_state/TRAINING_RECIPE.md`
 
 Update them when the process changes. Do not use them for run-specific counts.
 
 ## This MarkBind Site
 
-`guides/` is the GitHub Pages source for successor-friendly documentation.
+`docs/` is the GitHub Pages source for successor-friendly documentation.
 
 It should:
 
@@ -53,8 +58,8 @@ decisions:
 
 1. update the code/config;
 2. update generated manifests if a pipeline stage was rerun;
-3. update the relevant `docs/` state file;
-4. update `guides/` when successor-facing navigation or implementation details
+3. update the relevant `project_state/` state file;
+4. update `docs/` when successor-facing navigation or implementation details
    changed.
 
 ## Current Accepted Risk To Preserve
