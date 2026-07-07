@@ -22,6 +22,7 @@ dependencies = [
 dfir-collect = "scripts.collect_all:main"
 dfir-synthesize = "scripts.synthesize:main"
 dfir-quality = "scripts.quality_filter:main"
+dfir-package = "scripts.package_dataset:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -34,6 +35,7 @@ include = [
     "taxonomy*",
     "quality*",
     "evaluation*",
+    "dataset_packaging*",
     "synthesizers*",
     "validation*",
     "utils*",

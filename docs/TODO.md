@@ -2,12 +2,10 @@
 
 ## Immediate
 
-- Review `data/quality/gemini_subset_1/review_queue.jsonl` before packaging, prioritizing unsupported claims, invented indicators, mapping inconsistencies, weak source specificity, and low operational value.
-- Review the 100-row manual sample at `data/quality/gemini_subset_1/manual_spot_check_sample.jsonl` and record pass/fail notes.
-- Tune Phase 4 scoring signals, generic penalties, operational verbs, and dedupe/balance thresholds only after reviewing concrete false positives and false negatives from the current subset.
-- Rerun Phase 4 quality filtering after the current heuristic scoring changes so `quality_score`, duplicate retention ranking, source-balance review ranking, and `quality_manifest.json` reflect the new config-driven policy.
-- Start Phase 5 packaging from Phase 4 `filtered.jsonl`, never from Phase 3 `accepted.jsonl`.
-- Prepare the Phase 6 baseline evaluation set before LoRA SFT.
+- Prepare and run the Phase 6 baseline evaluation before LoRA SFT.
+- Use `data/packaged/gemini_subset_1/train.jsonl`, `validation.jsonl`, and `test.jsonl` as the current local Unsloth SFT inputs.
+- Record the exact Unsloth/GLM training configuration, checkpoint paths, and evaluation results once training starts.
+- Treat full review-queue adjudication and manual spot-check completion as deferred quality hardening unless the timeline expands.
 
 ## Phase 3 Synthesis
 
@@ -26,21 +24,25 @@
 
 ## Phase 4 Quality
 
+- Current status: complete for the shortened-timeline reduced subset by time-boxed acceptance. Hard rejects remain excluded; review rows are allowed into Phase 5 with quality provenance.
 - Keep Phase 4 independent as a stage while sharing pure validation primitives from `validation/`. Implemented in `quality/` with separate Phase 4 policy wrappers.
 - Deterministic checks for schema, source provenance, taxonomy validity, reasoning-link integrity, ATT&CK/ATLAS ID validity, tool names, invented indicators, and final-answer consistency are implemented. Review/tune them only after examining false positives.
 - Heuristic quality scoring is config-driven and no-API: task-category `quality_signals` live in `configs/task_categories.yaml`, while generic-answer penalties and operational verbs live in `configs/quality.yaml`. Row status is driven by deterministic reject/review issue severity, plus dataset gates for dedupe and source balance; scores rank duplicate retention and source-balance review choices.
-- Review unsupported-claim cases manually or with an AI judge where a response appears to use domain knowledge without sufficient source support.
 - Near-duplicate detection, source/category/difficulty/taxonomy audits, and manual spot-check sampling are implemented; tune scoring signals and dedupe/balance thresholds after reviewing the subset run.
 - `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` are implemented via `scripts/quality_filter.py`.
 - Stage-level quality logs are implemented at INFO by default.
-- Use AI-assisted judging and manual review for fuzzy quality issues such as weak reasoning or unsupported claims, not as the only quality gate.
+- Use AI-assisted judging and manual review for fuzzy quality issues such as weak reasoning or unsupported claims if time permits; for the current deadline, these concerns are carried forward through `quality_status` and `quality_issues`.
 
 ## Phase 5 Packaging
 
-- Split by `source_doc_id` to avoid leakage.
-- Package Phase 4 filtered pairs into GLM-friendly train/validation/test JSONL.
-- Keep canonical `<reasoning>` and add a GLM-specific `<think>` exporter only if the training recipe requires it.
-- Write packaging manifests with source, category, difficulty, and taxonomy distributions.
+- Current status: complete for the shortened-timeline reduced subset.
+- `scripts/package_dataset.py` packages Phase 4 filtered plus review rows into GLM-friendly local train/validation/test chat JSONL.
+- Phase 4 rejected rows are excluded from all packaged splits.
+- Splits are grouped by `source_doc_id` to avoid train/validation/test leakage.
+- Filtered rows keep canonical `<reasoning>` responses; review rows are transformed into direct-answer examples by stripping the reasoning block.
+- The current package has 5,517 records: 4,414 train, 552 validation, and 551 test.
+- `packaging_manifest.json` records package run ID, quality run ID, total records, response-style mix, split counts, and source-document overlap.
+- Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
 
 ## Phase 6 Training And Evaluation
 

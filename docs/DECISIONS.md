@@ -85,15 +85,20 @@
 ## Phase 4 Guardrails
 
 - Phase 4 quality validation should be primarily deterministic and heuristic, with AI-assisted judging and manual review used for fuzzy quality issues such as weak reasoning or unsupported claims.
-- Phase 4 must not depend on Phase 3's generated-output validators for differentiation. Phase 3 and Phase 4 share pure validation primitives in `validation/`, but each stage keeps its own policy wrapper. Phase 4 has row-level gates for schema, source provenance, taxonomy refs, ATT&CK/ATLAS IDs, reasoning links, grounding, invented indicators, source specificity, operational value, and rubric scoring, plus dataset-level gates for near-duplicates and distribution audits. Only `filtered.jsonl` is eligible for Phase 5 packaging.
+- Phase 4 must not depend on Phase 3's generated-output validators for differentiation. Phase 3 and Phase 4 share pure validation primitives in `validation/`, but each stage keeps its own policy wrapper. Phase 4 has row-level gates for schema, source provenance, taxonomy refs, ATT&CK/ATLAS IDs, reasoning links, grounding, invented indicators, source specificity, operational value, and rubric scoring, plus dataset-level gates for near-duplicates and distribution audits.
+- Time-boxed Phase 5 decision: for the shortened timeline, package both Phase 4 `filtered.jsonl` and `review_queue.jsonl` to preserve enough training volume. This is an explicit risk acceptance, not a claim that review rows are fully adjudicated. `rejected.jsonl` remains ineligible for packaging and training.
 - Do not add embedding or evaluator-model scoring to the current timeline unless the cost and latency budget changes. Phase 4 scoring should remain transparent and no-API: operational relevance comes from task-category `quality_signals`, task descriptions, configured operational verbs, and configured generic-answer penalties; specificity comes from source-token overlap and concrete artifact counts; completeness uses caveat presence and response-length tiers.
 - Phase 4 ATT&CK/ATLAS validation uses local reference caches when present (`data/raw/.cache/enterprise-attack.json` and `data/raw/.repos/atlas-data/dist/ATLAS.yaml`). Keep those caches with the raw data for reproducible offline validation.
 - The old `10k-15k` filtered-pair target belongs to the full-synthesis plan. Under the shortened timeline and reduced subset budget, the gate should optimize for coverage, factuality, and reviewability rather than forcing the old pair count.
 - Phase 4 should expose sub-stage progress through normal Python logging. `scripts/quality_filter.py` configures INFO logging by default and logs config loading, output preparation, raw/reference loading, row-validation progress, dataset audits, JSONL writes, manual spot-check sampling, and manifest writing.
-- Phase 5 packaging consumes Phase 4 filtered output, not raw Phase 3 `accepted.jsonl`.
+- Phase 5 packaging consumes Phase 4 package-eligible output (`filtered.jsonl` plus time-box-accepted `review_queue.jsonl`), not raw Phase 3 `accepted.jsonl`. The packager should stay small: it should not inspect `rejected.jsonl` or revalidate quality statuses already implied by the input files.
 
 ## Training And Hosting
 
 - Dataset hosting is local-only on DGX Sparks storage, not HuggingFace Hub, unless this decision changes.
 - Training is planned as LoRA SFT via Unsloth on GLM-4.7-Flash.
 - Baseline evaluation must run before fine-tuning, including AI/LLM-specific ATLAS cases.
+- Phase 5 packaging is implemented as `dataset_packaging/`, not `packaging/`, to avoid shadowing Python's common third-party `packaging` library.
+- The current Phase 5 package consumes Phase 4 `filtered.jsonl` plus time-box-accepted `review_queue.jsonl`, excludes `rejected.jsonl`, splits by `source_doc_id`, and preserves quality provenance in record metadata.
+- To match the Unsloth GLM guidance within the available data, filtered rows remain reasoning examples and review rows are converted to direct-answer examples by stripping canonical `<reasoning>` blocks. This yields an approximately 75/25 reasoning/direct mix without additional synthesis cost.
+- Hugging Face dataset-card and upload work are intentionally deferred for the current local training path.

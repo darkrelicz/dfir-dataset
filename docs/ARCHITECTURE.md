@@ -8,7 +8,7 @@ This repository is a Python dataset pipeline, not a website application. No fron
 
 - Language: Python 3.11+
 - Packaging: `pyproject.toml` with setuptools
-- CLI entrypoints: `dfir-collect`, `dfir-synthesize`, and `dfir-quality`
+- CLI entrypoints: `dfir-collect`, `dfir-synthesize`, `dfir-quality`, and `dfir-package`
 - Core libraries: `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`
 - Tests are configured for `pytest`, but no `tests/` tree is currently present.
 
@@ -22,16 +22,18 @@ This repository is a Python dataset pipeline, not a website application. No fron
 - `configs/synthesis.yaml`: Phase 3 model settings, pair targets, Gemini thinking budget, API retry/backoff, validation retry, and prompt-size controls.
 - `configs/source_profiles.yaml`: Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 - `configs/quality.yaml`: Programmatic taxonomy IDs, coverage levels, scoring weights, no-API heuristic terms, and dedupe/balance settings.
-- `configs/packaging.yaml`: Planned packaging configuration.
+- `configs/packaging.yaml`: Phase 5 packaging inputs, local output paths, source-document split settings, chat record format, and response-style policy.
 - `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt policy validation, prompt planning, prompt rendering, prompt-time source compaction, pilot sampling, model clients, schemas, run-state helpers, generation execution, and validation helpers.
 - `validation/`: Shared pure validation primitives for reasoning blocks, grounding tags, concrete indicators, mapping ID formats, and taxonomy config extraction. Phase 3 and Phase 4 call these primitives through separate stage-specific wrappers.
 - `scripts/synthesize.py`: Thin CLI for raw corpus validation, no-API prompt rendering, and Gemini-backed instruction-pair generation.
 - `quality/`: Phase 4 quality filtering for Phase 3 accepted pairs, including stage-specific row validators built on shared validation primitives, local ATT&CK/ATLAS ID reference checks, config-backed tool allowlist checks, config-driven heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, manual spot-check sampling, manifest output, and stage-level logging.
 - `scripts/quality_filter.py`: Thin CLI for running the Phase 4 quality filter against a Phase 3 `accepted.jsonl`; configures `INFO` stage logs by default.
+- `dataset_packaging/`: Phase 5 local dataset packaging for Unsloth/GLM SFT. It reads Phase 4 filtered and review rows directly, converts configured rows into direct-answer examples, splits by `source_doc_id`, and writes chat JSONL plus a small packaging manifest.
+- `scripts/package_dataset.py`: Thin CLI for running Phase 5 packaging from `configs/packaging.yaml`; configures `INFO` stage logs by default.
 - `docs/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
 - `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
 
-Planned but not yet implemented packages from the project plan: `packaging/` and `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
+The project plan's packaging phase is implemented as `dataset_packaging/` rather than `packaging/` to avoid shadowing Python's common third-party `packaging` library. Planned but not yet implemented packages from the project plan: `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
 
 ## Data Contracts
 
@@ -104,7 +106,7 @@ The generated-pair rejection gates catch invalid JSON, strict schema failures in
 
 The Phase 4 quality gate consumes Phase 3 `accepted.jsonl` and writes `filtered.jsonl`, `review_queue.jsonl`, `rejected.jsonl`, `manual_spot_check_sample.jsonl`, and `quality_manifest.json` under `data/quality/<run>/`. It does not call Phase 3's generated-output validators; instead, Phase 3 and Phase 4 share pure primitives from `validation/` while keeping separate stage policies. Phase 4 validates candidate row shape, source provenance, taxonomy refs, ATT&CK/ATLAS IDs against local reference caches when present, tool names against source text and the config-backed allowlist, `<reasoning>` link integrity and step count, grounding/tag consistency, final-answer presence, and concrete indicators absent from source. It then computes no-API heuristic rubric scores using `configs/task_categories.yaml` category `quality_signals` and descriptions, `configs/quality.yaml` operational verbs and generic-answer penalty terms, tiered source-token overlap, concrete artifact counts, caveat presence, and response-length tiers. Dataset gates apply near-duplicate checks, source balance review, category balance audit, difficulty balance audit, and taxonomy coverage audit. Objective failures go to `rejected.jsonl`; non-blocking concerns such as mapping metadata inconsistencies, unknown tools, overlong reasoning, source-balance pressure, or `source_plus_general` concrete indicators go to `review_queue.jsonl`. The CLI logs config loading, output setup, raw/reference loading, row validation progress, dataset gates, output writes, spot-check sampling, and manifest writing so users can see which sub-stage is complete.
 
-Phase 5 packaging should split by `source_doc_id` to prevent leakage and export local chat-formatted JSONL for training. The canonical export keeps `<reasoning>`; a model-specific GLM export may convert it to `<think>` only if needed. 
+Phase 5 packaging splits by `source_doc_id` to prevent leakage and exports local chat-formatted JSONL for training. Under the shortened timeline, the package input is the union of Phase 4 `filtered.jsonl` and `review_queue.jsonl`; the packager does not read or recount `rejected.jsonl`. The current package at `data/packaged/gemini_subset_1/` contains `train.jsonl`, `validation.jsonl`, `test.jsonl`, and `packaging_manifest.json`. Packaged records use a `messages` array with system/user/assistant turns plus metadata preserving `quality_status`, `quality_issues`, `quality_score`, source, category, difficulty, taxonomy refs, and source document IDs. The package keeps filtered rows as `<reasoning>` examples and converts review rows into direct-answer examples by stripping the reasoning block, yielding an approximately 75/25 reasoning/direct mix for Unsloth GLM-4.7-Flash training. Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
 
 Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd.
 
@@ -112,9 +114,9 @@ Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpo
 
 The Gemini client uses `models.generate_content` with `response_mime_type="application/json"` and a sanitized `InstructionPair` response schema, then validates the resulting JSON through the same Phase 3 rejection gates. If validation fails and `generation.validation_retries` is greater than zero, the runner can ask Gemini to regenerate using the original prompt plus a compact list of validation errors.
 
-The remaining workflow is intentionally gated around Phase 4 review and later stages:
+The remaining workflow is intentionally gated around Phase 6 training and later stages:
 
-1. Phase 4 review: rerun the quality filter after scoring-policy, dedupe/balance threshold, or code changes; then use `data/quality/gemini_subset_1/`, adjudicate `review_queue.jsonl`, and review the 100-row manual spot-check sample.
-2. Phase 5 packaging: consume the Phase 4 filtered dataset, split by `source_doc_id`, and write GLM-friendly train/validation/test JSONL plus a packaging manifest.
-3. Phase 6 fine-tuning: run baseline evaluation, train LoRA SFT on GLM-4.7-Flash, rerun evaluation, compare against baseline, and integrate into Shepherd only if results improve.
+1. Phase 6 baseline: run the baseline evaluation before fine-tuning.
+2. Phase 6 fine-tuning: train LoRA SFT on GLM-4.7-Flash with Unsloth using `data/packaged/gemini_subset_1/`.
+3. Phase 6 post-training evaluation: rerun the same evaluation suite, compare against baseline, and integrate into Shepherd only if results improve.
 4. Future full-corpus synthesis: if budget returns, rerun a smoke test and reviewed pilot before launching the larger full-generation job. Treat its `accepted.jsonl` as candidate data until Phase 4 passes again.
