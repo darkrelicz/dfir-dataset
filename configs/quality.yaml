@@ -144,12 +144,14 @@ manual_spot_check:
 tools:
   allowlist:
     - 7-Zip
+    - 7z
     - AADInternals
     - auditd
     - bash
     - BloodHound
     - bstrings
     - Carbon Black
+    - cat
     - certutil
     - certutil.exe
     - cmd
@@ -158,13 +160,18 @@ tools:
     - Cowrie
     - curl
     - curl.exe
+    - CyberChef
     - dd
     - DFIR ORC
     - DSInternals
+    - Empire
     - Event Viewer
+    - find
     - Finder
+    - gcloud CLI
     - Hayabusa
     - Impacket
+    - journalctl
     - KAPE
     - LaZagne
     - LogParser.exe
@@ -176,6 +183,7 @@ tools:
     - netsh
     - netsh.exe
     - nmap
+    - objdump
     - openssl
     - osascript
     - PowerShell
@@ -186,6 +194,7 @@ tools:
     - PsExec
     - pwsh.exe
     - RECmd
+    - readelf
     - reg
     - reg.exe
     - regsvr32
@@ -199,15 +208,22 @@ tools:
     - schtasks
     - schtasks.exe
     - Sigma
+    - Snort
+    - stat
+    - strings
+    - Suricata
     - Sysmon
+    - Sysinternals
     - tar
     - tcpdump
     - Velociraptor
+    - vol.py
     - volatility3
     - Volatility 3
     - wevtutil
     - wevtutil.exe
     - wget
+    - wireshark
     - wmic
     - wmic.exe
     - YARA
