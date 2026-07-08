@@ -55,3 +55,5 @@
 
 - Add evaluation fixtures and baseline evaluation before training.
 - Add tests for collectors and synthesis utilities.
+- Keep `docs/` synchronized with code, durable project state docs, and generated manifests when pipeline architecture, commands, decisions, or artifact paths change.
+- Update `docs/site.json` `baseUrl` if the GitHub Pages repository name or hosting shape changes from `/dfir-dataset`.

@@ -1,0 +1,58 @@
+@startuml
+!pragma layout smetana
+title Collector Inheritance And Outputs
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+abstract class BaseCollector {
+  VERSION: str
+  collect(): int
+  manifest(): CollectionManifest
+  _clone_repo(url, clone_path, shallow): Path
+  _write_documents(docs, output_dir, source): int
+  _parse_datetime(value): datetime
+}
+
+class MitreAttackCollector
+class SigmaRulesCollector
+class AtomicRedTeamCollector
+class CISAAdvisoriesCollector
+class Volatility3DocsCollector
+class MitreAtlasCollector
+class CISAKEVCollector
+class KapeFilesCollector
+class HayabusaRulesCollector
+class LOLBASGTFOBinsCollector
+class ForensicArtifactsCollector
+class VelociraptorArtifactsCollector
+class HijackLibsCollector
+class LOLDriversCollector
+class OSSEMDataDictsCollector
+class CybersecSkillsCollector
+
+BaseCollector <|-- MitreAttackCollector
+BaseCollector <|-- SigmaRulesCollector
+BaseCollector <|-- AtomicRedTeamCollector
+BaseCollector <|-- CISAAdvisoriesCollector
+BaseCollector <|-- Volatility3DocsCollector
+BaseCollector <|-- MitreAtlasCollector
+BaseCollector <|-- CISAKEVCollector
+BaseCollector <|-- KapeFilesCollector
+BaseCollector <|-- HayabusaRulesCollector
+BaseCollector <|-- LOLBASGTFOBinsCollector
+BaseCollector <|-- ForensicArtifactsCollector
+BaseCollector <|-- VelociraptorArtifactsCollector
+BaseCollector <|-- HijackLibsCollector
+BaseCollector <|-- LOLDriversCollector
+BaseCollector <|-- OSSEMDataDictsCollector
+BaseCollector <|-- CybersecSkillsCollector
+
+note right of BaseCollector
+Each concrete collector writes:
+- data/raw/<source>/<source>.jsonl
+- one RawDocument per logical source item
+- one CollectionManifest entry
+end note
+
+@enduml

@@ -6,10 +6,10 @@ Use this guide to assess dataset coverage after collection, synthesis, and quali
 
 For run-specific values, read generated manifests and the state files named in `PROJECT_BRIEF.md`:
 
-- `docs/PROJECT_BRIEF.md`
-- `docs/ARCHITECTURE.md`
-- `docs/TODO.md`
-- `docs/DECISIONS.md`
+- `project_state/PROJECT_BRIEF.md`
+- `project_state/ARCHITECTURE.md`
+- `project_state/TODO.md`
+- `project_state/DECISIONS.md`
 - `data/raw/collection_manifest.json`
 - `data/synthesized/<run>/generation_manifest.json`
 - `data/quality/<run>/quality_manifest.json`

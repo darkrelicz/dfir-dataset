@@ -1,0 +1,39 @@
+@startuml
+!pragma layout smetana
+title Guides Deployment Architecture
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Maintainer" as Maintainer
+cloud "GitHub" {
+  component "Repository" as Repo
+  component "GitHub Actions\nDeploy MarkBind Guides" as Actions
+  component "GitHub Pages" as Pages
+}
+
+package "guides/" {
+  [MarkBind Markdown pages] as PagesSrc
+  [site.json] as SiteJson
+  [PlantUML .puml files] as Puml
+  [package.json] as PackageJson
+}
+
+component "Node.js 22" as Node
+component "Java + Graphviz" as JavaGraphviz
+component "markbind build" as Build
+artifact "guides/_site" as SiteArtifact
+
+Maintainer --> Repo: push guides changes
+Repo --> Actions: workflow trigger
+Actions --> Node
+Actions --> JavaGraphviz
+Actions --> Build
+PagesSrc --> Build
+SiteJson --> Build
+Puml --> Build
+PackageJson --> Build
+Build --> SiteArtifact
+SiteArtifact --> Pages: upload and deploy artifact
+
+@enduml

@@ -20,6 +20,8 @@ Project state memory lives in `PROJECT_BRIEF.md`, `ARCHITECTURE.md`, `TODO.md`, 
 
 Successor handover and maintenance guides are `ADDING_SOURCES.md`, `COVERAGE_MAP.md`, `DATASET_CARD.md`, `HANDOVER.md`, `PROMPT_GUIDE.md`, `QUALITY_RUBRIC.md`, and `TRAINING_RECIPE.md`. Treat these as reusable operating guides and templates, not as canonical current-state documents. Current run counts, phase status, and artifact snapshots belong in the project state docs and generated manifests.
 
+The `docs/` directory is a MarkBind source site for GitHub Pages. It republishes and organizes successor-facing user/developer guidance, architecture diagrams, UML diagrams, current implementation notes, and suggested improvements. It should be kept derived from the current codebase, durable state docs, and generated manifests rather than chat history.
+
 ## Current Scope
 
 The selected dataset scope is Core + Tier 1 + Tier 2: all 16 collectors from the plan (C1-C7 and AF1-AF9). Tier 3 and semi-structured/unstructured sources are deferred to the successor.

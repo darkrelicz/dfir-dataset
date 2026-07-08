@@ -1,0 +1,109 @@
+{
+  "baseUrl": "/dfir-dataset",
+  "titlePrefix": "DFIR Dataset Guides",
+  "titleSuffix": "DFIR Dataset",
+  "enableSearch": true,
+  "headingIndexingLevel": 3,
+  "timeZone": "Asia/Singapore",
+  "style": {
+    "darkMode": false,
+    "codeTheme": "light",
+    "codeLineNumbers": false
+  },
+  "pages": [
+    {
+      "src": "index.md",
+      "title": "Guides Home"
+    },
+    {
+      "src": "user/index.md",
+      "title": "User Guides"
+    },
+    {
+      "src": "user/quickstart.md",
+      "title": "Quick Start"
+    },
+    {
+      "src": "current-state/index.md",
+      "title": "Current Project State"
+    },
+    {
+      "src": "user/running-the-pipeline.md",
+      "title": "Running The Pipeline"
+    },
+    {
+      "src": "user/source-guide.md",
+      "title": "Source Guide"
+    },
+    {
+      "src": "user/quality-and-packaging.md",
+      "title": "Quality And Packaging"
+    },
+    {
+      "src": "developer/index.md",
+      "title": "Developer Guides"
+    },
+    {
+      "src": "developer/architecture.md",
+      "title": "Architecture"
+    },
+    {
+      "src": "developer/data-contracts.md",
+      "title": "Data Contracts"
+    },
+    {
+      "src": "developer/collectors.md",
+      "title": "Collectors"
+    },
+    {
+      "src": "developer/synthesis.md",
+      "title": "Synthesis"
+    },
+    {
+      "src": "developer/validation-quality.md",
+      "title": "Validation And Quality"
+    },
+    {
+      "src": "developer/packaging.md",
+      "title": "Packaging"
+    },
+    {
+      "src": "developer/configuration.md",
+      "title": "Configuration"
+    },
+    {
+      "src": "developer/extension-points.md",
+      "title": "Extension Points"
+    },
+    {
+      "src": "developer/diagrams.md",
+      "title": "Diagrams"
+    },
+    {
+      "src": "developer/project-state-memory.md",
+      "title": "Project State Memory"
+    },
+    {
+      "src": "developer/suggested-improvements.md",
+      "title": "Suggested Improvements"
+    }
+  ],
+  "pagesExclude": [
+    "node_modules/**/*.md",
+    "_site/**/*.md"
+  ],
+  "ignore": [
+    "_site/*",
+    "node_modules/*",
+    "package.json",
+    "package-lock.json",
+    "site.json",
+    ".gitignore",
+    "README.md",
+    "_markbind/**/*"
+  ],
+  "intrasiteLinkValidation": {
+    "enabled": true
+  },
+  "plantumlCheck": true
+}

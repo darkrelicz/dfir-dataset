@@ -1,0 +1,46 @@
+@startuml
+title Phase 4 Quality Activity
+
+skinparam shadowing false
+
+start
+:Load quality and task configs;
+:Prepare output files;
+:Load raw documents by doc_id;
+:Build references from taxonomy config,
+ATT&CK cache, ATLAS cache, and tool allowlist;
+
+repeat
+  :Read one Phase 3 accepted row;
+  if (JSON and QualityCandidate schema valid?) then (yes)
+    if (source exists and source matches?) then (yes)
+      :Validate category, taxonomy refs,
+      mappings, tools, reasoning,
+      grounding, and indicators;
+      :Score factual accuracy, reasoning,
+      operational relevance, specificity,
+      and completeness;
+      if (reject issue?) then (yes)
+        :mark rejected;
+      elseif (review issue?) then (yes)
+        :mark review;
+      else (no)
+        :mark filtered;
+      endif
+    else (no)
+      :reject source problem;
+    endif
+  else (no)
+    :reject schema problem;
+  endif
+repeat while (more rows?)
+
+:Apply near-duplicate gate;
+:Apply source-balance gate;
+:Audit category, difficulty, and taxonomy coverage;
+:Write filtered.jsonl, review_queue.jsonl, rejected.jsonl;
+:Write manual_spot_check_sample.jsonl;
+:Write quality_manifest.json;
+stop
+
+@enduml

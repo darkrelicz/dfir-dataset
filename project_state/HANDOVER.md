@@ -6,19 +6,19 @@ Use this guide to hand the dataset factory to a successor. This file is an opera
 
 For run-specific status, read generated manifests and the state files named in `PROJECT_BRIEF.md`:
 
-- `docs/PROJECT_BRIEF.md`
-- `docs/ARCHITECTURE.md`
-- `docs/TODO.md`
-- `docs/DECISIONS.md`
+- `project_state/PROJECT_BRIEF.md`
+- `project_state/ARCHITECTURE.md`
+- `project_state/TODO.md`
+- `project_state/DECISIONS.md`
 - generated manifests under `data/raw/`, `data/synthesized/`, `data/quality/`, and `data/packaged/`
 
 ## Handover Packet Checklist
 
 Before handing over the project, make sure the successor can find:
 
-- The current phase and next actions in `docs/TODO.md`.
-- Durable architecture and implementation notes in `docs/ARCHITECTURE.md`.
-- Durable decisions in `docs/DECISIONS.md`.
+- The current phase and next actions in `project_state/TODO.md`.
+- Durable architecture and implementation notes in `project_state/ARCHITECTURE.md`.
+- Durable decisions in `project_state/DECISIONS.md`.
 - Raw collection outputs and `data/raw/collection_manifest.json`.
 - Synthesis outputs and the relevant `generation_manifest.json`.
 - Quality outputs and the relevant `quality_manifest.json`.

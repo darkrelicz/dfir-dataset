@@ -1,0 +1,16 @@
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
+
+# User Guides
+
+Use this section when you need to operate the dataset factory.
+
+Read these pages in order if you are onboarding:
+
+1. [Quick Start](quickstart.md)
+2. [Running The Pipeline](running-the-pipeline.md)
+3. [Source Guide](source-guide.md)
+4. [Quality And Packaging](quality-and-packaging.md)
+
