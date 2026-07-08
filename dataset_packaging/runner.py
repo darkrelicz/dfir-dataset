@@ -22,18 +22,8 @@ def run_packaging(args) -> int:
     config_path = Path(args.config)
     config = load_yaml(config_path)
 
-    input_config = config.get("input", {})
-    output_config = config.get("output", {})
-    split_config = config.get("split", {})
-
-    quality_dir = Path(
-        args.quality_dir
-        or input_config.get("quality_dir", "data/quality/gemini_subset_1")
-    )
-    output_dir = Path(
-        args.output_dir
-        or output_config.get("output_dir", "data/packaged/gemini_subset_1")
-    )
+    quality_dir = Path(args.quality_dir)
+    output_dir = Path(args.output_dir)
 
     logger.info(
         "Starting Phase 5 packaging: quality_dir=%s output_dir=%s",
@@ -42,8 +32,8 @@ def run_packaging(args) -> int:
     )
 
     stage_started = time.perf_counter()
-    input_paths = resolve_input_paths(quality_dir, input_config)
-    output_paths = resolve_output_paths(output_dir, output_config)
+    input_paths = resolve_input_paths(quality_dir)
+    output_paths = resolve_output_paths(output_dir)
     log_stage_complete(logger, "resolved packaging paths", stage_started)
 
     stage_started = time.perf_counter()
@@ -52,10 +42,10 @@ def run_packaging(args) -> int:
     review_rows = load_jsonl_rows(input_paths["review"])
     style_config = config.get("response_style", {})
     package_rows = [
-        (row, str(style_config.get("filtered", "reasoning")))
+        (row, str(style_config.get("filtered")))
         for row in filtered_rows
     ] + [
-        (row, str(style_config.get("review", "direct")))
+        (row, str(style_config.get("review")))
         for row in review_rows
     ]
     log_stage_complete(
@@ -81,6 +71,7 @@ def run_packaging(args) -> int:
     )
 
     stage_started = time.perf_counter()
+    split_config = config.get("split", {})
     split_rows = split_records_by_source_doc(packaged_records, split_config)
     log_stage_complete(
         logger,
@@ -126,24 +117,20 @@ def run_packaging(args) -> int:
     return 0
 
 
-def resolve_input_paths(quality_dir: Path, input_config: dict[str, Any]) -> dict[str, Path]:
+def resolve_input_paths(quality_dir: Path) -> dict[str, Path]:
     return {
-        "filtered": quality_dir / str(input_config.get("filtered_file", "filtered.jsonl")),
-        "review": quality_dir / str(input_config.get("review_file", "review_queue.jsonl")),
-        "quality_manifest": quality_dir / str(
-            input_config.get("quality_manifest_file", "quality_manifest.json")
-        ),
+        "filtered": quality_dir / "filtered.jsonl",
+        "review": quality_dir / "review_queue.jsonl",
+        "quality_manifest": quality_dir / "quality_manifest.json"
     }
 
 
-def resolve_output_paths(output_dir: Path, output_config: dict[str, Any]) -> dict[str, Path]:
+def resolve_output_paths(output_dir: Path) -> dict[str, Path]:
     return {
-        "train": output_dir / str(output_config.get("train_file", "train.jsonl")),
-        "validation": output_dir / str(output_config.get("validation_file", "validation.jsonl")),
-        "test": output_dir / str(output_config.get("test_file", "test.jsonl")),
-        "manifest": output_dir / str(
-            output_config.get("manifest_file", "packaging_manifest.json")
-        ),
+        "train": output_dir / "train.jsonl",
+        "validation": output_dir / "validation.jsonl",
+        "test": output_dir / "test.jsonl",
+        "manifest": output_dir / "packaging_manifest.json"
     }
 
 
@@ -160,7 +147,7 @@ def build_packaged_record(
     config: dict[str, Any],
     reasoning_style: str,
 ) -> dict[str, Any]:
-    assistant_content = assistant_content_for_style(
+    content = format_content_by_reasoning_style(
         str(row.get("response", "")),
         reasoning_style,
     )
@@ -171,13 +158,13 @@ def build_packaged_record(
         messages.append(
             {
                 "role": "system",
-                "content": str(format_config.get("system_message", "")).strip(),
+                "content": str(format_config.get("system_message")).strip(),
             }
         )
     messages.extend(
         [
             {"role": "user", "content": str(row.get("instruction", "")).strip()},
-            {"role": "assistant", "content": assistant_content},
+            {"role": "assistant", "content": content},
         ]
     )
 
@@ -218,7 +205,7 @@ def build_packaged_record(
     }
 
 
-def assistant_content_for_style(response: str, reasoning_style: str) -> str:
+def format_content_by_reasoning_style(response: str, reasoning_style: str) -> str:
     if reasoning_style != "direct":
         return response.strip()
     direct_answer = final_answer_text(response)

@@ -46,7 +46,7 @@ def load_json(path: Path, logger: Logger) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        logger.warning("Could not parse JSON manifest: %s", path)
+        logger.warning("Could not parse JSON file: %s", path)
         return {}
 
 

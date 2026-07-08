@@ -1,15 +1,8 @@
-input:
-  quality_dir: "data/quality/gemini_subset_1"
-  filtered_file: "filtered.jsonl"
-  review_file: "review_queue.jsonl"
-  quality_manifest_file: "quality_manifest.json"
-
 split:
   train: 0.80
   validation: 0.10
   test: 0.10
   seed: 1337
-  group_by: "source_doc_id"
 
 format:
   record_format: "messages_jsonl"
@@ -20,14 +13,6 @@ response_style:
   filtered: "reasoning"
   review: "direct"
   direct_transform: "strip_reasoning_block"
-
-output:
-  format: "jsonl"
-  output_dir: "data/packaged/gemini_subset_1"
-  train_file: "train.jsonl"
-  validation_file: "validation.jsonl"
-  test_file: "test.jsonl"
-  manifest_file: "packaging_manifest.json"
 
 hosting:
   canonical: "local"
