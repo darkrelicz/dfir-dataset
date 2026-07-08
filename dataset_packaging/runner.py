@@ -7,8 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-from dataset_packaging.schemas import PackagingManifest, PackagedSplitSummary
-from utils.io import load_yaml, write_json, write_jsonl
+from dataset_packaging.schemas import PackagedSplitSummary, PackagingManifest
+from utils.io import (load_json, load_jsonl_rows, load_yaml,
+                      log_stage_complete, write_json, write_jsonl)
 from validation.reasoning import final_answer_text
 
 logger = logging.getLogger(__name__)
@@ -43,10 +44,10 @@ def run_packaging(args) -> int:
     stage_started = time.perf_counter()
     input_paths = resolve_input_paths(quality_dir, input_config)
     output_paths = resolve_output_paths(output_dir, output_config)
-    log_stage_complete("resolved packaging paths", stage_started)
+    log_stage_complete(logger, "resolved packaging paths", stage_started)
 
     stage_started = time.perf_counter()
-    quality_manifest = load_optional_json(input_paths["quality_manifest"])
+    quality_manifest = load_json(input_paths["quality_manifest"], logger)
     filtered_rows = load_jsonl_rows(input_paths["filtered"])
     review_rows = load_jsonl_rows(input_paths["review"])
     style_config = config.get("response_style", {})
@@ -58,6 +59,7 @@ def run_packaging(args) -> int:
         for row in review_rows
     ]
     log_stage_complete(
+        logger,
         "loaded Phase 4 rows",
         stage_started,
         f"filtered={len(filtered_rows)} review={len(review_rows)}",
@@ -72,6 +74,7 @@ def run_packaging(args) -> int:
         for index, (row, response_style) in enumerate(package_rows, 1)
     ]
     log_stage_complete(
+        logger,
         "built packaged records",
         stage_started,
         f"records={len(packaged_records)}",
@@ -80,6 +83,7 @@ def run_packaging(args) -> int:
     stage_started = time.perf_counter()
     split_rows = split_records_by_source_doc(packaged_records, split_config)
     log_stage_complete(
+        logger,
         "split packaged records",
         stage_started,
         " ".join(f"{name}={len(rows)}" for name, rows in split_rows.items()),
@@ -88,7 +92,7 @@ def run_packaging(args) -> int:
     stage_started = time.perf_counter()
     prepare_output_dir(output_dir, output_paths)
     write_packaged_splits(split_rows, output_paths)
-    log_stage_complete("wrote packaged split JSONL files", stage_started)
+    log_stage_complete(logger, "wrote packaged split JSONL files", stage_started)
 
     stage_started = time.perf_counter()
     manifest = build_packaging_manifest(
@@ -105,12 +109,13 @@ def run_packaging(args) -> int:
     )
     write_json(output_paths["manifest"], manifest.model_dump(mode="json"))
     log_stage_complete(
+        logger,
         "wrote packaging manifest",
         stage_started,
         f"path={output_paths['manifest']}",
     )
 
-    log_stage_complete("completed Phase 5 packaging", overall_started)
+    log_stage_complete(logger, "completed Phase 5 packaging", overall_started)
     print(
         "Packaging complete: "
         f"records={len(packaged_records)}, "
@@ -147,29 +152,6 @@ def prepare_output_dir(output_dir: Path, output_paths: dict[str, Path]) -> None:
     for path in output_paths.values():
         if path.exists():
             path.unlink()
-
-
-def load_optional_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        logger.warning("Could not parse JSON manifest: %s", path)
-        return {}
-
-
-def load_jsonl_rows(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    if not path.exists():
-        raise FileNotFoundError(f"Missing required Phase 4 output: {path}")
-
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            rows.append(json.loads(line))
-    return rows
 
 
 def build_packaged_record(
@@ -375,11 +357,3 @@ def split_source_doc_overlap(
             key = f"{left}_vs_{right}"
             overlap[key] = sorted(ids_by_split[left] & ids_by_split[right])
     return overlap
-
-
-def log_stage_complete(stage: str, started_at: float, detail: str | None = None) -> None:
-    elapsed = time.perf_counter() - started_at
-    if detail:
-        logger.info("%s in %.1fs (%s)", stage, elapsed, detail)
-    else:
-        logger.info("%s in %.1fs", stage, elapsed)

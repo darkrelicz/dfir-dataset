@@ -13,7 +13,7 @@ from quality.references import QualityReferences, build_quality_references
 from quality.schemas import QualityDecision, QualityIssue, QualityManifest
 from quality.validators import validate_row_quality
 from synthesizers.io import load_raw_documents
-from utils.io import append_jsonl, load_yaml, write_json
+from utils.io import append_jsonl, load_yaml, log_stage_complete, write_json
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,7 @@ def run_quality_filter(args) -> int:
     quality_config = load_yaml(Path(args.quality_config))
     task_config = load_yaml(Path(args.task_config))
     log_stage_complete(
+        logger,
         "loaded configs",
         stage_started,
         f"quality_config={args.quality_config} task_config={args.task_config}",
@@ -42,15 +43,16 @@ def run_quality_filter(args) -> int:
 
     stage_started = time.perf_counter()
     output_paths = prepare_output_files(output_dir, append=args.append)
-    log_stage_complete("prepared output files", stage_started, f"append={args.append}")
+    log_stage_complete(logger, "prepared output files", stage_started, f"append={args.append}")
 
     stage_started = time.perf_counter()
     raw_docs_by_id = {doc.doc_id: doc for doc in load_raw_documents(raw_dir)}
-    log_stage_complete("loaded raw documents", stage_started, f"documents={len(raw_docs_by_id)}")
+    log_stage_complete(logger, "loaded raw documents", stage_started, f"documents={len(raw_docs_by_id)}")
 
     stage_started = time.perf_counter()
     references = build_quality_references(quality_config, raw_dir)
     log_stage_complete(
+        logger,
         "built quality references",
         stage_started,
         (
@@ -78,6 +80,7 @@ def run_quality_filter(args) -> int:
     )
 
     log_stage_complete(
+        logger,
         "completed row-level quality validation",
         stage_started,
         (
@@ -90,11 +93,12 @@ def run_quality_filter(args) -> int:
     stage_started = time.perf_counter()
     logger.info("Starting dataset-level quality gates")
     dataset_audits = apply_dataset_gates(records, quality_config, task_config)
-    log_stage_complete("completed dataset-level quality gates", stage_started)
+    log_stage_complete(logger, "completed dataset-level quality gates", stage_started)
 
     stage_started = time.perf_counter()
     counts = write_quality_outputs(records, output_paths, run_id)
     log_stage_complete(
+        logger,
         "wrote quality output JSONL files",
         stage_started,
         (
@@ -108,6 +112,7 @@ def run_quality_filter(args) -> int:
     spot_check = write_spot_check_sample(records, output_dir, quality_config, run_id)
     dataset_audits["manual_spot_check"] = spot_check
     log_stage_complete(
+        logger,
         "wrote manual spot-check sample",
         stage_started,
         f"rows={spot_check['actual_sample_size']} path={spot_check['path']}",
@@ -126,11 +131,12 @@ def run_quality_filter(args) -> int:
     stage_started = time.perf_counter()
     write_json(output_dir / "quality_manifest.json", manifest.model_dump(mode="json"))
     log_stage_complete(
+        logger,
         "wrote quality manifest",
         stage_started,
         f"path={output_dir / 'quality_manifest.json'}",
     )
-    log_stage_complete("completed Phase 4 quality filter", overall_started)
+    log_stage_complete(logger, "completed Phase 4 quality filter", overall_started)
     print(
         f"Quality filter complete: filtered={counts['filtered_pairs']}, "
         f"review={counts['review_pairs']}, rejected={counts['rejected_pairs']}, "
@@ -277,14 +283,6 @@ def build_quality_manifest(
             "review_queue.jsonl is excluded from filtered training output until reviewed.",
         ],
     )
-
-
-def log_stage_complete(stage: str, started_at: float, detail: str | None = None) -> None:
-    elapsed = time.perf_counter() - started_at
-    if detail:
-        logger.info("%s in %.1fs (%s)", stage, elapsed, detail)
-    else:
-        logger.info("%s in %.1fs", stage, elapsed)
 
 
 def write_quality_outputs(
