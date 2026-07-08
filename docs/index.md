@@ -3,24 +3,14 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Shepherd DFIR Dataset Guides
+# DFIR Dataset
 
-This MarkBind site is the successor-facing guide for the Shepherd DFIR dataset
-factory. It documents the current implementation first, then separates future
-improvement ideas into their own section.
+DFIR Dataset is a re-runnable dataset factory that produces quality DFIR training data for finetuning local LLMs. It is designed with expansionability in mind. To add a new data source, only one collector script and one line in the collector orchestrating script is needed. The rest of the pipeline can ran without modification.
 
-The source of truth for project state remains the durable memory documents under
-`../project_state/`, especially:
+* If you are interested in using this project, head over to the [_Quick Start section of the_ **User Guide**](user/quickstart.md).
+* If you are interested about developing this project, the [**Developer Guide**](developer/index.md) is a good place to start.
 
-* `../project_state/PROJECT_BRIEF.md`
-* `../project_state/ARCHITECTURE.md`
-* `../project_state/DECISIONS.md`
-* `../project_state/TODO.md`
-
-These guides make that state easier to navigate, but they should not replace
-the generated manifests under `../data/`.
-
-## Current Production Path
+## Current Snapshot
 
 As of 2026-07-07, the active handoff path is:
 
@@ -36,34 +26,4 @@ The current packaged training inputs are:
 * `../data/packaged/gemini_subset_1/validation.jsonl`
 * `../data/packaged/gemini_subset_1/test.jsonl`
 
-## Guide Map
-
-### User Guides
-
-* [Quick Start](user/quickstart.md)
-* [Current Project State](user/current-state.md)
-* [Running The Pipeline](user/running-the-pipeline.md)
-* [Source Guide](user/source-guide.md)
-* [Quality And Packaging](user/quality-and-packaging.md)
-
-### Developer Guides
-
-* [Architecture](developer/architecture.md)
-* [Data Contracts](developer/data-contracts.md)
-* [Collectors](developer/collectors.md)
-* [Synthesis](developer/synthesis.md)
-* [Validation And Quality](developer/validation-quality.md)
-* [Packaging](developer/packaging.md)
-* [Configuration](developer/configuration.md)
-* [Extension Points](developer/extension-points.md)
-* [Diagrams](developer/diagrams.md)
-* [Project State Memory](developer/project-state-memory.md)
-* [Suggested Improvements](developer/suggested-improvements.md)
-
-## Architecture At A Glance
-
-<puml src="diagrams/pipeline-component.puml" alt="Component diagram for the Shepherd DFIR dataset factory" width="1000" />
-
-## End-To-End Flow
-
-<puml src="diagrams/end-to-end-sequence.puml" alt="Sequence diagram for collection, synthesis, quality, and packaging" width="1000" />
+Refer to [**Current State**](current-state/index.md) to find out more about the current project state.

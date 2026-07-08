@@ -4,7 +4,7 @@
 
 <header sticky>
   <navbar type="dark">
-    <a slot="brand" href="{{baseUrl}}/index.html" title="Home" class="navbar-brand">Shepherd DFIR Dataset</a>
+    <a slot="brand" href="{{baseUrl}}/index.html" title="Home" class="navbar-brand">DFIR Dataset</a>
     <li>
       <a highlight-on="sibling-or-child" href="{{baseUrl}}/index.html" class="nav-link">Home</a>
     </li>
@@ -15,7 +15,7 @@
       <a highlight-on="sibling-or-child" href="{{baseUrl}}/developer/index.html" class="nav-link">Developer Guide</a>
     </li>
     <li>
-      <a highlight-on="sibling-or-child" href="{{baseUrl}}/user/current-state.html" class="nav-link">Current State</a>
+      <a highlight-on="sibling-or-child" href="{{baseUrl}}/current-state/index.html" class="nav-link">Current State</a>
     </li>
     <li>
       <a href="https://github.com/darkrelicz/dfir-dataset" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" class="nav-link"><md>:fab-github:</md></a>
@@ -36,15 +36,13 @@
     <div class="nav-component slim-scroll">
       <site-nav>
 * [Home]({{baseUrl}}/index.html)
+* [Current State]({{baseUrl}}/current-state/index.html)
 * [User Guide]({{baseUrl}}/user/index.html) :expanded:
-  * [Overview]({{baseUrl}}/user/index.html)
   * [Quick Start]({{baseUrl}}/user/quickstart.html)
-  * [Current Project State]({{baseUrl}}/user/current-state.html)
   * [Running The Pipeline]({{baseUrl}}/user/running-the-pipeline.html)
   * [Source Guide]({{baseUrl}}/user/source-guide.html)
   * [Quality And Packaging]({{baseUrl}}/user/quality-and-packaging.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
-  * [Overview]({{baseUrl}}/developer/index.html)
   * [Architecture]({{baseUrl}}/developer/architecture.html)
   * [Data Contracts]({{baseUrl}}/developer/data-contracts.html)
   * [Collectors]({{baseUrl}}/developer/collectors.html)

@@ -1,6 +1,6 @@
 {
   "baseUrl": "/dfir-dataset",
-  "titlePrefix": "Shepherd DFIR Dataset Guides",
+  "titlePrefix": "DFIR Dataset Guides",
   "titleSuffix": "DFIR Dataset",
   "enableSearch": true,
   "headingIndexingLevel": 3,
@@ -24,7 +24,7 @@
       "title": "Quick Start"
     },
     {
-      "src": "user/current-state.md",
+      "src": "current-state/index.md",
       "title": "Current Project State"
     },
     {
