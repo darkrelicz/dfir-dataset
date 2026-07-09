@@ -1,4 +1,4 @@
-# Benchmark 
+# Benchmark
 
 ## Benchmark case schema
 ```json
@@ -9,9 +9,34 @@
   "prompt": "Question shown to the model being evaluated.",
   "context": "Optional evidence packet, logs, rule snippet, or scenario.",
   "expected_answer": {
-    "must_include": [],
+    "required_concepts": [
+      {
+        "id": "atomic_concept_id",
+        "aliases": [
+          "short phrase that may appear in a correct answer",
+          "another acceptable wording",
+          "third paraphrase"
+        ],
+        "description": "Human-readable explanation of what this concept means."
+      }
+    ],
+    "forbidden_concepts": [
+      {
+        "id": "forbidden_overclaim_id",
+        "aliases": [
+          "bad claim wording",
+          "another bad wording"
+        ],
+        "description": "Human-readable explanation of the overclaim or error."
+      }
+    ],
+    "must_include": [
+      "backward-compatible short alias for current deterministic scorer"
+    ],
     "acceptable_variants": [],
-    "must_not_include": [],
+    "must_not_include": [
+      "backward-compatible short forbidden phrase"
+    ],
     "gold_labels": {}
   },
   "scoring": {
@@ -24,6 +49,42 @@
 }
 
 ```
+
+### Answer Key Guidance
+
+Use concept-style answer keys for rubric-scored cases. Do not put long prose
+sentences in `must_include` or `must_not_include`.
+
+For each required idea, create a `required_concepts` entry:
+
+- `id`: short snake_case concept name.
+- `aliases`: 3-6 short paraphrases that a correct model answer might use.
+- `description`: what the concept means for a human reviewer.
+
+For each important overclaim or error, create a `forbidden_concepts` entry:
+
+- `id`: short snake_case concept name.
+- `aliases`: 2-5 short bad-claim paraphrases.
+- `description`: why this would be wrong.
+
+Keep `must_include` and `must_not_include` populated for backward compatibility
+with the current deterministic scorer:
+
+- `must_include` should contain one short representative alias from each
+  required concept.
+- `must_not_include` should contain one short representative alias from each
+  forbidden concept.
+
+Keep structured labels in `gold_labels` whenever possible:
+
+- ATT&CK/ATLAS IDs for TTP cases.
+- Normalized IOCs for IOC extraction.
+- Ordered action IDs or labels for triage ranking.
+- Telemetry, artifacts, platforms, and detection concepts for rubric cases.
+
+Rubric scoring should reward atomic evidence coverage, limitations, next pivots,
+and avoidance of overclaims. The deterministic scorer is a first pass; text-heavy
+rubric cases still need human review before final Phase 6 claims.
 
 ## Prompts
 
@@ -38,12 +99,20 @@ Generate benchmark cases that are NOT copied from any training dataset, syntheti
 Each case must include:
 - a model-facing prompt;
 - any needed evidence/context;
-- an expected answer key;
+- an expected answer key with `required_concepts`, `forbidden_concepts`,
+  backward-compatible `must_include` / `must_not_include`, and `gold_labels`;
 - scoring guidance;
 - tags;
 - notes for a human reviewer.
 
 Do not make the answer depend on hidden knowledge unless the case explicitly asks for general DFIR knowledge. Prefer realistic but original scenarios.
+
+For rubric-scored cases, write concept-style answer keys:
+- Use `required_concepts` for ideas a correct answer must cover.
+- Use `forbidden_concepts` for overclaims, hallucinations, or wrong inferences.
+- Put short aliases in each concept instead of full prose sentences.
+- Mirror one short alias per concept into `must_include` / `must_not_include`
+  for backward compatibility with substring-based scoring.
 
 Return JSONL only, one JSON object per line, using this schema:
 {...schema...}
@@ -59,8 +128,9 @@ Requirements:
 - Include Windows, Linux, cloud, and living-off-the-land examples.
 - Include at least 2 ambiguous cases where multiple techniques are plausible but only some are strongly supported.
 - Include expected ATT&CK technique IDs in gold_labels.techniques.
-- Include must_include evidence links, such as specific command lines or artifacts.
-- Include must_not_include common overclaims.
+- Include required_concepts for evidence links, such as specific command lines or artifacts.
+- Include forbidden_concepts for common overclaims.
+- Keep must_include and must_not_include as short backward-compatible aliases.
 - Scoring metric: F1 over technique IDs, plus explanation quality notes.
 
 Return JSONL only.
@@ -75,7 +145,8 @@ Requirements:
 - Include IPv4, domains, URLs, hashes, file paths, registry keys, email addresses, mutexes, and process names where appropriate.
 - Include benign lookalikes that should not be extracted as IOCs.
 - Include normalized expected indicators in gold_labels.iocs with type and value.
-- Include must_not_include false positives.
+- Include forbidden_concepts and must_not_include for false positives.
+- Include required_concepts for normalization or classification requirements when useful.
 - Scoring metric: precision, recall, and F1.
 
 Return JSONL only.
@@ -91,6 +162,8 @@ Requirements:
 - Include at least 2 cases where an attractive action is lower priority because it is destructive, slow, or unsupported.
 - Include gold_labels.ranked_actions as an ordered list.
 - Include acceptable_variants for equivalent ordering when reasonable.
+- Include required_concepts for the reasoning behind the highest-priority actions.
+- Include forbidden_concepts for destructive, slow, or unsupported recommendations when relevant.
 - Scoring metric: NDCG@5.
 
 Return JSONL only.
@@ -110,7 +183,11 @@ Requirements:
 - Include at least 3 Windows event/Sysmon cases.
 - Include at least 2 Linux audit/process cases.
 - Include at least 2 cloud/SaaS cases.
-- Include expected_answer.must_include with detection logic, telemetry, false positives, and tuning points.
+- Include expected_answer.required_concepts with atomic concepts for detection logic,
+  required telemetry, key fields, false positives, and tuning or validation points.
+- Include forbidden_concepts for common wrong claims such as requiring the wrong
+  telemetry source, claiming the rule proves compromise, or ignoring allowlists.
+- Keep must_include and must_not_include populated with short representative aliases.
 - Scoring metric: rubric accuracy out of 5.
 
 Return JSONL only.
@@ -126,8 +203,11 @@ The evaluated model must interpret what the artifacts show, what they do not pro
 Requirements:
 - Include Windows and Linux cases.
 - Include at least 2 anti-forensics or uncertainty cases.
-- Include expected_answer.must_include for artifact meaning, limitations, and next pivots.
-- Include must_not_include overconfident conclusions.
+- Include expected_answer.required_concepts with atomic concepts for artifact
+  meaning, limitations, corroborating evidence, and next pivots.
+- Include forbidden_concepts for overconfident conclusions such as treating one
+  artifact as proof of maliciousness, operator identity, or non-execution.
+- Keep must_include and must_not_include populated with short representative aliases.
 - Scoring metric: rubric accuracy out of 5.
 
 Return JSONL only.
@@ -142,6 +222,9 @@ Requirements:
 - Expected answer should include executive summary, timeline, impact, confidence, open questions, and recommended next actions.
 - Include at least 1 case where evidence is insufficient for attribution.
 - Include at least 1 false-positive or benign-admin case.
+- Include required_concepts for required report sections and evidence-grounded conclusions.
+- Include forbidden_concepts for unsupported attribution, inflated impact, or invented facts.
+- Keep must_include and must_not_include populated with short representative aliases.
 - Scoring metric: report quality rubric from 1-5.
 
 Return JSONL only.
@@ -154,13 +237,14 @@ Each case should be designed so that a careless model may hallucinate or overcla
 
 Requirements:
 - Include incomplete logs, conflicting timestamps, missing host context, partial command lines, and ambiguous alerts.
-- Include expected_answer.must_include for uncertainty statements and required corroboration.
-- Include must_not_include unsupported claims.
+- Include required_concepts for uncertainty statements, evidence boundaries, and required corroboration.
+- Include forbidden_concepts for unsupported claims, certainty inflation, and invented evidence.
+- Keep must_include and must_not_include populated with short representative aliases.
 - Scoring metric: reasoning quality rubric from 1-5.
 
 Return JSONL only.
 
-### AL/LLM and ATLAS cases
+### AI/LLM and ATLAS cases
 
 Generate 8 benchmark cases for AI/LLM security and MITRE ATLAS-style incidents.
 
@@ -176,9 +260,9 @@ The evaluated model must identify likely risk, relevant ATLAS or ATT&CK-style be
 
 Requirements:
 - Include gold_labels.atlas_techniques where appropriate.
-- Include must_include evidence-based reasoning.
-- Include must_not_include hype or unsupported attribution.
+- Include required_concepts for evidence-based risk, likely ATLAS or ATT&CK-style behavior, evidence to collect, and containment.
+- Include forbidden_concepts for hype, unsupported attribution, or claiming model compromise without evidence.
+- Keep must_include and must_not_include populated with short representative aliases.
 - Scoring metric: mixed rubric out of 5.
 
 Return JSONL only.
-
