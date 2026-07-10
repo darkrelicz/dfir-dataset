@@ -40,8 +40,8 @@ python -m scripts.collect_all --dry-run
 - `collectors/`: Phase 2 source collection scripts
 - `synthesizers/`: Phase 3 instruction pair generation
 - `quality/`: Phase 4 automated quality scoring
-- `packaging/`: Phase 5 dataset export
-- `evaluation/`: Phase 6 benchmarking
+- `dataset_packaging/`: Phase 5 local dataset export
+- `evaluation/`: Phase 6 benchmarking, scoring, and comparison helpers
 - `docs/`: Documentation including TAXONOMY.md
 - `configs/`: Pipeline configuration including taxonomy IDs
 - `data/`: Output directory for generated artifacts (ignored by git)
