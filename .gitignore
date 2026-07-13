@@ -26,3 +26,4 @@ MANIFEST
 .ruff_cache/
 .pytest_cache/
 data/
+unsloth_compiled_cache/
