@@ -11,11 +11,11 @@ dataset:
 
 model:
   base_model: "unsloth/GLM-4.7-Flash"
-  max_seq_length: 8192 ## what this represent
-  dtype: null ## what is this
-  load_in_4bit: false
+  max_seq_length: 4096
+  dtype: null 
+  load_in_4bit: true
   load_in_8bit: false
-  load_in_16bit: true
+  load_in_16bit: false
   full_finetuning: false
   trust_remote_code: true
   unsloth_force_compile: false
@@ -41,8 +41,8 @@ lora:
 
 finetune:
   output_dir: "data/finetune/glm47_flash_lora_dfir_subset1"
-  max_length: 8192
-  dataset_num_proc: 1
+  max_length: 4096
+  dataset_num_proc: 4
   per_device_train_batch_size: 1
   per_device_eval_batch_size: 1
   gradient_accumulation_steps: 8
@@ -54,9 +54,9 @@ finetune:
   weight_decay: 0.01
   logging_steps: 10
   eval_strategy: "steps"
-  eval_steps: 100
+  eval_steps: 250
   save_strategy: "steps"
-  save_steps: 100
+  save_steps: 250
   save_total_limit: 3
   bf16: true
   fp16: false
