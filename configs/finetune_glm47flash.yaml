@@ -16,7 +16,7 @@ model:
   load_in_4bit: false
   load_in_8bit: false
   load_in_16bit: true
-  full_finetuning: true
+  full_finetuning: false
   trust_remote_code: true
   unsloth_force_compile: false
 

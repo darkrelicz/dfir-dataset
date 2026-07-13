@@ -22,12 +22,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-training-cuda126 = [
+training-cuda130 = [
     # Install Torch first from the PyTorch CUDA wheel index:
-    # pip install torch==2.10.0+cu126 --index-url https://download.pytorch.org/whl/cu126
+    # pip install torch==2.10.0+cu130 --index-url https://download.pytorch.org/whl/cu130
     # Then install this project with:
-    # pip install -e ".[training-cuda126]"
+    # pip install -e ".[training-cuda130]"
     "torch==2.10.0",
+    "fsspec[http]>=2023.1.0,<=2025.9.0",
 ]
 
 [project.scripts]
