@@ -176,6 +176,12 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
             tokenizer,
             save_method="merged_16bit",
         )
+    if bool(export_config.get("save_gguf")):
+        model.save_pretrained_gguf(
+            export_config["gguf_dir"], 
+            tokenizer, 
+            quantization_method=export_config["gguf_quantization"])
+    
     return {
         "train_result": str(stats),
         "adapter_dir": export_config.get("adapter_dir"),

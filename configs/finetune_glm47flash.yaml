@@ -70,6 +70,9 @@ finetune:
 
 export:
   save_lora_adapter: true
-  adapter_dir: "data/finetune/glm47_flash_lora_dfir_subset1/lora_adapter"
+  adapter_dir: "data/finetune/glm47_flash_subset1/lora_adapter"
   save_merged_16bit: false
-  merged_16bit_dir: "data/finetune/glm47_flash_lora_dfir_subset1/merged_16bit"
+  merged_16bit_dir: "data/finetune/glm47_flash_subset1/merged_16bit"
+  save_gguf: true
+  gguf_dir: "data/finetune/glm47_flash_subset1/gguf_q4_k_m"
+  gguf_quantization: "q4_k_m"
