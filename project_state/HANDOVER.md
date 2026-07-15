@@ -101,7 +101,7 @@ Before training:
 
 Before Shepherd integration:
 
-- [ ] Fine-tuned model passes the statistical and local-judge comparison gates independently.
+- [ ] Fine-tuned model passes the calibrated local-judge comparison gate.
 - [ ] No critical DFIR task or safety behavior has an unacceptable regression.
 - [ ] No severe regressions on critical DFIR behavior.
 - [ ] Reasoning format remains usable for Shepherd.

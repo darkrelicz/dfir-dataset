@@ -58,10 +58,11 @@ python -m scripts.run_evaluation \
   --model-label glm47_flash_base
 ```
 
-Statistical scoring is the default. To produce both independent statistical and
-local-judge scorecards from the same predictions, add `--evaluator both` and
-configure `scoring.judge` in `configs/evaluation.yaml`. To generate predictions
-through a local OpenAI-compatible model server, add `--mode openai_compatible`.
+The evaluator always uses the separately configured local judge under
+`scoring.judge`. To generate predictions through a local OpenAI-compatible model
+server, add `--mode openai_compatible`. Freeze the judge model, quantization,
+prompt, inference settings, and `calibration_id` before producing baseline and
+tuned scorecards; the comparison command rejects drift in these fields.
 
 | Benchmark | Cases | Metric | Baseline Score | Notes |
 |---|---:|---|---:|---|
@@ -125,14 +126,7 @@ python -m scripts.run_evaluation \
 python -m scripts.compare_evaluations \
   --baseline-dir data/evaluation/<baseline_run> \
   --tuned-dir data/evaluation/<tuned_run> \
-  --output-dir data/evaluation/comparisons/<comparison_name> \
-  --evaluator statistical
-
-python -m scripts.compare_evaluations \
-  --baseline-dir data/evaluation/<baseline_run> \
-  --tuned-dir data/evaluation/<tuned_run> \
-  --output-dir data/evaluation/comparisons/<comparison_name> \
-  --evaluator llm_judge
+  --output-dir data/evaluation/comparisons/<comparison_name>
 ```
 
 | Benchmark | Baseline | Fine-Tuned | Delta | Decision |

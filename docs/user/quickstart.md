@@ -50,9 +50,9 @@ data/packaged/gemini_subset_1/test.jsonl
 ```
 
 Use those three files for the Phase 6 baseline evaluation and Unsloth LoRA SFT
-run unless the project state docs are updated. Statistical evaluation is the
-default; `--evaluator both` adds an independent scorecard from a configured
-local judge.
+run unless the project state docs are updated. Phase 6 uses the local judge
+configured under `scoring.judge`; calibrate and freeze it before comparing the
+base and tuned models.
 
 ## Guides Site
 

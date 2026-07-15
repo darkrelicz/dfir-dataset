@@ -29,9 +29,33 @@ Run baseline scoring, post-training scoring, and comparison with the Phase 6
 commands. Record results in `project_state/TRAINING_RECIPE.md` and update
 `project_state/TODO.md`.
 
+### Calibrate And Freeze The Local Judge
+
+Do not treat deterministic temperature as calibration. Build a separate,
+stratified calibration set containing good, borderline, unsafe, incomplete,
+overconfident, and deliberately verbose answers across every task type. Have at
+least two DFIR reviewers score it independently against the same rubrics, then
+adjudicate disagreements into reference labels.
+
+Measure judge agreement with human labels using mean absolute error and weighted
+Cohen's kappa for ordinal scores, Spearman correlation for ranking, and a
+confusion matrix plus critical-error recall for any pass/fail deployment gate.
+Also run repeated-judgement and perturbation tests for paraphrase stability,
+verbosity bias, answer-order bias, prompt-injection resistance, and sensitivity
+to judge quantization.
+
+Tune the rubric wording and judge prompt only on a calibration split. Freeze a
+versioned prompt, judge model/quantization, chat template, temperature, and
+server settings, assign that release a `calibration_id` in
+`configs/evaluation.yaml`, then report metrics on an untouched holdout split. If
+enough human labels exist, fit a monotonic ordinal or isotonic score mapping on
+the calibration split; never fit that mapping on the benchmark used for the
+base-versus-tuned claim. Keep periodic human audits because a calibrated judge
+is still a measurement model, not ground truth.
+
 ### Expand Tests
 
-Focused evaluation metric, judge-response, and scorecard-comparison tests now
+Focused judge-response, sequential-runner, and scorecard-comparison tests now
 exist. Continue with tests for:
 
 * shared validation primitives;

@@ -36,7 +36,7 @@ server, or model-serving runtime.
 | `validation/` | Pure reusable validation primitives shared by Phase 3 and Phase 4. |
 | `quality/` | Phase 4 row gates, scoring, references, dataset audits, and output writing. |
 | `dataset_packaging/` | Phase 5 local JSONL packaging for Unsloth/GLM SFT. |
-| `evaluation/` | Phase 6 typed statistical metrics, structured-output parsing, local LLM judging, scorecard manifests, and comparison gates. |
+| `evaluation/` | Phase 6 local LLM judging, structured-output parsing, sequential target/judge orchestration, scorecard manifests, and comparison gates. |
 | `scripts/` | Thin CLI entrypoints that dispatch to package runners. |
 | `utils/` | Low-level helpers for IO, text normalization, Markdown frontmatter, and git URLs. |
 | `configs/` | Machine-readable policy and pipeline settings. |
@@ -98,16 +98,25 @@ JSONL, and creates a packaging manifest. The package name is
 ### Phase 6 Evaluation And Training
 
 `evaluation.runner` loads held-out benchmark cases and calls either a local
-OpenAI-compatible model endpoint or a prediction JSONL file. Statistical
-scoring is the default. Optional `llm_judge` and `both` modes use a separately
-configured local judge; `both` reuses the predictions and writes independent
-scorecards under `scorecards/statistical/` and `scorecards/llm_judge/`.
-Objective TTP, IOC, and ranking tasks require structured JSON; a format failure
-is recorded and scored as zero instead of being silently reinterpreted as prose.
+OpenAI-compatible model endpoint or a prediction JSONL file. A separately
+configured local judge is mandatory, and the runner writes only
+`scorecards/llm_judge/`. Cases are processed sequentially: the target response
+is generated, that response is judged, and only then does the runner advance to
+the next case. After every verdict, predictions, case results, aggregate scores,
+and the run manifest are atomically refreshed. Partial checkpoints are marked
+`in_progress`; comparison accepts only `complete` scorecards. Objective TTP,
+IOC, and ranking tasks request structured JSON for inspectability, but the judge
+now evaluates both formatting and content.
 
-`evaluation.comparison` compares one scorecard at a time and requires matching
-evaluator type, benchmark fingerprint, and case IDs. Per-task regression gates
-prevent a headline improvement from hiding a material task regression.
+The judge receives the answer key, scoring rubric, and `acceptable_variants`.
+Each variant is a complete independently valid alternative. Its structured
+verdict includes a bounded score, concise reason, optional criterion scores, and
+a range-validated matched-variant index.
+
+`evaluation.comparison` accepts only judge scorecards and requires matching
+benchmark fingerprint, case IDs, judge protocol/configuration fingerprint, and
+calibration ID. Per-task regression gates prevent a headline improvement from
+hiding a material task regression.
 
 `scripts.finetune` launches local Unsloth LoRA SFT using
 `configs/finetune_glm47flash.yaml`.

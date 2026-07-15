@@ -92,9 +92,9 @@ Keep report, reasoning, artifact-analysis, and other rubric-heavy answers in
 natural language so the benchmark still measures analyst-facing response quality.
 
 Rubric scoring should reward atomic evidence coverage, limitations, next pivots,
-and avoidance of overclaims. Statistical and local-judge scorecards are kept
-independent; text-heavy rubric cases still need human review before final Phase 6
-claims.
+and avoidance of overclaims. The local judge receives each complete
+`acceptable_variants` entry as an independently valid alternative. Judge scores
+still need calibration and human review before final Phase 6 claims.
 
 ## Prompts
 

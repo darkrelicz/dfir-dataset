@@ -18,11 +18,6 @@ def main() -> None:
     parser.add_argument("--predictions")
     parser.add_argument("--model")
     parser.add_argument("--model-label")
-    parser.add_argument(
-        "--evaluator",
-        choices=["statistical", "llm_judge", "both"],
-        help="Override scoring.evaluator; statistical remains the default.",
-    )
     parser.add_argument("--max-cases", type=int)
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args()

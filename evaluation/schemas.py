@@ -1,22 +1,22 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class ExpectedAnswer(BaseModel):
-    """Answer key fields used by deterministic Phase 6 scoring."""
+    """Answer key fields supplied only to the Phase 6 LLM judge."""
 
     required_concepts: list["AnswerConcept"] = Field(default_factory=list)
     forbidden_concepts: list["AnswerConcept"] = Field(default_factory=list)
     must_include: list[str] = Field(default_factory=list)
-    acceptable_variants: list[Any] = Field(default_factory=list)
+    acceptable_variants: list[list[str]] = Field(default_factory=list)
     must_not_include: list[str] = Field(default_factory=list)
     gold_labels: dict[str, Any] = Field(default_factory=dict)
 
 
 class AnswerConcept(BaseModel):
-    """Atomic answer concept with acceptable deterministic aliases."""
+    """Atomic answer concept with aliases supplied to the judge."""
 
     id: str
     aliases: list[str] = Field(default_factory=list)
@@ -46,11 +46,11 @@ class BenchmarkCase(BaseModel):
 
 
 class CaseScore(BaseModel):
-    """One score produced by a named evaluator for one benchmark case."""
+    """One LLM-judge score for one benchmark case."""
 
     case_id: str
     task_type: str
-    evaluator: str
+    evaluator: Literal["llm_judge"] = "llm_judge"
     metric: str
     score: float
     normalized_score: float
@@ -65,6 +65,7 @@ class JudgeVerdict(BaseModel):
     score: float
     reason: str
     criteria: dict[str, float] = Field(default_factory=dict)
+    matched_acceptable_variant: int | None = None
 
     @field_validator("reason")
     @classmethod
@@ -79,13 +80,15 @@ class EvaluationManifest(BaseModel):
 
     run_id: str
     created_at: datetime
+    status: Literal["in_progress", "complete"]
+    planned_case_count: int
     config_path: str
     cases_path: str
     output_dir: str
     model_label: str
     model: str
     generation_mode: str
-    evaluator_mode: str
+    evaluator_mode: Literal["llm_judge"] = "llm_judge"
     case_count: int
     case_ids: list[str]
     benchmark_fingerprint: str

@@ -9,12 +9,6 @@ def main() -> None:
     parser.add_argument("--baseline-dir", required=True)
     parser.add_argument("--tuned-dir", required=True)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument(
-        "--evaluator",
-        choices=["statistical", "llm_judge"],
-        default="statistical",
-        help="Compare one independent scorecard at a time.",
-    )
     parser.add_argument("--minimum-overall-delta", type=float, default=0.0)
     parser.add_argument("--max-task-regression", type=float, default=0.05)
     parser.add_argument("--log-level", default="INFO")

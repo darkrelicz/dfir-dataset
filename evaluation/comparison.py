@@ -14,15 +14,14 @@ def compare_evaluations(args: argparse.Namespace) -> int:
     baseline_dir = Path(args.baseline_dir)
     tuned_dir = Path(args.tuned_dir)
     output_dir = Path(args.output_dir)
-    evaluator = str(getattr(args, "evaluator", "statistical"))
+    evaluator = "llm_judge"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    baseline_scores = load_scorecard(baseline_dir, evaluator)
-    tuned_scores = load_scorecard(tuned_dir, evaluator)
+    baseline_scores = load_scorecard(baseline_dir)
+    tuned_scores = load_scorecard(tuned_dir)
     comparison = build_comparison(
         baseline_scores,
         tuned_scores,
-        evaluator=evaluator,
         minimum_overall_delta=float(getattr(args, "minimum_overall_delta", 0.0)),
         max_task_regression=float(getattr(args, "max_task_regression", 0.05)),
     )
@@ -49,11 +48,11 @@ def compare_evaluations(args: argparse.Namespace) -> int:
     return 0
 
 
-def load_scorecard(run_dir: Path, evaluator: str) -> dict[str, Any]:
-    path = run_dir / "scorecards" / evaluator / "scores.json"
+def load_scorecard(run_dir: Path) -> dict[str, Any]:
+    path = run_dir / "scorecards" / "llm_judge" / "scores.json"
     scores = load_json(path, logger)
     if not scores:
-        raise FileNotFoundError(f"Missing {evaluator} scorecard: {path}")
+        raise FileNotFoundError(f"Missing LLM-judge scorecard: {path}")
     return scores
 
 
@@ -61,11 +60,10 @@ def build_comparison(
     baseline_scores: dict[str, Any],
     tuned_scores: dict[str, Any],
     *,
-    evaluator: str = "statistical",
     minimum_overall_delta: float = 0.0,
     max_task_regression: float = 0.05,
 ) -> dict[str, Any]:
-    validate_compatible_scorecards(baseline_scores, tuned_scores, evaluator)
+    validate_compatible_scorecards(baseline_scores, tuned_scores)
     baseline_overall = float(baseline_scores["overall_normalized_score"])
     tuned_overall = float(tuned_scores["overall_normalized_score"])
     baseline_tasks = baseline_scores.get("task_scores", {})
@@ -76,9 +74,7 @@ def build_comparison(
         baseline = float(
             baseline_tasks.get(task_type, {}).get("mean_normalized_score", 0.0)
         )
-        tuned = float(
-            tuned_tasks.get(task_type, {}).get("mean_normalized_score", 0.0)
-        )
+        tuned = float(tuned_tasks.get(task_type, {}).get("mean_normalized_score", 0.0))
         delta = tuned - baseline
         regressed_beyond_gate = delta < -max_task_regression
         if regressed_beyond_gate:
@@ -92,7 +88,7 @@ def build_comparison(
     overall_delta = tuned_overall - baseline_overall
     passes = overall_delta > minimum_overall_delta and not severe_regressions
     return {
-        "evaluator": evaluator,
+        "evaluator": "llm_judge",
         "benchmark_fingerprint": baseline_scores["benchmark_fingerprint"],
         "case_count": len(baseline_scores["case_ids"]),
         "baseline_overall": round(baseline_overall, 4),
@@ -109,22 +105,35 @@ def build_comparison(
 def validate_compatible_scorecards(
     baseline_scores: dict[str, Any],
     tuned_scores: dict[str, Any],
-    evaluator: str,
 ) -> None:
     for label, scores in (("baseline", baseline_scores), ("tuned", tuned_scores)):
-        if scores.get("evaluator") != evaluator:
+        if scores.get("evaluator") != "llm_judge":
             raise ValueError(
                 f"{label} scorecard evaluator is {scores.get('evaluator')!r}, "
-                f"expected {evaluator!r}"
+                "expected 'llm_judge'"
             )
         if not scores.get("benchmark_fingerprint"):
             raise ValueError(f"{label} scorecard lacks a benchmark fingerprint")
         if not isinstance(scores.get("case_ids"), list):
             raise ValueError(f"{label} scorecard lacks case IDs")
-    if baseline_scores["benchmark_fingerprint"] != tuned_scores["benchmark_fingerprint"]:
+        if scores.get("run_status", "complete") != "complete":
+            raise ValueError(f"{label} scorecard is not from a completed run")
+    if (
+        baseline_scores["benchmark_fingerprint"]
+        != tuned_scores["benchmark_fingerprint"]
+    ):
         raise ValueError("Cannot compare scorecards from different benchmark content")
     if baseline_scores["case_ids"] != tuned_scores["case_ids"]:
         raise ValueError("Cannot compare scorecards with different case IDs")
+    for field in (
+        "judge_protocol_version",
+        "judge_config_fingerprint",
+        "judge_calibration_id",
+    ):
+        if not baseline_scores.get(field) or not tuned_scores.get(field):
+            raise ValueError(f"Cannot compare scorecards without matching {field}")
+        if baseline_scores[field] != tuned_scores[field]:
+            raise ValueError(f"Cannot compare scorecards with different {field}")
 
 
 def render_markdown(comparison: dict[str, Any]) -> str:

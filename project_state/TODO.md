@@ -3,7 +3,7 @@
 ## Immediate
 
 - Finalize and manually review the tracked benchmark files under `evaluation/benchmark/` before any baseline or tuned-model scoring.
-- Run independent statistical and local-judge baseline scorecards with `scripts/run_evaluation.py --evaluator both` before LoRA SFT.
+- Build and adjudicate a stratified human-scored calibration set, freeze the judge configuration, then run the local-judge baseline before LoRA SFT.
 - Use `data/packaged/gemini_subset_1/train.jsonl`, `validation.jsonl`, and `test.jsonl` as the current local Unsloth SFT inputs.
 - Record the exact Unsloth/GLM training configuration, checkpoint paths, and evaluation results once training starts.
 - Treat full review-queue adjudication and manual spot-check completion as deferred quality hardening unless the timeline expands.
@@ -47,13 +47,13 @@
 
 ## Phase 6 Training And Evaluation
 
-- Current status: evaluator implementation complete pending reviewed baseline execution. `evaluation/` implements typed deterministic metrics, local LLM judging, structured outputs for objective tasks, prediction replay, independent scorecards, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
-- `configs/evaluation.yaml` keeps `statistical` as the default evaluator and configures an optional separate local OpenAI-compatible judge endpoint. `both` writes independent scorecards without a composite score.
+- Current status: judge-only evaluator implementation complete pending calibration and reviewed baseline execution. `evaluation/` implements sequential target generation and local LLM judging, atomic per-case checkpoints, structured target-output requests, acceptable-variant handling, prediction replay, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
+- `configs/evaluation.yaml` requires a separate local OpenAI-compatible judge endpoint. The former statistical evaluator modes and scorecard have been removed.
 - `scripts/finetune.py` and `configs/finetune_glm47flash.yaml` provide the local DGX/Unsloth LoRA SFT runner.
 - Run baseline evaluation before fine-tuning.
 - Fine-tune GLM-4.7-Flash with LoRA SFT via Unsloth after the baseline manifest exists.
-- Run post-training evaluation with the same benchmark and compare each scorecard independently with `scripts/compare_evaluations.py --evaluator <name>`.
-- Integrate into Shepherd only if both reviewed scorecards improve without unacceptable task-level or critical-behavior regressions.
+- Run post-training evaluation with the same benchmark and frozen judge, then compare with `scripts/compare_evaluations.py`.
+- Integrate into Shepherd only if the reviewed judge scorecard improves without unacceptable task-level or critical-behavior regressions.
 
 ## Later
 

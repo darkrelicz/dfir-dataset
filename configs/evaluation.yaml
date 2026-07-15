@@ -16,20 +16,15 @@ generation:
   top_p: 0.95
   max_tokens: 36000
   timeout_seconds: 1800
-
-scoring:
-  # statistical | llm_judge | both. Statistical is intentionally the default.
-  evaluator: "statistical"
-  default_max_points: 5.0
-  ndcg_k: 5
   structured_outputs:
     # Applied only to TTP, IOC, and ranking tasks. Rubric tasks stay free-form.
     enabled: true
-    # Format failure is scored as zero instead of silently applying regexes.
-    required: true
+
+scoring:
   judge:
-    # Run a separate local OpenAI-compatible judge endpoint when using
-    # --evaluator llm_judge or --evaluator both.
+    # Required local OpenAI-compatible judge endpoint.
+    # Replace after calibration; comparisons require matching calibration IDs.
+    calibration_id: "uncalibrated"
     base_url: "http://127.0.0.1:8081/v1"
     model: "gemma-4-31B-it-Q4_K_M.gguf"
     temperature: 0.0

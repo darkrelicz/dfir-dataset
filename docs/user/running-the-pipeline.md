@@ -138,8 +138,8 @@ First finalize a held-out benchmark:
 evaluation/benchmark/
 ```
 
-Run baseline evaluation before fine-tuning. By default the evaluator scores an
-existing prediction JSONL with the statistical scorecard:
+Run baseline evaluation before fine-tuning. The evaluator always writes one
+local-judge scorecard. It can score an existing prediction JSONL:
 
 ```bash
 python -m scripts.run_evaluation \
@@ -149,20 +149,22 @@ python -m scripts.run_evaluation \
   --model-label glm47_flash_base
 ```
 
-Add `--mode openai_compatible` when you want the evaluator to call a local model
-server directly.
-
-To run both independent scorecards, configure the separate local judge endpoint
-under `scoring.judge` and add:
+Configure the target endpoint under `generation` and the separate judge endpoint
+under `scoring.judge` to call both local model servers directly:
 
 ```bash
 python -m scripts.run_evaluation \
   --config configs/evaluation.yaml \
   --cases evaluation/benchmark \
-  --predictions data/evaluation/glm47_flash_base_predictions.jsonl \
-  --model-label glm47_flash_base \
-  --evaluator both
+  --mode openai_compatible \
+  --model-label glm47_flash_base
 ```
+
+The runner processes cases sequentially. It generates one target response,
+sends that response to the judge, checkpoints every output artifact, and
+advances only after the verdict and checkpoint succeed. An interrupted run
+therefore retains all fully evaluated cases with `in_progress` status. The final
+case changes the scorecard and manifest status to `complete`.
 
 Launch training only after the baseline manifest exists:
 
@@ -177,12 +179,12 @@ Then rerun the same evaluator against the fine-tuned model and compare:
 python -m scripts.compare_evaluations \
   --baseline-dir data/evaluation/<baseline_run> \
   --tuned-dir data/evaluation/<tuned_run> \
-  --output-dir data/evaluation/comparisons/<comparison_name> \
-  --evaluator statistical
+  --output-dir data/evaluation/comparisons/<comparison_name>
 ```
 
-Repeat the comparison with `--evaluator llm_judge`. The scorecards remain
-independent and both require qualitative review before deployment.
+The comparison accepts only LLM-judge scorecards and rejects a changed judge
+protocol/configuration fingerprint or calibration ID. Qualitatively review
+critical regressions before deployment.
 
 Record the exact training configuration, checkpoint paths, and results in
 `project_state/TRAINING_RECIPE.md` and `project_state/TODO.md`.
