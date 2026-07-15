@@ -100,6 +100,13 @@
 - Dataset hosting is local-only on DGX Sparks storage, not HuggingFace Hub, unless this decision changes.
 - Training is planned as LoRA SFT via Unsloth on GLM-4.7-Flash.
 - Baseline evaluation must run before fine-tuning, including AI/LLM-specific ATLAS cases.
+- Phase 6 benchmark cases must be held out from the synthesis/training pipeline and manually reviewed before scoring.
+- Phase 6 supports `statistical`, `llm_judge`, and `both` evaluator modes. Statistical local scoring remains the default for cost-free, auditable regression checks. `both` generates predictions once and writes independent statistical and local-judge scorecards; the scores must not be blended into a composite.
+- Statistical metrics are technique F1, typed IOC precision/recall/F1, NDCG@5 for ranked triage actions, and negation-aware concept-alias coverage for text-heavy tasks. TTP, IOC, and ranked-action prompts require structured JSON so exact scorers measure the intended contract; format failures receive zero rather than silently falling back to lossy regex scoring. Report and reasoning answers remain free-form.
+- Local LLM judging uses a separately configured OpenAI-compatible endpoint, validates a structured score and concise reason, and records judge model/configuration metadata. Judge scores remain probabilistic and require human review for final claims.
+- Baseline and tuned comparisons must use the same evaluator, benchmark fingerprint, and case IDs. Aggregate improvement does not override an unacceptable task-level regression or severe DFIR behavior regression.
+- The Phase 6 evaluator supports local OpenAI-compatible endpoints and prediction-file replay so baseline and tuned runs can be produced by the same scoring path even if model serving changes.
+- The Phase 6 training script keeps Unsloth, Transformers, TRL, datasets, torch, accelerate, and bitsandbytes as DGX environment requirements rather than core package dependencies.
 - Phase 5 packaging is implemented as `dataset_packaging/`, not `packaging/`, to avoid shadowing Python's common third-party `packaging` library.
 - The current Phase 5 package consumes Phase 4 `filtered.jsonl` plus time-box-accepted `review_queue.jsonl`, excludes `rejected.jsonl`, splits by `source_doc_id`, and preserves quality provenance in record metadata.
 - To match the Unsloth GLM guidance within the available data, filtered rows remain reasoning examples and review rows are converted to direct-answer examples by stripping canonical `<reasoning>` blocks. This yields an approximately 75/25 reasoning/direct mix without additional synthesis cost.

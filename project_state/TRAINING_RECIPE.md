@@ -48,6 +48,21 @@ Record:
 
 Run baseline evaluation before fine-tuning.
 
+Default command for scoring an existing prediction JSONL:
+
+```bash
+python -m scripts.run_evaluation \
+  --config configs/evaluation.yaml \
+  --cases evaluation/benchmark \
+  --predictions data/evaluation/glm47_flash_base_predictions.jsonl \
+  --model-label glm47_flash_base
+```
+
+Statistical scoring is the default. To produce both independent statistical and
+local-judge scorecards from the same predictions, add `--evaluator both` and
+configure `scoring.judge` in `configs/evaluation.yaml`. To generate predictions
+through a local OpenAI-compatible model server, add `--mode openai_compatible`.
+
 | Benchmark | Cases | Metric | Baseline Score | Notes |
 |---|---:|---|---:|---|
 | TTP identification |  | F1 |  |  |
@@ -82,7 +97,8 @@ Run baseline evaluation before fine-tuning.
 ## Training Command
 
 ```bash
-# Add exact command here.
+python -m scripts.finetune \
+  --config configs/finetune_glm47flash.yaml
 ```
 
 ## Training Results
@@ -98,6 +114,26 @@ Run baseline evaluation before fine-tuning.
 ## Post-Training Evaluation
 
 Use the same benchmark as the baseline.
+
+```bash
+python -m scripts.run_evaluation \
+  --config configs/evaluation.yaml \
+  --cases evaluation/benchmark \
+  --predictions data/evaluation/glm47_flash_dfir_lora_predictions.jsonl \
+  --model-label glm47_flash_dfir_lora
+
+python -m scripts.compare_evaluations \
+  --baseline-dir data/evaluation/<baseline_run> \
+  --tuned-dir data/evaluation/<tuned_run> \
+  --output-dir data/evaluation/comparisons/<comparison_name> \
+  --evaluator statistical
+
+python -m scripts.compare_evaluations \
+  --baseline-dir data/evaluation/<baseline_run> \
+  --tuned-dir data/evaluation/<tuned_run> \
+  --output-dir data/evaluation/comparisons/<comparison_name> \
+  --evaluator llm_judge
+```
 
 | Benchmark | Baseline | Fine-Tuned | Delta | Decision |
 |---|---:|---:|---:|---|

@@ -22,6 +22,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "ruff>=0.15",
+]
 training-cuda130 = [
     # Install Torch first from the PyTorch CUDA wheel index:
     # pip install torch==2.10.0+cu130 --index-url https://download.pytorch.org/whl/cu130
@@ -38,7 +42,7 @@ dfir-quality = "scripts.quality_filter:main"
 dfir-package = "scripts.package_dataset:main"
 dfir-evaluate = "scripts.run_evaluation:main"
 dfir-compare-evals = "scripts.compare_evaluations:main"
-dfir-train-lora = "scripts.train_lora_unsloth:main"
+dfir-train-lora = "scripts.finetune:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]

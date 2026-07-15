@@ -22,6 +22,9 @@ dfir-collect
 dfir-synthesize
 dfir-quality
 dfir-package
+dfir-evaluate
+dfir-compare-evals
+dfir-train-lora
 ```
 
 The module commands used throughout the existing docs are equivalent:
@@ -31,6 +34,9 @@ python -m scripts.collect_all
 python -m scripts.synthesize --help
 python -m scripts.quality_filter
 python -m scripts.package_dataset
+python -m scripts.run_evaluation --help
+python -m scripts.compare_evaluations --help
+python -m scripts.finetune --help
 ```
 
 ## Current Training Inputs
@@ -44,7 +50,9 @@ data/packaged/gemini_subset_1/test.jsonl
 ```
 
 Use those three files for the Phase 6 baseline evaluation and Unsloth LoRA SFT
-run unless the project state docs are updated.
+run unless the project state docs are updated. Statistical evaluation is the
+default; `--evaluator both` adds an independent scorecard from a configured
+local judge.
 
 ## Guides Site
 
@@ -74,5 +82,7 @@ commit real API keys.
 
 ## Immediate Next Step
 
-Run baseline evaluation before fine-tuning. Then train LoRA SFT on
-GLM-4.7-Flash with the local package under `data/packaged/gemini_subset_1/`.
+Finalize and review the benchmark files under `evaluation/benchmark/`, then run baseline
+evaluation before fine-tuning. After the baseline manifest exists, train LoRA
+SFT on GLM-4.7-Flash with the local package under
+`data/packaged/gemini_subset_1/`.

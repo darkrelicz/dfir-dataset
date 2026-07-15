@@ -2,7 +2,8 @@
 
 ## Immediate
 
-- Prepare and run the Phase 6 baseline evaluation before LoRA SFT.
+- Finalize and manually review the tracked benchmark files under `evaluation/benchmark/` before any baseline or tuned-model scoring.
+- Run independent statistical and local-judge baseline scorecards with `scripts/run_evaluation.py --evaluator both` before LoRA SFT.
 - Use `data/packaged/gemini_subset_1/train.jsonl`, `validation.jsonl`, and `test.jsonl` as the current local Unsloth SFT inputs.
 - Record the exact Unsloth/GLM training configuration, checkpoint paths, and evaluation results once training starts.
 - Treat full review-queue adjudication and manual spot-check completion as deferred quality hardening unless the timeline expands.
@@ -46,14 +47,17 @@
 
 ## Phase 6 Training And Evaluation
 
+- Current status: evaluator implementation complete pending reviewed baseline execution. `evaluation/` implements typed deterministic metrics, local LLM judging, structured outputs for objective tasks, prediction replay, independent scorecards, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
+- `configs/evaluation.yaml` keeps `statistical` as the default evaluator and configures an optional separate local OpenAI-compatible judge endpoint. `both` writes independent scorecards without a composite score.
+- `scripts/finetune.py` and `configs/finetune_glm47flash.yaml` provide the local DGX/Unsloth LoRA SFT runner.
 - Run baseline evaluation before fine-tuning.
-- Fine-tune GLM-4.7-Flash with LoRA SFT via Unsloth.
-- Run post-training evaluation and compare against baseline.
-- Integrate into Shepherd only if evaluation shows improvement.
+- Fine-tune GLM-4.7-Flash with LoRA SFT via Unsloth after the baseline manifest exists.
+- Run post-training evaluation with the same benchmark and compare each scorecard independently with `scripts/compare_evaluations.py --evaluator <name>`.
+- Integrate into Shepherd only if both reviewed scorecards improve without unacceptable task-level or critical-behavior regressions.
 
 ## Later
 
-- Add evaluation fixtures and baseline evaluation before training.
+- Expand Phase 6 benchmark coverage after the initial reviewed benchmark is stable.
 - Add tests for collectors and synthesis utilities.
 - Keep `docs/` synchronized with code, durable project state docs, and generated manifests when pipeline architecture, commands, decisions, or artifact paths change.
 - Update `docs/site.json` `baseUrl` if the GitHub Pages repository name or hosting shape changes from `/dfir-dataset`.

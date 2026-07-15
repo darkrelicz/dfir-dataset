@@ -14,9 +14,8 @@ server, or model-serving runtime.
 |---|---|
 | Language | Python 3.11+ |
 | Packaging | `pyproject.toml` with setuptools |
-| CLI entrypoints | `dfir-collect`, `dfir-synthesize`, `dfir-quality`, `dfir-package` |
+| CLI entrypoints | `dfir-collect`, `dfir-synthesize`, `dfir-quality`, `dfir-package`, `dfir-evaluate`, `dfir-compare-evals`, `dfir-train-lora` |
 | Core libraries | `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python` |
-| Tests | `pytest` is configured, but no `tests/` tree exists yet |
 
 ## Component View
 
@@ -37,6 +36,7 @@ server, or model-serving runtime.
 | `validation/` | Pure reusable validation primitives shared by Phase 3 and Phase 4. |
 | `quality/` | Phase 4 row gates, scoring, references, dataset audits, and output writing. |
 | `dataset_packaging/` | Phase 5 local JSONL packaging for Unsloth/GLM SFT. |
+| `evaluation/` | Phase 6 typed statistical metrics, structured-output parsing, local LLM judging, scorecard manifests, and comparison gates. |
 | `scripts/` | Thin CLI entrypoints that dispatch to package runners. |
 | `utils/` | Low-level helpers for IO, text normalization, Markdown frontmatter, and git URLs. |
 | `configs/` | Machine-readable policy and pipeline settings. |
@@ -95,6 +95,23 @@ chat-style message records, splits by `source_doc_id`, writes train/validation/t
 JSONL, and creates a packaging manifest. The package name is
 `dataset_packaging/` to avoid shadowing Python's third-party `packaging` module.
 
+### Phase 6 Evaluation And Training
+
+`evaluation.runner` loads held-out benchmark cases and calls either a local
+OpenAI-compatible model endpoint or a prediction JSONL file. Statistical
+scoring is the default. Optional `llm_judge` and `both` modes use a separately
+configured local judge; `both` reuses the predictions and writes independent
+scorecards under `scorecards/statistical/` and `scorecards/llm_judge/`.
+Objective TTP, IOC, and ranking tasks require structured JSON; a format failure
+is recorded and scored as zero instead of being silently reinterpreted as prose.
+
+`evaluation.comparison` compares one scorecard at a time and requires matching
+evaluator type, benchmark fingerprint, and case IDs. Per-task regression gates
+prevent a headline improvement from hiding a material task regression.
+
+`scripts.finetune` launches local Unsloth LoRA SFT using
+`configs/finetune_glm47flash.yaml`.
+
 ## Current Generated State
 
 The current reduced-subset package is:
@@ -117,3 +134,5 @@ rows. The split has no `source_doc_id` overlap.
 * Phase 3 `accepted.jsonl` is candidate data, not final training data.
 * Phase 5 currently packages filtered plus review rows by explicit time-boxed
   decision.
+* Phase 6 benchmark cases are held out from synthesis/training and must be
+  manually reviewed before baseline scoring.

@@ -82,9 +82,19 @@ Keep structured labels in `gold_labels` whenever possible:
 - Ordered action IDs or labels for triage ranking.
 - Telemetry, artifacts, platforms, and detection concepts for rubric cases.
 
+The evaluator may require structured model outputs for objective tasks:
+
+- TTP cases: `{"techniques": [...], "answer": "..."}`.
+- IOC cases: `{"iocs": [{"type": "...", "value": "..."}], "answer": "..."}`.
+- Ranking cases: `{"ranked_actions": [...], "answer": "..."}`.
+
+Keep report, reasoning, artifact-analysis, and other rubric-heavy answers in
+natural language so the benchmark still measures analyst-facing response quality.
+
 Rubric scoring should reward atomic evidence coverage, limitations, next pivots,
-and avoidance of overclaims. The deterministic scorer is a first pass; text-heavy
-rubric cases still need human review before final Phase 6 claims.
+and avoidance of overclaims. Statistical and local-judge scorecards are kept
+independent; text-heavy rubric cases still need human review before final Phase 6
+claims.
 
 ## Prompts
 

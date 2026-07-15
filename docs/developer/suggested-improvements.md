@@ -10,9 +10,10 @@ implementation facts.
 
 ## Highest Priority
 
-### Implement Phase 6 Evaluation
+### Finalize Phase 6 Benchmark
 
-Add evaluation fixtures and a baseline harness before fine-tuning.
+The evaluator and training scaffolding now exist. Finalize and manually review
+the held-out benchmark cases before fine-tuning.
 
 Suggested coverage:
 
@@ -24,14 +25,14 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-Record results in `project_state/TRAINING_RECIPE.md` and update
+Run baseline scoring, post-training scoring, and comparison with the Phase 6
+commands. Record results in `project_state/TRAINING_RECIPE.md` and update
 `project_state/TODO.md`.
 
-### Add Tests
+### Expand Tests
 
-`pytest` is configured but no `tests/` tree exists.
-
-Start with focused tests for:
+Focused evaluation metric, judge-response, and scorecard-comparison tests now
+exist. Continue with tests for:
 
 * shared validation primitives;
 * `PromptBuilder` taxonomy-ref and pair-cap behavior;

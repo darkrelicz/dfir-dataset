@@ -31,7 +31,7 @@ Explain these points during handover:
 
 - Phase 3 `accepted.jsonl` is candidate synthesis output, not final training data.
 - Phase 4 `filtered.jsonl` is the first dataset eligible for packaging.
-- `review_queue.jsonl` is excluded from training until adjudicated.
+- `review_queue.jsonl` is included in the current Phase 5 package by explicit time-boxed risk acceptance and transformed into direct-answer examples. Rejected rows remain excluded.
 - Splits must be by `source_doc_id` to avoid leakage.
 - Canonical responses use `<reasoning>`, not `<think>`.
 - Model-specific exporters may transform formatting only at packaging time.
@@ -101,7 +101,8 @@ Before training:
 
 Before Shepherd integration:
 
-- [ ] Fine-tuned model improves over baseline.
+- [ ] Fine-tuned model passes the statistical and local-judge comparison gates independently.
+- [ ] No critical DFIR task or safety behavior has an unacceptable regression.
 - [ ] No severe regressions on critical DFIR behavior.
 - [ ] Reasoning format remains usable for Shepherd.
 - [ ] Rollback path is documented.

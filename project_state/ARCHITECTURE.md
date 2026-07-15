@@ -8,9 +8,9 @@ This repository is a Python dataset pipeline. The primary product code is not a 
 
 - Language: Python 3.11+
 - Packaging: `pyproject.toml` with setuptools
-- CLI entrypoints: `dfir-collect`, `dfir-synthesize`, `dfir-quality`, and `dfir-package`
+- CLI entrypoints: `dfir-collect`, `dfir-synthesize`, `dfir-quality`, `dfir-package`, `dfir-evaluate`, `dfir-compare-evals`, and `dfir-train-lora`
 - Core libraries: `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`
-- Tests are configured for `pytest`, but no `tests/` tree is currently present.
+- Tests are configured for `pytest`; focused evaluation metric, judge-response, and comparison tests live under `tests/`.
 
 ## Pipeline Layout
 
@@ -23,6 +23,8 @@ This repository is a Python dataset pipeline. The primary product code is not a 
 - `configs/source_profiles.yaml`: Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
 - `configs/quality.yaml`: Programmatic taxonomy IDs, coverage levels, scoring weights, no-API heuristic terms, and dedupe/balance settings.
 - `configs/packaging.yaml`: Phase 5 packaging inputs, local output paths, source-document split settings, chat record format, and response-style policy.
+- `configs/evaluation.yaml`: Phase 6 benchmark input path, model endpoint settings, generation parameters, prompt wrapper, and scoring defaults.
+- `configs/finetune_glm47flash.yaml`: Phase 6 local Unsloth/GLM LoRA SFT settings, dataset paths, LoRA hyperparameters, training arguments, and export paths.
 - `synthesizers/`: Phase 3 scaffolding for source profiles, content-type profiles, prompt policy validation, prompt planning, prompt rendering, prompt-time source compaction, pilot sampling, model clients, schemas, run-state helpers, generation execution, and validation helpers.
 - `validation/`: Shared pure validation primitives for reasoning blocks, grounding tags, concrete indicators, mapping ID formats, and taxonomy config extraction. Phase 3 and Phase 4 call these primitives through separate stage-specific wrappers.
 - `scripts/synthesize.py`: Thin CLI for raw corpus validation, no-API prompt rendering, and Gemini-backed instruction-pair generation.
@@ -30,12 +32,16 @@ This repository is a Python dataset pipeline. The primary product code is not a 
 - `scripts/quality_filter.py`: Thin CLI for running the Phase 4 quality filter against a Phase 3 `accepted.jsonl`; configures `INFO` stage logs by default.
 - `dataset_packaging/`: Phase 5 local dataset packaging for Unsloth/GLM SFT. It reads Phase 4 filtered and review rows directly, converts configured rows into direct-answer examples, splits by `source_doc_id`, and writes chat JSONL plus a small packaging manifest.
 - `scripts/package_dataset.py`: Thin CLI for running Phase 5 packaging from `configs/packaging.yaml`; configures `INFO` stage logs by default.
+- `evaluation/`: Phase 6 benchmark schemas, typed deterministic metrics, structured-output parsing, local LLM judging, OpenAI-compatible and prediction-file model clients, independent scorecard output, and before/after comparison helpers.
+- `scripts/run_evaluation.py`: Thin CLI for running the Phase 6 evaluator against a local OpenAI-compatible model endpoint or a prediction JSONL file.
+- `scripts/compare_evaluations.py`: Thin CLI for comparing baseline and fine-tuned Phase 6 score outputs.
+- `scripts/finetune.py`: Phase 6 Unsloth LoRA SFT runner for GLM-4.7-Flash.
 - `project_state/TAXONOMY.md`: Human-readable 57-category DFIR artifact taxonomy.
 - `docs/`: Self-contained MarkBind documentation site for user/developer guides, PlantUML source diagrams, current implementation notes, and suggested improvements. Built locally with `npm run build` from inside `docs/`.
 - `.github/workflows/deploy-guides.yml`: GitHub Pages workflow for building `docs/` with MarkBind and deploying the generated `docs/_site` artifact.
 - `data/raw/`: Generated collector outputs and cloned upstream repositories. Treat as generated data.
 
-The project plan's packaging phase is implemented as `dataset_packaging/` rather than `packaging/` to avoid shadowing Python's common third-party `packaging` library. Planned but not yet implemented packages from the project plan: `evaluation/`. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
+The project plan's packaging phase is implemented as `dataset_packaging/` rather than `packaging/` to avoid shadowing Python's common third-party `packaging` library. Phase 6 evaluation/training scaffolding now lives in `evaluation/` plus thin scripts. The `synthesizers/` package includes the direct Gemini client and generation runner; Claude comparison jobs are not implemented.
 
 ## Data Contracts
 
@@ -110,7 +116,7 @@ The Phase 4 quality gate consumes Phase 3 `accepted.jsonl` and writes `filtered.
 
 Phase 5 packaging splits by `source_doc_id` to prevent leakage and exports local chat-formatted JSONL for training. Under the shortened timeline, the package input is the union of Phase 4 `filtered.jsonl` and `review_queue.jsonl`; the packager does not read or recount `rejected.jsonl`. The current package at `data/packaged/gemini_subset_1/` contains `train.jsonl`, `validation.jsonl`, `test.jsonl`, and `packaging_manifest.json`. Packaged records use a `messages` array with system/user/assistant turns plus metadata preserving `quality_status`, `quality_issues`, `quality_score`, source, category, difficulty, taxonomy refs, and source document IDs. The package keeps filtered rows as `<reasoning>` examples and converts review rows into direct-answer examples by stripping the reasoning block, yielding an approximately 75/25 reasoning/direct mix for Unsloth GLM-4.7-Flash training. Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
 
-Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd.
+Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd. The evaluator can call a local OpenAI-compatible endpoint or replay prediction JSONL keyed by `case_id`. It supports `statistical`, `llm_judge`, and `both`; statistical is the default, while `both` reuses one prediction pass and writes independent scorecards under `scorecards/statistical/` and `scorecards/llm_judge/`. TTP, typed IOC, and ranked-action tasks request structured JSON; report and reasoning tasks remain free-form. The local judge uses a separately configured OpenAI-compatible endpoint and validated JSON verdicts. Comparison requires matching evaluator type, benchmark fingerprint, and case IDs, and rejects excessive per-task regressions. The training runner consumes the Phase 5 package and writes `training_manifest.json`; actual training requires a DGX environment with Unsloth, Transformers v5, TRL, datasets, torch, accelerate, and bitsandbytes installed.
 
 ## Remaining Pipeline Gates
 
@@ -118,7 +124,8 @@ The Gemini client uses `models.generate_content` with `response_mime_type="appli
 
 The remaining workflow is intentionally gated around Phase 6 training and later stages:
 
-1. Phase 6 baseline: run the baseline evaluation before fine-tuning.
-2. Phase 6 fine-tuning: train LoRA SFT on GLM-4.7-Flash with Unsloth using `data/packaged/gemini_subset_1/`.
-3. Phase 6 post-training evaluation: rerun the same evaluation suite, compare against baseline, and integrate into Shepherd only if results improve.
-4. Future full-corpus synthesis: if budget returns, rerun a smoke test and reviewed pilot before launching the larger full-generation job. Treat its `accepted.jsonl` as candidate data until Phase 4 passes again.
+1. Phase 6 benchmark: finalize and review the tracked benchmark files under `evaluation/benchmark/` before any model run.
+2. Phase 6 baseline: run `python -m scripts.run_evaluation` against untrained GLM-4.7-Flash before fine-tuning.
+3. Phase 6 fine-tuning: train LoRA SFT on GLM-4.7-Flash with Unsloth using `data/packaged/gemini_subset_1/`.
+4. Phase 6 post-training evaluation: rerun the same evaluation suite, compare with `python -m scripts.compare_evaluations`, and integrate into Shepherd only if results improve.
+5. Future full-corpus synthesis: if budget returns, rerun a smoke test and reviewed pilot before launching the larger full-generation job. Treat its `accepted.jsonl` as candidate data until Phase 4 passes again.

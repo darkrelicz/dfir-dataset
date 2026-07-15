@@ -130,7 +130,59 @@ data/packaged/gemini_subset_1/packaging_manifest.json
 
 ## 7. Phase 6
 
-Phase 6 is not implemented in this repository yet. Use the packaged split files
-for baseline evaluation and Unsloth LoRA SFT, then record the exact training
-configuration and results in `project_state/TRAINING_RECIPE.md` and
-`project_state/TODO.md`.
+Phase 6 now has evaluator and training scaffolding.
+
+First finalize a held-out benchmark:
+
+```bash
+evaluation/benchmark/
+```
+
+Run baseline evaluation before fine-tuning. By default the evaluator scores an
+existing prediction JSONL with the statistical scorecard:
+
+```bash
+python -m scripts.run_evaluation \
+  --config configs/evaluation.yaml \
+  --cases evaluation/benchmark \
+  --predictions data/evaluation/glm47_flash_base_predictions.jsonl \
+  --model-label glm47_flash_base
+```
+
+Add `--mode openai_compatible` when you want the evaluator to call a local model
+server directly.
+
+To run both independent scorecards, configure the separate local judge endpoint
+under `scoring.judge` and add:
+
+```bash
+python -m scripts.run_evaluation \
+  --config configs/evaluation.yaml \
+  --cases evaluation/benchmark \
+  --predictions data/evaluation/glm47_flash_base_predictions.jsonl \
+  --model-label glm47_flash_base \
+  --evaluator both
+```
+
+Launch training only after the baseline manifest exists:
+
+```bash
+python -m scripts.finetune \
+  --config configs/finetune_glm47flash.yaml
+```
+
+Then rerun the same evaluator against the fine-tuned model and compare:
+
+```bash
+python -m scripts.compare_evaluations \
+  --baseline-dir data/evaluation/<baseline_run> \
+  --tuned-dir data/evaluation/<tuned_run> \
+  --output-dir data/evaluation/comparisons/<comparison_name> \
+  --evaluator statistical
+```
+
+Repeat the comparison with `--evaluator llm_judge`. The scorecards remain
+independent and both require qualitative review before deployment.
+
+Record the exact training configuration, checkpoint paths, and results in
+`project_state/TRAINING_RECIPE.md` and `project_state/TODO.md`.

@@ -12,13 +12,13 @@ DFIR Dataset is a re-runnable dataset factory that produces quality DFIR trainin
 
 ## Current Snapshot
 
-As of 2026-07-07, the active handoff path is:
+As of 2026-07-09, the active handoff path is:
 
 1. Raw source collection under `../data/raw/`.
 2. Reduced-subset Gemini synthesis under `../data/synthesized/gemini_subset_1/`.
 3. Phase 4 quality filtering under `../data/quality/gemini_subset_1/`.
 4. Phase 5 local packaging under `../data/packaged/gemini_subset_1/`.
-5. Phase 6 baseline evaluation and LoRA SFT are the next project tasks.
+5. Phase 6 benchmark finalization, baseline evaluation, LoRA SFT, and post-training comparison.
 
 The current packaged training inputs are:
 

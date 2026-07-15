@@ -5,7 +5,7 @@
 
 # Current Project State
 
-This page reflects the latest repository state inspected on 2026-07-07. The
+This page reflects the latest repository state inspected on 2026-07-14. The
 generated manifests remain the authoritative record for run-specific counts.
 
 ## Phase Status
@@ -17,7 +17,7 @@ generated manifests remain the authoritative record for run-specific counts.
 | Phase 3 synthesis | Complete for reduced subset | `data/synthesized/gemini_subset_1/` |
 | Phase 4 quality | Complete by time-boxed acceptance | `data/quality/gemini_subset_1/` |
 | Phase 5 packaging | Complete for local training path | `data/packaged/gemini_subset_1/` |
-| Phase 6 evaluation/training | Active next phase | Not implemented in this repo yet |
+| Phase 6 evaluation/training | Evaluator implemented; baseline pending review | `evaluation/`, `configs/evaluation.yaml`, `configs/finetune_glm47flash.yaml` |
 
 ## Raw Corpus
 
@@ -60,7 +60,7 @@ data until Phase 4 quality has run.
 
 ## Quality Snapshot
 
-The current quality run is `quality-20260707T024506Z`:
+The current quality run is `quality-20260708T064057Z`:
 
 | Status | Pairs |
 |---|---:|
@@ -74,7 +74,7 @@ rows. Rejected rows remain ineligible.
 
 ## Packaging Snapshot
 
-The current package is `package-20260707T075641Z`:
+The current package is `package-20260708T071253Z`:
 
 | Split | Records |
 |---|---:|
@@ -101,5 +101,6 @@ Review rows are included in Phase 5 to preserve enough training volume for the
 current deadline. This is a time-boxed risk acceptance, not a statement that
 the review queue has been fully adjudicated.
 
-Full-corpus synthesis, Hugging Face publishing, evaluation fixtures, and
-training automation are deferred.
+Full-corpus synthesis and Hugging Face publishing are deferred. Phase 6
+benchmark finalization, baseline scoring, real DGX training, post-training
+scoring, and Shepherd integration remain active next actions.
