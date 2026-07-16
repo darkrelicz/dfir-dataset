@@ -1,6 +1,6 @@
-import json
 import logging
 import random
+import re
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -15,6 +15,11 @@ from validation.reasoning import final_answer_text
 logger = logging.getLogger(__name__)
 
 SPLIT_NAMES = ("train", "validation", "test")
+GENERAL_KNOWLEDGE_ANNOTATION = "[GENERAL KNOWLEDGE]"
+CANONICAL_REASONING_START = "<reasoning>"
+CANONICAL_REASONING_END = "</reasoning>"
+GLM_REASONING_START = "<think>"
+GLM_REASONING_END = "</think>"
 
 
 def run_packaging(args) -> int:
@@ -63,6 +68,7 @@ def run_packaging(args) -> int:
         build_packaged_record(row, index, config, response_style)
         for index, (row, response_style) in enumerate(package_rows, 1)
     ]
+    validate_packaged_records(packaged_records, config)
     log_stage_complete(
         logger,
         "built packaged records",
@@ -151,6 +157,10 @@ def build_packaged_record(
         str(row.get("response", "")),
         reasoning_style,
     )
+    content, model_transforms = apply_model_specific_transforms(
+        content,
+        config.get("model_transform", {}),
+    )
 
     messages = []
     format_config = config.get("format", {})
@@ -193,6 +203,7 @@ def build_packaged_record(
             "response_transform": (
                 "strip_reasoning_block" if reasoning_style == "direct" else "none"
             ),
+            "model_transforms": model_transforms,
             "run_id": row.get("run_id"),
             "prompt_id": prompt_id,
             "prompt_hash": row.get("prompt_hash"),
@@ -210,6 +221,81 @@ def format_content_by_reasoning_style(response: str, reasoning_style: str) -> st
         return response.strip()
     direct_answer = final_answer_text(response)
     return (direct_answer or response).strip()
+
+
+def apply_model_specific_transforms(
+    content: str,
+    transform_config: dict[str, Any],
+) -> tuple[str, list[str]]:
+    """Create a model-specific response view without mutating canonical data."""
+
+    transformed = content
+    applied: list[str] = []
+
+    if bool(transform_config.get("remove_general_knowledge_annotations", False)):
+        if GENERAL_KNOWLEDGE_ANNOTATION in transformed:
+            transformed = transformed.replace(GENERAL_KNOWLEDGE_ANNOTATION, "")
+            applied.append("remove_general_knowledge_annotations")
+
+    if bool(transform_config.get("glm_reasoning_tags", False)):
+        if (
+            CANONICAL_REASONING_START in transformed
+            or CANONICAL_REASONING_END in transformed
+        ):
+            transformed = transformed.replace(
+                CANONICAL_REASONING_START,
+                GLM_REASONING_START,
+            ).replace(
+                CANONICAL_REASONING_END,
+                GLM_REASONING_END,
+            )
+            applied.append("canonical_reasoning_to_glm_think")
+
+    return normalize_transformed_content(transformed), applied
+
+
+def normalize_transformed_content(content: str) -> str:
+    lines = [re.sub(r"[ \t]+$", "", line) for line in content.splitlines()]
+    return "\n".join(lines).strip()
+
+
+def validate_packaged_records(
+    records: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> None:
+    preflight_config = config.get("preflight", {})
+    if not bool(preflight_config.get("enabled", False)):
+        return
+
+    issues: list[str] = []
+    for record in records:
+        record_id = str(record.get("id", "<unknown>"))
+        messages = record.get("messages", [])
+        assistant_content = ""
+        if messages and isinstance(messages[-1], dict):
+            assistant_content = str(messages[-1].get("content", "")).strip()
+
+        if not assistant_content:
+            issues.append(f"{record_id}: empty assistant response")
+        if GENERAL_KNOWLEDGE_ANNOTATION in assistant_content:
+            issues.append(f"{record_id}: retained grounding annotation")
+        if (
+            CANONICAL_REASONING_START in assistant_content
+            or CANONICAL_REASONING_END in assistant_content
+        ):
+            issues.append(f"{record_id}: retained canonical reasoning tag")
+        if assistant_content.count(GLM_REASONING_START) != assistant_content.count(
+            GLM_REASONING_END
+        ):
+            issues.append(f"{record_id}: unbalanced GLM reasoning tags")
+
+        if len(issues) >= 20:
+            break
+
+    if issues:
+        raise ValueError(
+            "Packaged-record preflight failed:\n- " + "\n- ".join(issues)
+        )
 
 
 def split_records_by_source_doc(

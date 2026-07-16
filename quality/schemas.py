@@ -38,7 +38,7 @@ class QualityIssue(BaseModel):
 
 
 class QualityScore(BaseModel):
-    """Heuristic Phase 4 score aligned with docs/QUALITY_RUBRIC.md."""
+    """Heuristic Phase 4 score aligned with docs/developer/quality-rubric.md."""
 
     factual_accuracy: float
     reasoning_quality: float

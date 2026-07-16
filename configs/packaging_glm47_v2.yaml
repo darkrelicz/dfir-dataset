@@ -1,0 +1,29 @@
+split:
+  train: 0.80
+  validation: 0.10
+  test: 0.10
+  seed: 1337
+
+format:
+  record_format: "messages_jsonl"
+  include_system_message: true
+  system_message: "You are Shepherd, a DFIR AI assistant. Answer as a careful incident responder: stay grounded in evidence, calibrate uncertainty, and avoid unsupported claims."
+
+response_style:
+  filtered: "reasoning"
+  review: "direct"
+  direct_transform: "strip_reasoning_block"
+
+# These transformations affect only the GLM training view. Canonical synthesized
+# and quality-filtered records retain their original reasoning and provenance.
+model_transform:
+  remove_general_knowledge_annotations: true
+  glm_reasoning_tags: true
+
+preflight:
+  enabled: true
+
+hosting:
+  canonical: "local"
+  huggingface_dataset_card: false
+  publish_data_to_huggingface: false

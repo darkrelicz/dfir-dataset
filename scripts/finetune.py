@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from unsloth import FastLanguageModel
-
 from utils.io import load_json, load_yaml, log_stage_complete, write_json
 
 logger = logging.getLogger(__name__)
@@ -46,7 +44,7 @@ def run_training(args: argparse.Namespace) -> int:
         "dataset": dataset_summary,
         "model": config.get("model", {}),
         "lora": config.get("lora", {}),
-        "training": config.get("training", {}),
+        "training": config.get("finetune", {}),
         "export": config.get("export", {}),
     }
 
@@ -84,9 +82,13 @@ def validate_dataset_inputs(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
+    # Unsloth must patch Transformers/TRL before either package is imported.
+    # Otherwise TRL attempts entropy metrics on Unsloth's fused-loss
+    # EMPTY_LOGITS sentinel and fails before the first optimizer step.
+    from unsloth import FastLanguageModel
+    from unsloth.chat_templates import train_on_responses_only
     from datasets import load_dataset
     from trl.trainer.sft_trainer import SFTTrainer
-    from unsloth.chat_templates import train_on_responses_only
 
     dataset_config = config["dataset"]
     model_config = config["model"]
@@ -126,18 +128,14 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
         },
     )
 
-    def format_messages(batch: dict[str, Any]) -> dict[str, list[str]]:
-        texts = [
-            tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-            for messages in batch["messages"]
-        ]
-        return {dataset_config.get("text_field", "text"): texts}
-
-    dataset = dataset.map(format_messages, batched=True)
+    dataset = render_training_dataset(
+        dataset,
+        tokenizer,
+        text_field=dataset_config.get("text_field", "text"),
+        max_length=int(
+            finetune_config.get("max_length", model_config["max_seq_length"])
+        ),
+    )
 
     sft_args = build_sft_config(dataset_config, model_config, finetune_config, config)
     trainer = SFTTrainer(
@@ -178,10 +176,11 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
         )
     if bool(export_config.get("save_gguf")):
         model.save_pretrained_gguf(
-            export_config["gguf_dir"], 
-            tokenizer, 
-            quantization_method=export_config["gguf_quantization"])
-    
+            export_config["gguf_dir"],
+            tokenizer,
+            quantization_method=export_config["gguf_quantization"],
+        )
+
     return {
         "train_result": str(stats),
         "adapter_dir": export_config.get("adapter_dir"),
@@ -189,6 +188,77 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
         if bool(export_config.get("save_merged_16bit", False))
         else None,
     }
+
+
+def format_messages_for_training(
+    messages_batch: list[list[dict[str, Any]]],
+    tokenizer: Any,
+    *,
+    max_length: int,
+) -> list[str]:
+    """Render conversations, append EOS explicitly, and reject truncation."""
+
+    eos_token = tokenizer.eos_token
+    if not eos_token:
+        raise ValueError("Tokenizer must define an EOS token before SFT formatting")
+
+    texts: list[str] = []
+    for messages in messages_batch:
+        rendered = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+        if not rendered.endswith(eos_token):
+            rendered += eos_token
+        texts.append(rendered)
+
+    encoded = tokenizer(
+        texts,
+        add_special_tokens=False,
+        truncation=False,
+    )["input_ids"]
+    oversized = [
+        (index, len(token_ids))
+        for index, token_ids in enumerate(encoded)
+        if len(token_ids) > max_length
+    ]
+    if oversized:
+        preview = ", ".join(
+            f"batch_index={index} tokens={length}"
+            for index, length in oversized[:10]
+        )
+        raise ValueError(
+            f"Rendered training examples exceed max_length={max_length}: {preview}"
+        )
+    return texts
+
+
+def render_training_dataset(
+    dataset: Any,
+    tokenizer: Any,
+    *,
+    text_field: str,
+    max_length: int,
+) -> Any:
+    """Replace source messages with the exact text that TRL must tokenize."""
+
+    def format_messages(batch: dict[str, Any]) -> dict[str, list[str]]:
+        return {
+            text_field: format_messages_for_training(
+                batch["messages"],
+                tokenizer,
+                max_length=max_length,
+            )
+        }
+
+    # Without removing `messages`, TRL identifies the row as conversational and
+    # silently applies the chat template again instead of consuming `text_field`.
+    return dataset.map(
+        format_messages,
+        batched=True,
+        remove_columns=["messages"],
+    )
 
 
 def build_sft_config(
