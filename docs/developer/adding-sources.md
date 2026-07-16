@@ -122,7 +122,7 @@ content_type_profiles:
 - [ ] `docs/developer/architecture.md`: add the source to the pipeline layout.
 - [ ] `project_state/DECISIONS.md`: record any durable source-specific decision.
 - [ ] `project_state/TODO.md`: add follow-up work if collection, synthesis, quality, or packaging remains incomplete.
-- [ ] Canonical site guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, dataset-card template, quality rubric, or training recipe.
+- [ ] Canonical site guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, quality rubric, or training recipe.
 
 # New Source Review
 

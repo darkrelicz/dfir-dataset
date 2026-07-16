@@ -153,7 +153,7 @@ Before training:
 - [ ] Dataset package loads locally.
 - [ ] GLM training view contains no `[GENERAL KNOWLEDGE]` or `<reasoning>` tokens and has balanced `<think>` blocks.
 - [ ] Rendered training text ends with tokenizer EOS and fits the configured sequence length.
-- [ ] Dataset card is filled from the packaged run.
+- [ ] Packaging manifest matches the split files and reports no source-document overlap.
 - [ ] Held-out baseline evaluation set is finalized and verified absent from training inputs.
 - [ ] Judge calibration set is adjudicated and `calibration_id` is not `uncalibrated`.
 - [ ] Baseline evaluation manifest and scorecard are `complete`.

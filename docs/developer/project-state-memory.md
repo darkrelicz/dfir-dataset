@@ -38,7 +38,6 @@ templates. Important migrated pages include:
 * [Prompt Guide](prompt-guide.md)
 * [Quality Rubric](quality-rubric.md)
 * [Coverage Map](coverage-map.md)
-* [Dataset Card Template](dataset-card.md)
 * [Benchmark Design](benchmark-design.md)
 * [Training And Release](../user/training-and-release.md)
 * [Handover Guide](../user/handover.md)

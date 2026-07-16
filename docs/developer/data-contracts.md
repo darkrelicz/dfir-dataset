@@ -122,7 +122,6 @@ The current package format is `messages_jsonl`.
     "quality_issues": [],
     "quality_score": {},
     "reasoning_style": "reasoning",
-    "response_transform": "none",
     "model_transforms": ["canonical_reasoning_to_glm_think"],
     "run_id": "...",
     "prompt_id": "...",

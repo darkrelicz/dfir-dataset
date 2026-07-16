@@ -48,7 +48,7 @@
 - Canonical synthesis/quality rows retain `<reasoning>` and grounding annotations. The GLM v2 training view removes `[GENERAL KNOWLEDGE]`, converts reasoning rows to `<think>`, and strips reasoning from review rows.
 - `data/packaged/glm47_dfir_v2/` has 5,517 records: 4,414 train, 552 validation, and 551 test, with no leaked annotations/canonical tags, no unbalanced `<think>` blocks, and no split overlap.
 - `packaging_manifest.json` records package run ID, quality run ID, total records, response-style mix, split counts, and source-document overlap.
-- Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
+- Hugging Face upload work is intentionally not implemented for the current local training path.
 
 ## Phase 6 Training And Evaluation
 

@@ -162,21 +162,15 @@ def build_packaged_record(
         config.get("model_transform", {}),
     )
 
-    messages = []
     format_config = config.get("format", {})
-    if bool(format_config.get("include_system_message", True)):
-        messages.append(
-            {
-                "role": "system",
-                "content": str(format_config.get("system_message")).strip(),
-            }
-        )
-    messages.extend(
-        [
-            {"role": "user", "content": str(row.get("instruction", "")).strip()},
-            {"role": "assistant", "content": content},
-        ]
-    )
+    messages = [
+        {
+            "role": "system",
+            "content": str(format_config["system_message"]).strip(),
+        },
+        {"role": "user", "content": str(row.get("instruction", "")).strip()},
+        {"role": "assistant", "content": content},
+    ]
 
     source_doc_id = str(row.get("source_doc_id", "unknown"))
     prompt_id = str(row.get("prompt_id", "prompt"))
@@ -200,10 +194,7 @@ def build_packaged_record(
             "quality_issues": row.get("quality_issues", []),
             "quality_score": row.get("quality_score"),
             "reasoning_style": reasoning_style,
-            "response_transform": (
-                "strip_reasoning_block" if reasoning_style == "direct" else "none"
-            ),
-            "model_transforms": model_transforms,
+            "model_transforms": str(model_transforms),
             "run_id": row.get("run_id"),
             "prompt_id": prompt_id,
             "prompt_hash": row.get("prompt_hash"),
@@ -226,16 +217,16 @@ def format_content_by_reasoning_style(response: str, reasoning_style: str) -> st
 def apply_model_specific_transforms(
     content: str,
     transform_config: dict[str, Any],
-) -> tuple[str, list[str]]:
+) -> tuple[str, set]:
     """Create a model-specific response view without mutating canonical data."""
 
     transformed = content
-    applied: list[str] = []
+    applied = set()
 
     if bool(transform_config.get("remove_general_knowledge_annotations", False)):
         if GENERAL_KNOWLEDGE_ANNOTATION in transformed:
             transformed = transformed.replace(GENERAL_KNOWLEDGE_ANNOTATION, "")
-            applied.append("remove_general_knowledge_annotations")
+            applied.add("remove_general_knowledge_annotations")
 
     if bool(transform_config.get("glm_reasoning_tags", False)):
         if (
@@ -249,7 +240,7 @@ def apply_model_specific_transforms(
                 CANONICAL_REASONING_END,
                 GLM_REASONING_END,
             )
-            applied.append("canonical_reasoning_to_glm_think")
+            applied.add("canonical_reasoning_to_glm_think")
 
     return normalize_transformed_content(transformed), applied
 
@@ -386,7 +377,7 @@ def build_packaging_manifest(
             "validation": split_config.get("validation", 0.1),
             "test": split_config.get("test", 0.1),
             "seed": split_config.get("seed", 1337),
-            "group_by": split_config.get("group_by", "source_doc_id"),
+            "group_by": "source_doc_id",
         },
         splits=splits,
         source_doc_overlap=overlap,

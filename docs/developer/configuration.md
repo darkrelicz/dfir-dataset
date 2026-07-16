@@ -102,11 +102,10 @@ Defines Phase 5 packaging:
 * split fractions, seed, and group key;
 * output record format;
 * system message;
-* response-style policy;
-* output paths;
-* hosting policy.
+* response-style policy.
 
-The current packaging policy is local-only and does not publish to Hugging Face.
+The packager writes local JSONL splits and a packaging manifest. It has no
+hosting or publishing behavior.
 
 `configs/packaging_glm47_v2.yaml` is the active model-specific view. It enables
 GLM reasoning-tag conversion, grounding-annotation removal, and packaged-record

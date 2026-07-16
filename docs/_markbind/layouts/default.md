@@ -57,7 +57,6 @@
   * [Prompt Guide]({{baseUrl}}/developer/prompt-guide.html)
   * [Quality Rubric]({{baseUrl}}/developer/quality-rubric.html)
   * [Coverage Map]({{baseUrl}}/developer/coverage-map.html)
-  * [Dataset Card Template]({{baseUrl}}/developer/dataset-card.html)
   * [Benchmark Design]({{baseUrl}}/developer/benchmark-design.html)
   * [Diagrams]({{baseUrl}}/developer/diagrams.html)
   * [Project State Memory]({{baseUrl}}/developer/project-state-memory.html)

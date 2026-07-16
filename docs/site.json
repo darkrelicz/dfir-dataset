@@ -100,10 +100,6 @@
       "title": "Coverage Map"
     },
     {
-      "src": "developer/dataset-card.md",
-      "title": "Dataset Card Template"
-    },
-    {
       "src": "developer/benchmark-design.md",
       "title": "Benchmark Design"
     },

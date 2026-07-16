@@ -23,9 +23,8 @@ Recommended reading order:
 11. [Prompt Guide](prompt-guide.md)
 12. [Quality Rubric](quality-rubric.md)
 13. [Coverage Map](coverage-map.md)
-14. [Dataset Card Template](dataset-card.md)
-15. [Benchmark Design](benchmark-design.md)
-16. [DFIR Artifact Taxonomy](../reference/taxonomy.md)
+14. [Benchmark Design](benchmark-design.md)
+15. [DFIR Artifact Taxonomy](../reference/taxonomy.md)
 
 The [Diagrams](diagrams.md) page renders every PlantUML diagram from
 `docs/diagrams/`.

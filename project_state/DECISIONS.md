@@ -117,4 +117,4 @@
 - Phase 5 packaging is implemented as `dataset_packaging/`, not `packaging/`, to avoid shadowing Python's common third-party `packaging` library.
 - The current Phase 5 package consumes Phase 4 `filtered.jsonl` plus time-box-accepted `review_queue.jsonl`, excludes `rejected.jsonl`, splits by `source_doc_id`, and preserves quality provenance in record metadata.
 - To match the Unsloth GLM guidance within the available data, filtered rows remain reasoning examples and review rows are converted to direct-answer examples by stripping canonical `<reasoning>` blocks. This yields an approximately 75/25 reasoning/direct mix without additional synthesis cost.
-- Hugging Face dataset-card and upload work are intentionally deferred for the current local training path.
+- Hugging Face upload work is intentionally deferred for the current local training path.

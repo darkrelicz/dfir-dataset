@@ -59,7 +59,6 @@ over 4,096 tokens, and removes `messages` before TRL preprocessing.
 | Train | `data/packaged/gemini_subset_1/train.jsonl` | 4,414 | Grouped by `source_doc_id` |
 | Validation | `data/packaged/gemini_subset_1/validation.jsonl` | 552 | No source-document overlap |
 | Test | `data/packaged/gemini_subset_1/test.jsonl` | 551 | No source-document overlap |
-| Dataset card | `docs/developer/dataset-card.md` |  | Reusable template; run-specific card not yet filled |
 | Packaging manifest | `data/packaged/gemini_subset_1/packaging_manifest.json` | 5,517 | `package-20260708T071253Z` |
 
 # Environment

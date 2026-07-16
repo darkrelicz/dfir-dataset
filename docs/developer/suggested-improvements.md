@@ -166,16 +166,6 @@ Known weak areas:
 
 # Training And Release
 
-## Generate A Run-Specific Dataset Card
-
-[Dataset Card Template](dataset-card.md) is currently reusable guidance. Generate or fill a
-run-specific card from:
-
-* raw collection manifest;
-* generation manifest;
-* quality manifest;
-* packaging manifest.
-
 ## Add Hugging Face Export Only If Hosting Decision Changes
 
 Current hosting is local-only on DGX Sparks storage. Do not add Hugging Face
