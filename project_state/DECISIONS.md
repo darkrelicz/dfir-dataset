@@ -2,7 +2,7 @@
 
 ## Durable Project State
 
-- Durable project context lives in `project_state/PROJECT_BRIEF.md`, `project_state/ARCHITECTURE.md`, `project_state/DESIGN_SYSTEM.md`, `project_state/TODO.md`, and this file.
+- Operational project context lives in `project_state/PROJECT_BRIEF.md`, `project_state/DESIGN_SYSTEM.md`, `project_state/TODO.md`, and this file. Stable architecture and operating guidance live in the canonical Markdown source under `docs/`.
 - Do not rely on chat history for project memory. Update these files when project direction, architecture, design rules, tasks, or major decisions change.
 
 ## Data Model
@@ -26,7 +26,7 @@
 
 ## Taxonomy And Config Separation
 
-- `project_state/TAXONOMY.md` is the human-readable 57-category DFIR artifact taxonomy.
+- `docs/reference/taxonomy.md` is the human-readable 57-category DFIR artifact taxonomy.
 - `configs/quality.yaml` is the machine-readable taxonomy validation, coverage map, scoring weights, no-API heuristic terms, and dedupe/balance policy.
 - `configs/task_categories.yaml` defines the five model behavior categories used for synthesis and carries category-specific `quality_signals` for Phase 4 operational-relevance scoring.
 - `configs/source_profiles.yaml` defines Phase 3 source profiles, content-type overrides, pair caps, and pilot sampling targets.
@@ -57,7 +57,7 @@
 - Prompting should require source-grounded evidence, confidence labels, explicit caveats, uncertainty calibration, and final answers that do not introduce claims absent from linked conclusions.
 - The `grounding` field is a validation contract. Use `source_only` only when the response contains no `[GENERAL KNOWLEDGE]` tags, and use `source_plus_general` whenever the response includes any well-established but non-source claim tagged with `[GENERAL KNOWLEDGE]`.
 - The Pydantic response schema is not a substitute for prompt instructions about the linked reasoning chain. Keep the concise `<reasoning>` structure and example in the prompt even when using Gemini structured JSON output.
-- A model-specific packaging exporter may convert `<reasoning>` to `<think>` for GLM training only if the training recipe requires that exact tag. The canonical synthesized and packaged dataset remains `<reasoning>`.
+- Canonical synthesized and quality-stage responses retain `<reasoning>` and `[GENERAL KNOWLEDGE]` provenance tags. The GLM-specific training view converts `<reasoning>` to `<think>` and removes the literal grounding annotations from assistant text; these are export-time transformations and must not mutate canonical inputs.
 - Pilot sampling is source-aware and stratified by content type and source richness so the pilot reviews both thin and rich examples. Pair counts are source-richness aware: documents under 250 words generate one pair, and thin content types such as artifact definitions, event dictionaries, and abuse database entries are capped to avoid padded hallucinations.
 - Prompting uses a two-layer source model: broad `source_type` instructions from the collector source plus selective exact `content_type` overrides from each raw document.
 - Source and content-type prompt policy should live in config, not hard-coded Python mappings.
@@ -99,6 +99,9 @@
 
 - Dataset hosting is local-only on DGX Sparks storage, not HuggingFace Hub, unless this decision changes.
 - Training uses LoRA SFT via Unsloth on GLM-4.7-Flash. The first run completed on 2026-07-14 as `train-20260714T025314Z`.
+- The first run is a rejected diagnostic artifact: Web UI and direct-adapter tests showed repetitive continuations, emitted `<|user|>`/thinking delimiters, and no EOS within a bounded 256-token greeting test. A completed optimizer run is not promotable until the direct adapter passes a short-prompt EOS smoke gate.
+- The v2 retraining keeps the original LoRA/trainer hyperparameters but uses `package-20260716T053818Z`, GLM-native reasoning tags, removed grounding annotations, explicit EOS-terminated rendered text, maximum-length preflight, and corrected manifest configuration serialization.
+- `scripts.finetune` must import Unsloth before datasets/TRL/Transformers imports. Otherwise Unsloth cannot replace TRL's logits-dependent entropy metric, which is incompatible with fused-loss `EMPTY_LOGITS` and fails before the first optimizer step.
 - Baseline evaluation must run before fine-tuning, including AI/LLM-specific ATLAS cases.
 - The first LoRA run completed before a calibrated baseline was available. Preserve that chronology rather than rewriting it: evaluate the existing base and tuned artifacts retrospectively with the same calibrated judge before making any improvement claim. Future training runs should restore the baseline-first gate.
 - Phase 6 benchmark cases must be held out from the synthesis/training pipeline and manually reviewed before scoring.

@@ -249,4 +249,5 @@ its calibration ID is `uncalibrated`. Do not compare it as a final baseline.
 Calibrate and freeze the judge, then produce new complete base and tuned runs.
 
 Record the exact training configuration, checkpoint paths, and results in
-`project_state/TRAINING_RECIPE.md` and `project_state/TODO.md`.
+[Training And Release](training-and-release.md), the generated training
+manifest, and `project_state/TODO.md`.

@@ -118,7 +118,8 @@ If adding another format:
 After structural changes, update:
 
 * `project_state/PROJECT_BRIEF.md` for product intent or phase state;
-* `project_state/ARCHITECTURE.md` for implementation structure;
+* `docs/developer/architecture.md` for implementation structure;
 * `project_state/DECISIONS.md` for durable choices;
 * `project_state/TODO.md` for active next work;
-* this `docs/` site for successor-facing user/developer details.
+* the relevant canonical page in this `docs/` source for stable
+  user/developer details.

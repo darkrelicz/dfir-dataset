@@ -1,10 +1,32 @@
-# Training Recipe
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Training And Release</h1>
+
+# Purpose
 
 Document the exact training and evaluation procedure used for Shepherd fine-tuning. This document should make the run reproducible and make before/after quality claims auditable.
 
-## Current Run Summary
+# Active Retraining Summary
+
+- Status: prepared; training not yet complete
+- Configuration: `configs/finetune_glm47flash_v2.yaml`
+- Dataset version: `package-20260716T053818Z`
+- Dataset path: `data/packaged/glm47_dfir_v2/`
+- Output checkpoint path: `data/finetune/glm47_flash_lora_dfir_v2/`
+- Output adapter path: `data/finetune/glm47_flash_v2/lora_adapter`
+- Output GGUF path prefix: `data/finetune/glm47_flash_v2/gguf_q4_k_m`
+- Hyperparameters: unchanged from v1
+
+The v2 package keeps the same 5,517 eligible records and split membership. Its
+GLM-only view removes literal `[GENERAL KNOWLEDGE]` annotations, maps canonical
+`<reasoning>` blocks to `<think>`, and validates tag balance and nonempty
+responses. The trainer renders once, appends EOS explicitly, rejects examples
+over 4,096 tokens, and removes `messages` before TRL preprocessing.
+
+# Historical V1 Run Summary
 
 - Run ID: `train-20260714T025314Z`
 - Date: 2026-07-14
@@ -19,18 +41,28 @@ Document the exact training and evaluation procedure used for Shepherd fine-tuni
 - Judge calibration ID: `uncalibrated`
 - Output adapter path: `data/finetune/glm47_flash_subset1/lora_adapter`
 - GGUF/export path: `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf`
+- Promotion status: rejected; direct-adapter and Web UI greeting tests looped and did not emit EOS
 
-## Dataset Inputs
+# Active V2 Dataset Inputs
+
+| Input | Path | Records | Notes |
+|---|---|---:|---|
+| Train | `data/packaged/glm47_dfir_v2/train.jsonl` | 4,414 | GLM-native view; grouped by `source_doc_id` |
+| Validation | `data/packaged/glm47_dfir_v2/validation.jsonl` | 552 | No source-document overlap |
+| Test | `data/packaged/glm47_dfir_v2/test.jsonl` | 551 | No source-document overlap |
+| Packaging manifest | `data/packaged/glm47_dfir_v2/packaging_manifest.json` | 5,517 | `package-20260716T053818Z` |
+
+# Historical V1 Dataset Inputs
 
 | Input | Path | Records | Notes |
 |---|---|---:|---|
 | Train | `data/packaged/gemini_subset_1/train.jsonl` | 4,414 | Grouped by `source_doc_id` |
 | Validation | `data/packaged/gemini_subset_1/validation.jsonl` | 552 | No source-document overlap |
 | Test | `data/packaged/gemini_subset_1/test.jsonl` | 551 | No source-document overlap |
-| Dataset card | `project_state/DATASET_CARD.md` |  | Reusable template; run-specific card not yet filled |
+| Dataset card | `docs/developer/dataset-card.md` |  | Reusable template; run-specific card not yet filled |
 | Packaging manifest | `data/packaged/gemini_subset_1/packaging_manifest.json` | 5,517 | `package-20260708T071253Z` |
 
-## Environment
+# Environment
 
 ```bash
 python --version
@@ -48,12 +80,12 @@ Record:
 - GPU/accelerator:
 - Available memory:
 
-## Baseline Evaluation
+# Baseline Evaluation
 
 For future training runs, complete baseline evaluation before fine-tuning. The
-first run (`train-20260714T025314Z`) completed before a calibrated baseline, so
-its base and tuned artifacts require retrospective evaluation with the same
-frozen calibrated judge before any improvement claim.
+first run (`train-20260714T025314Z`) completed before a calibrated baseline and
+subsequently failed termination tests, so it is not eligible for retrospective
+comparison. Use only an EOS-approved v2 artifact for tuned evaluation.
 
 Default command for generating and judging through the configured local
 OpenAI-compatible endpoints:
@@ -95,7 +127,7 @@ are not calibrated baseline values.
 | AI/LLM ATLAS cases | 8 | LLM judge: mixed rubric | 0.6125 | Uncalibrated |
 | **Overall** | **68** | Mean normalized score | **0.7588** | Diagnostic only |
 
-## Training Configuration
+# Training Configuration
 
 | Parameter | Value |
 |---|---|
@@ -116,14 +148,18 @@ are not calibrated baseline values.
 | Precision | BF16; 4-bit base-model loading |
 | Seed | 1337 |
 
-## Training Command
+# Training Command
 
 ```bash
 python -m scripts.finetune \
-  --config configs/finetune_glm47flash.yaml
+  --config configs/finetune_glm47flash_v2.yaml
 ```
 
-## Training Results
+Unsloth must be imported before datasets/TRL/Transformers. The runner enforces
+this order because TRL's entropy metric cannot consume Unsloth fused-loss empty
+logits when the patch is missed.
+
+# Training Results
 
 | Metric | Value | Notes |
 |---|---:|---|
@@ -133,9 +169,13 @@ python -m scripts.finetune \
 | Training duration | 38,018.77 seconds | About 10 hours 33 minutes |
 | Peak memory | Not recorded | Capture on the next run |
 
-## Post-Training Evaluation
+# Post-Training Evaluation
 
-Use the same benchmark as the baseline.
+Before benchmark evaluation, load the direct v2 adapter and run bounded greeting
+and DFIR prompts. Require a concise completion and an emitted EOS token. Do not
+export, serve, or evaluate a checkpoint that reaches the token cap or emits
+`<|user|>`/template delimiters. After this smoke gate, use the same benchmark as
+the baseline.
 
 ```bash
 python -m scripts.run_evaluation \
@@ -162,23 +202,23 @@ python -m scripts.compare_evaluations \
 | Reasoning quality |  |  |  |  |
 | AI/LLM ATLAS cases |  |  |  |  |
 
-## Qualitative Review
+# Qualitative Review
 
 Record representative wins and failures.
 
-### Improved Examples
+## Improved Examples
 
 | Case ID | Improvement | Notes |
 |---|---|---|
 |  |  |  |
 
-### Regressions
+## Regressions
 
 | Case ID | Regression | Severity | Notes |
 |---|---|---|---|
 |  |  |  |  |
 
-## Deployment Decision
+# Deployment Decision
 
 - [ ] Fine-tuned model improves over baseline.
 - [ ] No severe regressions on critical DFIR behavior.
@@ -190,7 +230,7 @@ Decision:
 
 Rationale:
 
-## Export
+# Export
 
 | Artifact | Path | Notes |
 |---|---|---|
@@ -199,7 +239,7 @@ Rationale:
 | GGUF export | `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf` | Q4_K_M |
 | Evaluation report | `data/evaluation/glm47-flash-base/` | Complete but uncalibrated base run |
 
-## Integration Notes
+# Integration Notes
 
 - Shepherd branch/commit:
 - Model path configured:
@@ -207,7 +247,7 @@ Rationale:
 - Known limitations:
 - Rollback instructions:
 
-## Follow-Up Experiments
+# Follow-Up Experiments
 
 | Experiment | Reason | Priority |
 |---|---|---|

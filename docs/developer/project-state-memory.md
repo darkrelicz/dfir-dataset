@@ -8,12 +8,11 @@
 The project must not rely on chat history as durable memory. Current state,
 decisions, and TODOs belong in repository documents.
 
-# Canonical State Files
+# Operational State Files
 
 | File | Role |
 |---|---|
 | `project_state/PROJECT_BRIEF.md` | Product intent, phase status, current run state, and success criteria. |
-| `project_state/ARCHITECTURE.md` | Current codebase structure and implementation architecture. |
 | `project_state/DECISIONS.md` | Durable decisions and accepted risks. |
 | `project_state/TODO.md` | Active and deferred work. |
 | `project_state/DESIGN_SYSTEM.md` | Documentation and CLI presentation rules. |
@@ -28,30 +27,31 @@ Generated manifests are canonical for run-specific counts:
 * `data/evaluation/<run>/scorecards/llm_judge/scores.json`
 * `data/finetune/<run>/training_manifest.json`
 
-# Operating Guides
+# Canonical Stable Documentation
 
-These files are reusable guides or templates rather than the canonical phase
-status pages. Some are filled with a current run snapshot when the guide itself
-requires it:
+The Markdown source under `docs/` is the single source for stable architecture,
+operating guides, handover material, taxonomy references, and reusable
+templates. Important migrated pages include:
 
-* `project_state/HANDOVER.md`
-* `project_state/ADDING_SOURCES.md`
-* `project_state/COVERAGE_MAP.md`
-* `project_state/DATASET_CARD.md`
-* `project_state/PROMPT_GUIDE.md`
-* `project_state/QUALITY_RUBRIC.md`
-* `project_state/TRAINING_RECIPE.md`
+* [Architecture](architecture.md)
+* [Adding Sources](adding-sources.md)
+* [Prompt Guide](prompt-guide.md)
+* [Quality Rubric](quality-rubric.md)
+* [Coverage Map](coverage-map.md)
+* [Dataset Card Template](dataset-card.md)
+* [Benchmark Design](benchmark-design.md)
+* [Training And Release](../user/training-and-release.md)
+* [Handover Guide](../user/handover.md)
+* [DFIR Artifact Taxonomy](../reference/taxonomy.md)
 
-Update them when the process changes. Do not use them for run-specific counts.
+The rendered MarkBind site is the GitHub Pages presentation of these source
+files. Do not edit generated files under `docs/_site/`.
 
-# This MarkBind Site
+The documentation should:
 
-`docs/` is the GitHub Pages source for successor-friendly documentation.
-
-It should:
-
-* summarize current implementation from code and durable state docs;
-* link back to canonical files;
+* describe the current implementation from code, operational state, and
+  generated manifests;
+* link to operational state or manifests where live status belongs;
 * include architecture and UML diagrams as PlantUML source;
 * keep suggested improvements separate from current behavior;
 * be updated when architecture, commands, contracts, or handoff workflows change.
@@ -63,9 +63,10 @@ decisions:
 
 1. update the code/config;
 2. update generated manifests if a pipeline stage was rerun;
-3. update the relevant `project_state/` state file;
-4. update `docs/` when successor-facing navigation or implementation details
-   changed.
+3. update `project_state/` when product intent, decisions, active work, or
+   presentation rules changed;
+4. update the canonical `docs/` page when stable architecture, commands,
+   contracts, workflows, or successor guidance changed.
 
 # Current Accepted Risk To Preserve
 

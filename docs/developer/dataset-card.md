@@ -1,6 +1,11 @@
-# Dataset Card Template
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Dataset Card Template</h1>
+
+# Purpose
 
 Use this template when documenting a packaged training dataset. Phase 6
 evaluation cases are held out separately under `evaluation/benchmark/` and must
@@ -12,9 +17,9 @@ Run-specific dataset cards should be generated or filled from:
 - `data/synthesized/<run>/generation_manifest.json`
 - `data/quality/<run>/quality_manifest.json`
 - `data/packaged/<run>/packaging_manifest.json`
-- `project_state/COVERAGE_MAP.md`
+- `docs/developer/coverage-map.md`
 
-## Dataset Summary
+# Dataset Summary
 
 | Field | Value |
 |---|---|
@@ -30,7 +35,7 @@ Run-specific dataset cards should be generated or filled from:
 | Quality run |  |
 | Packaging run |  |
 
-## Dataset Purpose
+# Dataset Purpose
 
 Describe what the packaged dataset is designed to teach the model:
 
@@ -40,7 +45,7 @@ Describe what the packaged dataset is designed to teach the model:
 - Detection engineering
 - Evidence-cited report generation
 
-## Dataset Sources
+# Dataset Sources
 
 Fill this table from the raw collection manifest and quality manifest.
 
@@ -48,7 +53,7 @@ Fill this table from the raw collection manifest and quality manifest.
 |---|---:|---:|---|---|
 |  |  |  |  |  |
 
-## Generation Methodology
+# Generation Methodology
 
 Record the exact generation setup for the packaged run:
 
@@ -61,7 +66,7 @@ Record the exact generation setup for the packaged run:
 - Quality filtering path:
 - Manual review performed:
 
-## Dataset Structure
+# Dataset Structure
 
 Canonical packaged record:
 
@@ -100,7 +105,7 @@ Canonical packaged record:
 }
 ```
 
-## Splits
+# Splits
 
 Splits must be by `source_doc_id` to avoid leakage.
 
@@ -110,9 +115,9 @@ Splits must be by `source_doc_id` to avoid leakage.
 | Validation |  |  |  |
 | Test |  |  |  |
 
-## Distribution
+# Distribution
 
-### Task Category Distribution
+## Task Category Distribution
 
 | Category | Records | Percent |
 |---|---:|---:|
@@ -122,7 +127,7 @@ Splits must be by `source_doc_id` to avoid leakage.
 | `detection_engineering` |  |  |
 | `report_generation` |  |  |
 
-### Difficulty Distribution
+## Difficulty Distribution
 
 | Difficulty | Records | Percent |
 |---|---:|---:|
@@ -130,11 +135,11 @@ Splits must be by `source_doc_id` to avoid leakage.
 | `mid` |  |  |
 | `senior` |  |  |
 
-### Taxonomy Coverage
+## Taxonomy Coverage
 
 Summarize covered, thin, and absent taxonomy IDs using `configs/quality.yaml` and the quality manifest.
 
-## Quality Controls
+# Quality Controls
 
 Record which controls were applied:
 
@@ -145,7 +150,7 @@ Record which controls were applied:
 - Review queue adjudication:
 - Known rejected/review patterns:
 
-## Intended Use
+# Intended Use
 
 This dataset is intended for:
 
@@ -159,7 +164,7 @@ This dataset is not intended for:
 - Attribution claims without external corroboration
 - Training on private incident data unless a separate approval and sanitization process exists
 
-## Limitations
+# Limitations
 
 | Limitation | Impact | Mitigation |
 |---|---|---|
@@ -169,14 +174,14 @@ This dataset is not intended for:
 | Limited cloud/SaaS coverage | Shepherd may underperform on those investigations | Add cloud/SaaS sources |
 | Limited AI/LLM incident coverage | ATLAS foundation may be shallow | Add OWASP LLM and incident sources |
 
-## Ethical And Safety Notes
+# Ethical And Safety Notes
 
 - The dataset is for defensive DFIR and incident response training.
 - Do not include private customer data without approval and sanitization.
 - Preserve source provenance for auditability.
 - Do not train the model to provide offensive procedural guidance beyond defensive analysis needs.
 
-## Reproduction
+# Reproduction
 
 Record exact commands used for the packaged run:
 

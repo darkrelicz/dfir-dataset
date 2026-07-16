@@ -1,12 +1,17 @@
-# DFIR Artifact Taxonomy
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## 1. Overview
+<h1 class="no-index">DFIR Artifact Taxonomy</h1>
+
+# 1. Overview
 This document serves as a reference for the 57-category artifact taxonomy.
 It defines the full landscape of forensic artifacts the model should eventually understand.
 This taxonomy is directly related to the 5 task categories, where artifact categories are absorbed as sub-topics.
 
-## 2. Category Tables by Domain
-#### Windows Artifacts (W1-W10)
+# 2. Category Tables by Domain
+## Windows Artifacts (W1-W10)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -23,7 +28,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Linux Artifacts (L1-L8)
+## Linux Artifacts (L1-L8)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -38,7 +43,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Network Forensics (N1-N6)
+## Network Forensics (N1-N6)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -51,7 +56,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### SIEM / Log Aggregation (S1-S3)
+## SIEM / Log Aggregation (S1-S3)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -61,7 +66,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Cloud Forensics (C1-C6)
+## Cloud Forensics (C1-C6)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -74,7 +79,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### File Storage & Data Access (F1-F5)
+## File Storage & Data Access (F1-F5)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -86,7 +91,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### AI / LLM Threats & Forensics (A1-A4)
+## AI / LLM Threats & Forensics (A1-A4)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -97,7 +102,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Mobile Device Forensics (M1-M3)
+## Mobile Device Forensics (M1-M3)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -107,7 +112,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Anti-Forensics Detection (AF1-AF4)
+## Anti-Forensics Detection (AF1-AF4)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -118,7 +123,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Threat Intelligence Operations (TI1-TI2)
+## Threat Intelligence Operations (TI1-TI2)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -127,7 +132,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### IoT / OT / ICS Forensics (OT1-OT2)
+## IoT / OT / ICS Forensics (OT1-OT2)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -136,7 +141,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Virtualization / Hypervisor Forensics (V1)
+## Virtualization / Hypervisor Forensics (V1)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -144,7 +149,7 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Supply Chain & Software Integrity (SC1)
+## Supply Chain & Software Integrity (SC1)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
@@ -152,19 +157,19 @@ This taxonomy is directly related to the 5 task categories, where artifact categ
 
 ---
 
-#### Compliance / Legal / Chain of Custody (CL1-CL2)
+## Compliance / Legal / Chain of Custody (CL1-CL2)
 
 | # | Forensic Question | Key Artifact Sources | Example Artifacts |
 |---|---|---|---|
 | CL1 | **Is the investigation legally sound?** | Evidence handling procedures, chain of custody documentation, legal hold processes, acquisition tool logs (FTK Imager, `dc3dd`), hash verification records | Acquisition logs, chain of custody forms |
 | CL2 | **Are we meeting regulatory requirements?** | GDPR breach notification requirements, HIPAA breach assessment, PCI-DSS incident response, notification timelines, data classification for breach scope | Regulatory notification templates, breach scope assessment |
 
-## 3. Coverage Mapping
-### 1.3 Artifact Taxonomy Coverage Mapping
+# 3. Coverage Mapping
+## 1.3 Artifact Taxonomy Coverage Mapping
 
 This maps which of the 57 artifact categories the current dataset iteration will cover, based on source availability across the selected 16 collectors (Core + Tier 1-2).
 
-#### Strong Coverage (Primary focus — instruction pairs explicitly generated)
+## Strong Coverage (Primary focus — instruction pairs explicitly generated)
 
 | ID | Category | Primary Sources |
 |---|---|---|
@@ -186,7 +191,7 @@ This maps which of the 57 artifact categories the current dataset iteration will
 | A2 | LLM app compromise | **ATLAS** ML attack staging techniques |
 | A3 | AI supply chain | **ATLAS** supply chain techniques + ATT&CK T1195 |
 
-#### Moderate Coverage (Appears in instruction pairs but not primary focus)
+## Moderate Coverage (Appears in instruction pairs but not primary focus)
 
 | ID | Category | How It Appears |
 |---|---|---|
@@ -204,7 +209,7 @@ This maps which of the 57 artifact categories the current dataset iteration will
 | SC1 | Supply chain | ATT&CK T1195 + CISA supply chain advisories |
 | A4 | AI infrastructure | **ATLAS** ML infrastructure techniques |
 
-#### Weak/No Coverage (Deferred — taxonomy placeholder for successor)
+## Weak/No Coverage (Deferred — taxonomy placeholder for successor)
 
 | ID | Category | Successor Action |
 |---|---|---|
@@ -221,8 +226,8 @@ This maps which of the 57 artifact categories the current dataset iteration will
 | V1 | Virtualization/hypervisor | Add VMware KB, ESXi forensic guides |
 | CL1-CL2 | Compliance/legal | Add legal frameworks, regulatory guidelines |
 
-## 4. Expanded Scope per Discipline
-### 1.4 Expanded Artifact Analysis Scope
+# 4. Expanded Scope per Discipline
+## 1.4 Expanded Artifact Analysis Scope
 
 The Artifact Analysis task category is the broadest of the five — it covers all forensic artifact interpretation, not just memory analysis. This section breaks down the full scope by forensic discipline, tiered by source coverage available in this iteration.
 
@@ -231,11 +236,11 @@ The Artifact Analysis task category is the broadest of the five — it covers al
 
 ---
 
-#### 1.4.1 Event Log Analysis (W3, W8, W10)
+## 1.4.1 Event Log Analysis (W3, W8, W10)
 
 The highest-volume discipline by source coverage. Sigma alone provides ~3,000+ detection rules, nearly all referencing specific event log channels and IDs. Hayabusa adds ~4,000+ more. This is the area where the model will have the deepest training signal.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -251,7 +256,7 @@ The highest-volume discipline by source coverage. Sigma alone provides ~3,000+ d
 | Kerberos/NTLM auth events (4768/4769/4771/4776) | T1558, T1110 | Sigma + ATT&CK AD rules |
 | Windows Defender/AV events | T1562.001 | Sigma + Hayabusa |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
@@ -259,7 +264,7 @@ The highest-volume discipline by source coverage. Sigma alone provides ~3,000+ d
 | BITS-Client events | T1197 | Technique documented; few detection rules for BITS event log specifics |
 | TerminalServices-RDPClient logs | T1021.001 | ATT&CK + some Sigma; event field interpretation requires deeper context |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -268,11 +273,11 @@ The highest-volume discipline by source coverage. Sigma alone provides ~3,000+ d
 
 ---
 
-#### 1.4.2 Memory Forensics (W7)
+## 1.4.2 Memory Forensics (W7)
 
 Deep analysis of volatile artifacts from memory dumps using Volatility 3 and similar tools. Source coverage comes primarily from ATT&CK technique descriptions and Volatility plugin documentation.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact / Plugin | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -284,14 +289,14 @@ Deep analysis of volatile artifacts from memory dumps using Volatility 3 and sim
 | Handle analysis (`handles`) | T1003 (LSASS handle) | ATT&CK + Volatility docs |
 | File objects in memory (`filescan`) | T1083, T1036 | ATT&CK + Volatility docs |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact / Plugin | Related ATT&CK | Gap |
 |---|---|---|
 | Registry in memory (`printkey`, `hivelist`) | T1547, T1112 | Technique documented but in-memory analysis is tool-specific |
 | Scheduled tasks from memory | T1053 | Same gap |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact / Plugin | Why Defer |
 |---|---|
@@ -300,11 +305,11 @@ Deep analysis of volatile artifacts from memory dumps using Volatility 3 and sim
 
 ---
 
-#### 1.4.3 Filesystem & Disk Forensics (W1, W4, W6)
+## 1.4.3 Filesystem & Disk Forensics (W1, W4, W6)
 
 Interpretation of on-disk artifacts that record execution history, file access, and user activity. KAPE target definitions and ForensicArtifacts provide the "what and where" for these artifacts; ATT&CK provides the "why it matters."
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -318,7 +323,7 @@ Interpretation of on-disk artifacts that record execution history, file access, 
 | UserAssist / RecentApps | T1204 | KAPE targets + ForensicArtifacts |
 | BAM/DAM (Background Activity Moderator) | T1059 | KAPE targets |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
@@ -326,7 +331,7 @@ Interpretation of on-disk artifacts that record execution history, file access, 
 | USN Journal (`$UsnJrnl:$J`) | T1070.006 | Same gap — file change journal interpretation requires tool doc context |
 | `$I30` directory index parsing | T1070, T1564 | Niche forensic technique not well-covered in structured sources |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -335,11 +340,11 @@ Interpretation of on-disk artifacts that record execution history, file access, 
 
 ---
 
-#### 1.4.4 Registry Forensics (W2, W6)
+## 1.4.4 Registry Forensics (W2, W6)
 
 Analysis of Windows registry hives for persistence, configuration changes, and user activity tracking. Registry is central to Windows forensics — nearly every persistence mechanism touches the registry.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -352,14 +357,14 @@ Analysis of Windows registry hives for persistence, configuration changes, and u
 | MRU lists (TypedPaths, TypedURLs, RecentDocs) | T1083 | KAPE targets + ForensicArtifacts |
 | USB device history (`USBSTOR`) | T1025, T1052 | KAPE targets + ForensicArtifacts |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
 | Boot Execute / Winlogon | T1547.004 | ATT&CK documents technique; limited detection rules |
 | AppCompatFlags / PCA | — | KAPE defines targets; no ATT&CK mapping |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -368,11 +373,11 @@ Analysis of Windows registry hives for persistence, configuration changes, and u
 
 ---
 
-#### 1.4.5 Network Artifact Forensics (W5, N2, N4)
+## 1.4.5 Network Artifact Forensics (W5, N2, N4)
 
 Network-level forensic artifacts observable from host-based evidence and IOC matching. Full PCAP analysis (N1, N3, N5) is deferred, but host-observable network indicators are well-covered.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -382,14 +387,14 @@ Network-level forensic artifacts observable from host-based evidence and IOC mat
 | Proxy / browser history artifacts | T1071.001 | ATT&CK + ForensicArtifacts |
 | Sysmon network events (Event ID 3, 22) | T1071, T1568 | Sigma + ATT&CK |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
 | Firewall log analysis (5156/5157) | T1562.004 | Some Sigma rules; log format interpretation is tool-specific |
 | BITS transfer artifacts | T1197 | ATT&CK + Atomic RT; limited structured detection content |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -398,11 +403,11 @@ Network-level forensic artifacts observable from host-based evidence and IOC mat
 
 ---
 
-#### 1.4.6 Anti-Forensics Detection (taxonomy AF1-AF4)
+## 1.4.6 Anti-Forensics Detection (taxonomy AF1-AF4)
 
 Detecting attacker attempts to cover tracks, destroy evidence, or hide data. Partially covered through ATT&CK T1070 sub-techniques and LOLBAS/GTFOBins.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -412,14 +417,14 @@ Detecting attacker attempts to cover tracks, destroy evidence, or hide data. Par
 | VSS shadow copy deletion | T1490 | ATT&CK + Sigma + Atomic RT |
 | Indicator removal from tools | T1070.004 | ATT&CK + Sigma |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
 | Selective event log entry deletion | T1070.001 | Detection requires gap analysis methodology, not just rule matching |
 | Process argument spoofing | T1564.010 | ATT&CK documents; few structured detection rules |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -429,11 +434,11 @@ Detecting attacker attempts to cover tracks, destroy evidence, or hide data. Par
 
 ---
 
-#### 1.4.7 Linux Forensics (L1-L6)
+## 1.4.7 Linux Forensics (L1-L6)
 
 Linux artifact analysis is thinner than Windows in structured source coverage — fewer Sigma rules, no KAPE equivalent — but ATT&CK Linux techniques and Atomic Red Team Linux tests provide a solid foundation. ForensicArtifacts includes Linux artifact definitions.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -445,7 +450,7 @@ Linux artifact analysis is thinner than Windows in structured source coverage �
 | `wtmp`/`btmp`/`utmp` login records | T1078 | ATT&CK + ForensicArtifacts |
 | GTFOBins abuse | Various | GTFOBins |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
@@ -453,7 +458,7 @@ Linux artifact analysis is thinner than Windows in structured source coverage �
 | Package manager logs (`dpkg.log`, `dnf.log`) | T1072 | ForensicArtifacts defines location; interpretation is tool-specific |
 | LD_PRELOAD / PAM module injection | T1574.006 | ATT&CK + Atomic RT; detection is configuration-dependent |
 
-##### Tier C — Defer
+### Tier C — Defer
 
 | Artifact Type | Why Defer |
 |---|---|
@@ -462,11 +467,11 @@ Linux artifact analysis is thinner than Windows in structured source coverage �
 
 ---
 
-#### 1.4.8 Active Directory Forensics (W9)
+## 1.4.8 Active Directory Forensics (W9)
 
 AD-specific attack and artifact analysis. Well-covered through ATT&CK credential access / lateral movement techniques and Sigma's AD-focused rules.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -477,7 +482,7 @@ AD-specific attack and artifact analysis. Well-covered through ATT&CK credential
 | Pass-the-Hash / Pass-the-Ticket | T1550.002, T1550.003 | ATT&CK + Sigma + CISA |
 | AdminSDHolder / SID History abuse | T1134, T1207 | ATT&CK |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
@@ -487,11 +492,11 @@ AD-specific attack and artifact analysis. Well-covered through ATT&CK credential
 
 ---
 
-#### 1.4.9 Script & Command Forensics (W10)
+## 1.4.9 Script & Command Forensics (W10)
 
 Analysis of executed commands, scripts, and encoded payloads. Strong overlap with Detection Engineering but the Artifact Analysis angle focuses on *interpreting output and identifying malicious intent*, not writing rules.
 
-##### Tier A — Included Now
+### Tier A — Included Now
 
 | Artifact Type | Related ATT&CK | Source Coverage |
 |---|---|---|
@@ -502,7 +507,7 @@ Analysis of executed commands, scripts, and encoded payloads. Strong overlap wit
 | VBA/macro artifact detection | T1059.005 | ATT&CK + Sigma |
 | `cscript`/`wscript`/`mshta` execution | T1059.005, T1059.007 | ATT&CK + Sigma + LOLBAS |
 
-##### Tier B — Stretch
+### Tier B — Stretch
 
 | Artifact Type | Related ATT&CK | Gap |
 |---|---|---|
@@ -510,7 +515,7 @@ Analysis of executed commands, scripts, and encoded payloads. Strong overlap wit
 | AMSI bypass detection | T1562.001 | ATT&CK + Atomic RT; detection is version-dependent |
 
 
-## 5. Summary Table
+# 5. Summary Table
 
 | Domain | Count | Range | Coverage Tier | Current-Iteration Status |
 |---|---|---|---|---|

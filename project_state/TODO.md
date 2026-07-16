@@ -8,13 +8,14 @@
 - Enforce the calibration policy in `evaluation.comparison`: reject placeholder IDs such as `uncalibrated`, not only missing or mismatched values.
 - Add fingerprint-safe evaluation resume support; current atomic checkpoints preserve completed cases but a rerun starts from case one and may overwrite the same run directory.
 - Add configurable retry/failure behavior for empty target `content`; the current client only warns and passes the empty answer to the judge.
-- Preserve the completed `train-20260714T025314Z` manifest, checkpoints, adapter, and GGUF under `data/finetune/`; record their hashes before promotion.
-- Fix training-manifest reproducibility before another training run: serialize the actual `finetune` config instead of the currently empty `training` block, use YAML `null` instead of the string `None` for `loftq_config`, and reconcile configured export paths with the actual `_gguf` output directory.
+- Preserve `train-20260714T025314Z` for failure analysis, but mark its adapter and GGUF as rejected: direct-adapter and Web UI smoke tests looped, emitted role/template tokens, and failed to emit EOS.
+- Complete the v2 LoRA retraining with `configs/finetune_glm47flash_v2.yaml`, then run a bounded direct-adapter `hello` smoke test. Require `EOS generated: True` before GGUF promotion or benchmark evaluation.
+- Record the actual v2 GGUF output path, package/runtime versions, artifact hashes, validation metrics, and selected checkpoint after training completes.
 - Treat full review-queue adjudication and manual spot-check completion as deferred quality hardening unless the timeline expands.
 
 ## Phase 3 Synthesis
 
-- Current status: complete for the shortened-timeline reduced subset.
+- Current status: complete for the shortened-timeline reduced subset and for the GLM-specific v2 training view.
 - Preserve `data/synthesized/gemini_subset_1/prompts.jsonl`, `raw_outputs.jsonl`, `accepted.jsonl`, `rejected.jsonl`, and `generation_manifest.json` for audit and retry analysis.
 - Current subset output: 6,494 prompts, 6,287 accepted candidate pairs, 206 rejected prompt rows, and 7,779 raw output rows for `run-20260701T021807Z`.
 - Treat Phase 3 `accepted.jsonl` as candidate synthesis output, not final training data.
@@ -44,18 +45,18 @@
 - `scripts/package_dataset.py` packages Phase 4 filtered plus review rows into GLM-friendly local train/validation/test chat JSONL.
 - Phase 4 rejected rows are excluded from all packaged splits.
 - Splits are grouped by `source_doc_id` to avoid train/validation/test leakage.
-- Filtered rows keep canonical `<reasoning>` responses; review rows are transformed into direct-answer examples by stripping the reasoning block.
-- The current package has 5,517 records: 4,414 train, 552 validation, and 551 test.
+- Canonical synthesis/quality rows retain `<reasoning>` and grounding annotations. The GLM v2 training view removes `[GENERAL KNOWLEDGE]`, converts reasoning rows to `<think>`, and strips reasoning from review rows.
+- `data/packaged/glm47_dfir_v2/` has 5,517 records: 4,414 train, 552 validation, and 551 test, with no leaked annotations/canonical tags, no unbalanced `<think>` blocks, and no split overlap.
 - `packaging_manifest.json` records package run ID, quality run ID, total records, response-style mix, split counts, and source-document overlap.
 - Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
 
 ## Phase 6 Training And Evaluation
 
-- Current status: the first LoRA SFT run is complete, while calibrated evaluation remains incomplete. `train-20260714T025314Z` reached one epoch/552 steps and exported adapter/GGUF artifacts under `data/finetune/`. The uncalibrated base-model evaluation under `data/evaluation/glm47-flash-base/` completed 68/68 cases at 0.7588 and is diagnostic only. `evaluation/` implements sequential target generation and local LLM judging, atomic per-case checkpoints, structured target-output requests, acceptable-variant handling, prediction replay, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
+- Current status: v1 training completed but its adapter/GGUF is invalid because it loops and does not emit EOS. The v2 package and runner fixes are complete; v2 training is pending. The uncalibrated base-model evaluation under `data/evaluation/glm47-flash-base/` completed 68/68 cases at 0.7588 and remains diagnostic only.
 - `configs/evaluation.yaml` requires a separate local OpenAI-compatible judge endpoint. The former statistical evaluator modes and scorecard have been removed.
-- `scripts/finetune.py` and `configs/finetune_glm47flash.yaml` provide the local DGX/Unsloth LoRA SFT runner.
+- `scripts/finetune.py` and `configs/finetune_glm47flash_v2.yaml` provide the active local DGX/Unsloth LoRA SFT path. Unsloth must import before TRL/Transformers so its fused-loss trainer patch is installed.
 - Calibrate and freeze the judge, then run complete base and tuned evaluations. An `in_progress` or `uncalibrated` manifest does not satisfy the comparison gate.
-- Do not rerun training merely because the calibrated baseline was not completed first; evaluate the existing tuned artifact retrospectively against a calibrated base run, and only retrain if the reviewed result or reproducibility defects justify it.
+- Do not evaluate or promote the v1 tuned artifact. Complete and smoke-test v2 first; only an EOS-terminating adapter is eligible for GGUF export and calibrated comparison.
 - Run post-training evaluation with the same benchmark and frozen judge, then compare with `scripts/compare_evaluations.py`.
 - Integrate into Shepherd only if the reviewed judge scorecard improves without unacceptable task-level or critical-behavior regressions.
 

@@ -1,10 +1,15 @@
-# Adding Sources
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Adding Sources</h1>
+
+# Purpose
 
 Use this guide when adding a new collector to the dataset factory. A new source is ready only when it can be collected reproducibly, normalized into `RawDocument`, validated, mapped to synthesis profiles, and accounted for in generated manifests and the state files named in `PROJECT_BRIEF.md`.
 
-## Source Intake Checklist
+# Source Intake Checklist
 
 - [ ] Source is legally usable for local dataset generation.
 - [ ] Source license and attribution notes are recorded.
@@ -14,7 +19,7 @@ Use this guide when adding a new collector to the dataset factory. A new source 
 - [ ] Thin sources are capped to avoid hallucinated details.
 - [ ] Expected output volume is estimated.
 
-## Collector Naming
+# Collector Naming
 
 Use a short source key that stays stable across runs.
 
@@ -24,7 +29,7 @@ Use a short source key that stays stable across runs.
 - Synthesis pair target: `configs/synthesis.yaml` -> `generation.pairs_per_document.<source_key>`
 - Source profile: `configs/source_profiles.yaml` -> `source_profiles.<source_key>`
 
-## RawDocument Contract
+# RawDocument Contract
 
 Each collector must emit records matching `collectors.schemas.RawDocument`:
 
@@ -43,7 +48,7 @@ Each collector must emit records matching `collectors.schemas.RawDocument`:
 }
 ```
 
-## Collector Implementation Steps
+# Collector Implementation Steps
 
 1. Add source settings to `configs/collection.yaml`.
 2. Create `collectors/<source_key>.py`.
@@ -56,7 +61,7 @@ Each collector must emit records matching `collectors.schemas.RawDocument`:
 9. Run the collector alone.
 10. Run all collectors and validate the raw corpus.
 
-## Content Type Guidance
+# Content Type Guidance
 
 Choose precise `content_type` labels. Add content-type prompt overrides only when broad source-type guidance is not enough.
 
@@ -70,7 +75,7 @@ Choose precise `content_type` labels. Add content-type prompt overrides only whe
 | Practitioner workflows | `practitioner_workflow` | `case_study`, `workflow` |
 | Abuse databases | `abuse_database` | `lolbas_windows_lolbin`, `gtfobins_linux_abuse_function` |
 
-## Synthesis Profile Steps
+# Synthesis Profile Steps
 
 Update `configs/source_profiles.yaml`:
 
@@ -104,7 +109,7 @@ content_type_profiles:
     thin_source: true
 ```
 
-## Validation Commands
+# Validation Commands
 
 ```bash
 .venv/bin/python -m scripts.collect_all --source new_source_key
@@ -112,14 +117,14 @@ content_type_profiles:
 .venv/bin/python -m scripts.synthesize render-prompts --mode pilot --output-dir data/synthesized/dry_run
 ```
 
-## Documentation Updates
+# Documentation Updates
 
-- [ ] `project_state/ARCHITECTURE.md`: add source to pipeline layout or generated state.
+- [ ] `docs/developer/architecture.md`: add the source to the pipeline layout.
 - [ ] `project_state/DECISIONS.md`: record any durable source-specific decision.
 - [ ] `project_state/TODO.md`: add follow-up work if collection, synthesis, quality, or packaging remains incomplete.
-- [ ] Handover guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, dataset-card template, quality rubric, or training recipe.
+- [ ] Canonical site guides: update only if the new source changes the source-onboarding workflow, coverage-review method, prompt-review method, dataset-card template, quality rubric, or training recipe.
 
-## New Source Review
+# New Source Review
 
 | Question | Answer |
 |---|---|

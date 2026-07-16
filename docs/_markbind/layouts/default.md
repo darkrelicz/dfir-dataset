@@ -42,6 +42,8 @@
   * [Running The Pipeline]({{baseUrl}}/user/running-the-pipeline.html)
   * [Source Guide]({{baseUrl}}/user/source-guide.html)
   * [Quality And Packaging]({{baseUrl}}/user/quality-and-packaging.html)
+  * [Training And Release]({{baseUrl}}/user/training-and-release.html)
+  * [Handover Guide]({{baseUrl}}/user/handover.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
   * [Architecture]({{baseUrl}}/developer/architecture.html)
   * [Data Contracts]({{baseUrl}}/developer/data-contracts.html)
@@ -51,9 +53,17 @@
   * [Packaging]({{baseUrl}}/developer/packaging.html)
   * [Configuration]({{baseUrl}}/developer/configuration.html)
   * [Extension Points]({{baseUrl}}/developer/extension-points.html)
+  * [Adding Sources]({{baseUrl}}/developer/adding-sources.html)
+  * [Prompt Guide]({{baseUrl}}/developer/prompt-guide.html)
+  * [Quality Rubric]({{baseUrl}}/developer/quality-rubric.html)
+  * [Coverage Map]({{baseUrl}}/developer/coverage-map.html)
+  * [Dataset Card Template]({{baseUrl}}/developer/dataset-card.html)
+  * [Benchmark Design]({{baseUrl}}/developer/benchmark-design.html)
   * [Diagrams]({{baseUrl}}/developer/diagrams.html)
   * [Project State Memory]({{baseUrl}}/developer/project-state-memory.html)
   * [Suggested Improvements]({{baseUrl}}/developer/suggested-improvements.html)
+* Reference :expanded:
+  * [DFIR Artifact Taxonomy]({{baseUrl}}/reference/taxonomy.html)
       </site-nav>
     </div>
   </nav>

@@ -30,7 +30,8 @@ Suggested coverage:
 Complete and smoke-test the v2 artifact first. After judge calibration, rerun
 base scoring, score only the EOS-approved v2 artifact, and compare them with the
 Phase 6 commands. Record reviewed results in
-`project_state/TRAINING_RECIPE.md` and update `project_state/TODO.md`.
+the [Training And Release](../user/training-and-release.md) page and update
+`project_state/TODO.md`.
 
 ## Calibrate And Freeze The Local Judge
 
@@ -167,7 +168,7 @@ Known weak areas:
 
 ## Generate A Run-Specific Dataset Card
 
-`project_state/DATASET_CARD.md` is currently a template. Generate or fill a
+[Dataset Card Template](dataset-card.md) is currently reusable guidance. Generate or fill a
 run-specific card from:
 
 * raw collection manifest;

@@ -44,8 +44,8 @@ server, or model-serving runtime.
 | `scripts/` | Thin CLI entrypoints that dispatch to package runners. |
 | `utils/` | Low-level helpers for IO, text normalization, Markdown frontmatter, and git URLs. |
 | `configs/` | Machine-readable policy and pipeline settings. |
-| `project_state/` | Durable project memory and operating guides. |
-| `docs/` | This MarkBind successor guide site. |
+| `project_state/` | Live product intent, decisions, TODOs, and presentation rules. |
+| `docs/` | Canonical stable guidance and its MarkBind site source. |
 
 # Pipeline Phases
 

@@ -1,13 +1,18 @@
-# Coverage Map Guide
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Coverage Map Guide</h1>
+
+# Purpose
 
 Use this guide to assess dataset coverage after collection, synthesis, and quality filtering. 
 
 For run-specific values, read generated manifests and the state files named in `PROJECT_BRIEF.md`:
 
 - `project_state/PROJECT_BRIEF.md`
-- `project_state/ARCHITECTURE.md`
+- `docs/developer/architecture.md`
 - `project_state/TODO.md`
 - `project_state/DECISIONS.md`
 - `data/raw/collection_manifest.json`
@@ -15,7 +20,7 @@ For run-specific values, read generated manifests and the state files named in `
 - `data/quality/<run>/quality_manifest.json`
 - `data/packaged/<run>/packaging_manifest.json`
 
-## Coverage Inputs
+# Coverage Inputs
 
 Use these sources when preparing a run-specific coverage report:
 
@@ -30,7 +35,7 @@ Use these sources when preparing a run-specific coverage report:
 | `configs/quality.yaml` | Valid taxonomy refs, coverage groupings, and dedupe/balance thresholds |
 | `configs/task_categories.yaml` | Target category and difficulty distributions |
 
-## Coverage Labels
+# Coverage Labels
 
 Use consistent labels when summarizing coverage:
 
@@ -41,7 +46,7 @@ Use consistent labels when summarizing coverage:
 | `thin` | Present but should not be treated as a model strength |
 | `absent` | No meaningful filtered coverage |
 
-## Review Dimensions
+# Review Dimensions
 
 Check coverage along these dimensions:
 
@@ -58,7 +63,7 @@ quality and packaging manifests for training coverage; use the held-out cases
 under `evaluation/benchmark/` for behavior-evaluation coverage. Never infer that
 a strong judge score proves strong source coverage, or vice versa.
 
-## Common Gaps To Watch
+# Common Gaps To Watch
 
 These areas are likely to remain weak unless new sources are added:
 
@@ -70,7 +75,7 @@ These areas are likely to remain weak unless new sources are added:
 | Malware analysis workflows | The current plan is DFIR-heavy, not malware-specialist-heavy | MalAPI, malware analysis references, sandbox report schemas |
 | AI/LLM incident sources | ATLAS is foundational but real incident depth is limited | OWASP LLM Top 10, AI incident databases, model-platform audit docs |
 
-## Coverage Report Template
+# Coverage Report Template
 
 Use this template in a run-specific report when packaging a dataset:
 
@@ -87,6 +92,6 @@ Use this template in a run-specific report when packaging a dataset:
 | Detection engineering |  |  |  |  |
 | Incident reporting |  |  |  |  |
 
-## Maintenance Rule
+# Maintenance Rule
 
 Change this guide only when the coverage-review method changes. Do not use it as a live snapshot of a run.

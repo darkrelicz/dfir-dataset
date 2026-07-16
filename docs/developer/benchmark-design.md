@@ -1,6 +1,11 @@
-# Benchmark
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Benchmark case schema
+<h1 class="no-index">Benchmark Design</h1>
+
+# Benchmark case schema
 ```json
 {
   "case_id": "phase6-ttp-001",
@@ -52,7 +57,7 @@
 
 ```
 
-### Answer Key Guidance
+## Answer Key Guidance
 
 Use concept-style answer keys for rubric-scored cases. Do not put long prose
 sentences in `must_include` or `must_not_include`.
@@ -100,11 +105,11 @@ still need calibration and human review before final Phase 6 claims. The
 `scoring.metric` field describes the benchmark objective inherited by the cases;
 all current Phase 6 scores are produced by the local LLM judge.
 
-## Prompts
+# Prompts
 
 Review all test cases before using for benchmark
 
-### Master prompt
+## Master prompt
 
 You are creating a held-out benchmark for evaluating a DFIR AI assistant fine-tuned on cybersecurity and forensic instruction data.
 
@@ -133,7 +138,7 @@ Return JSONL only, one JSON object per line, using this schema:
 {...schema...}
 
 
-### TTP identification
+## TTP identification
 
 Generate 10 DFIR benchmark cases for MITRE ATT&CK TTP identification.
 
@@ -151,7 +156,7 @@ Requirements:
 
 Return JSONL only.
 
-### IOC extraction
+## IOC extraction
 
 Generate 10 DFIR benchmark cases for IOC extraction.
 
@@ -169,7 +174,7 @@ Requirements:
 
 Return JSONL only.
 
-### Triage ranking
+## Triage ranking
 
 Generate 8 DFIR benchmark cases for triage and threat hunting prioritization.
 
@@ -188,7 +193,7 @@ Requirements:
 
 Return JSONL only.
 
-### Detection rule interpretation
+## Detection rule interpretation
 
 Generate 10 DFIR benchmark cases for detection engineering interpretation.
 
@@ -212,7 +217,7 @@ Requirements:
 
 Return JSONL only.
 
-### Artifact analysis
+## Artifact analysis
 
 Generate 8 DFIR benchmark cases for forensic artifact analysis.
 
@@ -232,7 +237,7 @@ Requirements:
 
 Return JSONL only.
 
-### Incident report generation
+## Incident report generation
 
 Generate 6 DFIR benchmark cases for incident report generation.
 
@@ -249,7 +254,7 @@ Requirements:
 
 Return JSONL only.
 
-### Reasoning and grounding stress tests
+## Reasoning and grounding stress tests
 
 Generate 8 DFIR benchmark cases that test reasoning quality, uncertainty, and grounding.
 
@@ -264,7 +269,7 @@ Requirements:
 
 Return JSONL only.
 
-### AI/LLM and ATLAS cases
+## AI/LLM and ATLAS cases
 
 Generate 8 benchmark cases for AI/LLM security and MITRE ATLAS-style incidents.
 

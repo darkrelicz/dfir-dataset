@@ -40,6 +40,14 @@
       "title": "Quality And Packaging"
     },
     {
+      "src": "user/training-and-release.md",
+      "title": "Training And Release"
+    },
+    {
+      "src": "user/handover.md",
+      "title": "Handover Guide"
+    },
+    {
       "src": "developer/index.md",
       "title": "Developer Guides"
     },
@@ -74,6 +82,34 @@
     {
       "src": "developer/extension-points.md",
       "title": "Extension Points"
+    },
+    {
+      "src": "developer/adding-sources.md",
+      "title": "Adding Sources"
+    },
+    {
+      "src": "developer/prompt-guide.md",
+      "title": "Prompt Guide"
+    },
+    {
+      "src": "developer/quality-rubric.md",
+      "title": "Quality Rubric"
+    },
+    {
+      "src": "developer/coverage-map.md",
+      "title": "Coverage Map"
+    },
+    {
+      "src": "developer/dataset-card.md",
+      "title": "Dataset Card Template"
+    },
+    {
+      "src": "developer/benchmark-design.md",
+      "title": "Benchmark Design"
+    },
+    {
+      "src": "reference/taxonomy.md",
+      "title": "DFIR Artifact Taxonomy"
     },
     {
       "src": "developer/diagrams.md",

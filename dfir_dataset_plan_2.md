@@ -865,13 +865,13 @@ dfir-dataset/
 │   └── packaging.yaml
 │
 └── docs/
-    ├── ARCHITECTURE.md
-    ├── TAXONOMY.md                 # Full 57-category reference
-    ├── COVERAGE_MAP.md
-    ├── ADDING_SOURCES.md
-    ├── PROMPT_GUIDE.md
-    ├── QUALITY_RUBRIC.md
-    └── HANDOVER.md
+    ├── developer/architecture.md
+    ├── reference/taxonomy.md       # Full 57-category reference
+    ├── developer/coverage-map.md
+    ├── developer/adding-sources.md
+    ├── developer/prompt-guide.md
+    ├── developer/quality-rubric.md
+    └── user/handover.md
 ```
 
 ### 2.3 Raw Document Schema
@@ -1620,13 +1620,13 @@ Includes: source breakdown, generation methodology, task/difficulty distribution
 - [ ] Fine-tuned model checkpoint + GGUF
 
 ### Documentation
-- [ ] `HANDOVER.md` — what's done, what's next, decision rationale
-- [ ] `ARCHITECTURE.md` — pipeline design
-- [ ] `TAXONOMY.md` — full 57-category reference with coverage status
-- [ ] `COVERAGE_MAP.md` — what's covered, what sources to add per gap
-- [ ] `ADDING_SOURCES.md` — step-by-step for new collectors
-- [ ] `PROMPT_GUIDE.md` — prompt iteration guide
-- [ ] `QUALITY_RUBRIC.md` — scoring criteria
+- [ ] `docs/user/handover.md` — what's done, what's next, decision rationale
+- [ ] `docs/developer/architecture.md` — pipeline design
+- [ ] `docs/reference/taxonomy.md` — full 57-category reference with coverage status
+- [ ] `docs/developer/coverage-map.md` — what's covered, what sources to add per gap
+- [ ] `docs/developer/adding-sources.md` — step-by-step for new collectors
+- [ ] `docs/developer/prompt-guide.md` — prompt iteration guide
+- [ ] `docs/developer/quality-rubric.md` — scoring criteria
 - [ ] Dataset card on HuggingFace
 - [ ] Training recipe
 
@@ -1683,7 +1683,7 @@ Includes: source breakdown, generation methodology, task/difficulty distribution
 ## Resolved Decisions (formerly Open Questions)
 > Resolved 2026-06-02.
 1. **API access:** ✅ Setting up a Google AI account for Gemini 2.5 Flash. Single model, single account. No Claude/GPT-4o accounts needed unless Flash quality is insufficient (fallback plan documented in §3.7).
-2. **Dataset hosting:** ✅ Local-only on DGX Sparks filesystem. No HuggingFace. Data loaded via `datasets.load_dataset("json", data_files=...)` — functionally identical to HF hosting for Unsloth training. Data path documented in `HANDOVER.md` for successor.
+2. **Dataset hosting:** ✅ Local-only on DGX Sparks filesystem. No HuggingFace. Data loaded via `datasets.load_dataset("json", data_files=...)` — functionally identical to HF hosting for Unsloth training. Data path documented in `docs/user/handover.md` for successor.
 3. **Shepherd MVP 2 status:** ✅ 3 core MVP 2 items remaining (process_plugin_mismatch finding, report provenance citations, parser/finding tests). 5 refactor gate items deferred to v0.2.1. Tag v0.2.0 after the 3 core items are complete.
 4. **DGX Sparks access:** ✅ Dedicated. No scheduling conflicts. Can run 3-4 LoRA rank experiments (16, 32, 64, 128) during weeks 9-10.
 5. **Synthesis approach:** ✅ Full LLM generation using Gemini 2.5 Flash for all pairs (~$9 total). No hybrid/template approach — research (LIMA, DEITA, Evol-Instruct) shows diversity from LLM generation outperforms template-based data for SFT, and the cost difference is negligible at Flash pricing.

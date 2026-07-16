@@ -1,18 +1,23 @@
-# Quality Rubric
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Quality Rubric</h1>
+
+# Purpose
 
 Define the Phase 4 quality gate for candidate instruction pairs. Phase 4 consumes Phase 3 `accepted.jsonl` and produces filtered training candidates, review queues, rejection manifests, and quality summaries.
 
 This file is a reusable rubric and operating guide, not a live quality snapshot. Run-specific counts belong in `data/quality/<run>/quality_manifest.json` and the state files named in `PROJECT_BRIEF.md`.
 
-## Implementation Notes
+# Implementation Notes
 
 The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local ATT&CK/ATLAS ID reference checks, raw-corpus fallback ID references, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`.
 
 The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 
-## Required Outputs
+# Required Outputs
 
 | Output | Purpose |
 |---|---|
@@ -22,7 +27,7 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 | `quality_manifest.json` | Run metadata, counts, distributions, and audits |
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample for manual rubric scoring |
 
-## Running Phase 4
+# Running Phase 4
 
 ```bash
 .venv/bin/python -m scripts.quality_filter \
@@ -34,7 +39,7 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 
 The logger should report config loading, output preparation, raw document loading, reference-set construction, row-level validation progress, dataset-level audits, JSONL output writing, spot-check sampling, and manifest writing.
 
-## Deterministic Validators
+# Deterministic Validators
 
 These checks should run before heuristic scoring.
 
@@ -53,7 +58,7 @@ These checks should run before heuristic scoring.
 | Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic or AI-assisted review |
 | Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
 
-## Heuristic Scoring
+# Heuristic Scoring
 
 Suggested weights:
 
@@ -71,7 +76,7 @@ Quality scores are descriptive metadata. They are useful for sorting and manual 
 - `review`: at least one review issue and no reject issue
 - `rejected`: at least one reject issue
 
-## Manual Review Guidance
+# Manual Review Guidance
 
 Manual reviewers should ask:
 
@@ -82,7 +87,7 @@ Manual reviewers should ask:
 5. Is the reasoning trace auditable?
 6. Is this pair too similar to another pair?
 
-## Rejection Reasons
+# Rejection Reasons
 
 Use stable reason codes so later analysis is easy.
 
@@ -104,7 +109,7 @@ Use stable reason codes so later analysis is easy.
 | `duplicate_or_near_duplicate` | Redundant with existing pair |
 | `source_overrepresented` | Accepted only if needed for balance |
 
-## Distribution Audits
+# Distribution Audits
 
 Run these after filtering:
 
@@ -117,13 +122,13 @@ Run these after filtering:
 | Taxonomy heatmap | Covered, thin, and absent categories visible |
 | Duplicate audit | Sigma/Hayabusa and repeated advisory patterns checked |
 
-## Spot Check Template
+# Spot Check Template
 
 | Pair ID | Source | Category | Score | Decision | Notes |
 |---|---|---|---:|---|---|
 |  |  |  |  |  |  |
 
-## Quality Manifest Template
+# Quality Manifest Template
 
 ```json
 {
@@ -146,6 +151,6 @@ Run these after filtering:
 }
 ```
 
-## Maintenance Rule
+# Maintenance Rule
 
 Change this rubric only when quality-gate behavior, reason codes, scoring, or review guidance changes. Do not use it as a quality-run report.

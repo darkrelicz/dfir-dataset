@@ -13,3 +13,5 @@ Read these pages in order if you are onboarding:
 2. [Running The Pipeline](running-the-pipeline.md)
 3. [Source Guide](source-guide.md)
 4. [Quality And Packaging](quality-and-packaging.md)
+5. [Training And Release](training-and-release.md)
+6. [Handover Guide](handover.md)
