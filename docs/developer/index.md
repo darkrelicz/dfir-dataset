@@ -3,7 +3,7 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Developer Guides
+<h1 class="no-index">Developer Guides</h1>
 
 Use this section when changing code, adding sources, tuning prompts, or
 debugging pipeline behavior.

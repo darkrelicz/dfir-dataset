@@ -3,11 +3,11 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Quality And Packaging
+<h1 class="no-index">Quality And Packaging</h1>
 
 Phase 4 and Phase 5 turn candidate generated pairs into local SFT-ready JSONL.
 
-## Phase 4 Quality
+# Phase 4 Quality
 
 The quality runner is `quality.runner.run_quality_filter`, dispatched by
 `scripts/quality_filter.py`.
@@ -29,7 +29,7 @@ Outputs:
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample using seed 1337 |
 | `quality_manifest.json` | Run counts, issue counts, distributions, and audits |
 
-## Row Gates
+# Row Gates
 
 Phase 4 validates:
 
@@ -55,7 +55,7 @@ Quality scoring is no-API and heuristic. It uses:
 
 Scores help with ranking and audits. Row status is decided by issue severity.
 
-## Dataset Gates
+# Dataset Gates
 
 After row validation, `quality.dataset.apply_dataset_gates` runs:
 
@@ -68,7 +68,7 @@ After row validation, `quality.dataset.apply_dataset_gates` runs:
 The current reduced subset had zero near duplicates and no source-balance
 movement.
 
-## Current Quality Result
+# Current Quality Result
 
 The latest quality run is `quality-20260708T064057Z`.
 
@@ -82,15 +82,15 @@ The latest quality run is `quality-20260708T064057Z`.
 The biggest rejection and review pressures are invented concrete indicators and
 mapping inconsistencies.
 
-## Phase 5 Packaging
+# Phase 5 Packaging
 
 The packager is `dataset_packaging.runner.run_packaging`, dispatched by
 `scripts/package_dataset.py`.
 
-Current config:
+Active GLM config:
 
 * quality input directory: `data/quality/gemini_subset_1`
-* output directory: `data/packaged/gemini_subset_1`
+* output directory: `data/packaged/glm47_dfir_v2`
 * splits: 80 percent train, 10 percent validation, 10 percent test
 * split grouping: `source_doc_id`
 * seed: 1337
@@ -105,6 +105,10 @@ Response style policy:
 | `filtered` | Keep canonical `<reasoning>` response |
 | `review` | Strip the reasoning block and keep the final answer |
 | `rejected` | Excluded |
+
+The GLM v2 exporter then removes literal `[GENERAL KNOWLEDGE]` annotations and
+maps retained reasoning blocks from `<reasoning>` to `<think>`. These transforms
+are recorded in metadata and apply only to the training view.
 
 The output record shape is `messages_jsonl`:
 
@@ -124,5 +128,6 @@ The output record shape is `messages_jsonl`:
 }
 ```
 
-The current package has 5,517 records and no source-document overlap across
-splits.
+`package-20260716T053818Z` has 5,517 records and no source-document overlap.
+Preflight found no retained grounding annotations/canonical reasoning tags,
+unbalanced thinking blocks, empty responses, or rendered examples missing EOS.

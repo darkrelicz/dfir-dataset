@@ -3,13 +3,13 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Data Contracts
+<h1 class="no-index">Data Contracts</h1>
 
 The pipeline is held together by a few stable Pydantic and JSONL contracts.
 
 <puml src="../diagrams/raw-document-class.puml" alt="Class diagram for core data contracts" width="900" />
 
-## RawDocument
+# RawDocument
 
 Defined in `collectors/schemas.py`.
 
@@ -26,7 +26,7 @@ Defined in `collectors/schemas.py`.
 | `metadata` | `dict[str, Any]` | Source-specific structured metadata. |
 | `word_count` | `int` | Count from `utils.text.count_words`. |
 
-## CollectionManifest
+# CollectionManifest
 
 Each collector returns a manifest entry with:
 
@@ -41,7 +41,7 @@ Each collector returns a manifest entry with:
 `scripts.collect_all` writes the combined list to
 `data/raw/collection_manifest.json`.
 
-## PromptRecord
+# PromptRecord
 
 Defined in `synthesizers/schemas.py`.
 
@@ -61,7 +61,7 @@ Prompt records represent one model call for one raw document:
 `synthesizers.run_state.prompt_record_row` adds `prompt_hash` before writing
 `prompts.jsonl`.
 
-## InstructionPair
+# InstructionPair
 
 Defined in `synthesizers/schemas.py` with `extra="forbid"`.
 
@@ -84,7 +84,7 @@ Phase 3 overwrites deterministic provenance fields from `PromptRecord` before
 schema validation, because the teacher model should not be trusted for those
 values.
 
-## QualityCandidate And QualityDecision
+# QualityCandidate And QualityDecision
 
 `QualityCandidate` is the Phase 4 input schema. It mirrors `InstructionPair`,
 but ignores extra fields because Phase 3 rows include run metadata.
@@ -95,7 +95,7 @@ but ignores extra fields because Phase 3 rows include run metadata.
 * `issues`: deterministic and heuristic issue codes;
 * `score`: a `QualityScore` with five dimensions and total.
 
-## Packaged Record
+# Packaged Record
 
 The current package format is `messages_jsonl`.
 
@@ -123,6 +123,7 @@ The current package format is `messages_jsonl`.
     "quality_score": {},
     "reasoning_style": "reasoning",
     "response_transform": "none",
+    "model_transforms": ["canonical_reasoning_to_glm_think"],
     "run_id": "...",
     "prompt_id": "...",
     "prompt_hash": "...",
@@ -135,7 +136,12 @@ The current package format is `messages_jsonl`.
 }
 ```
 
-## Manifest Contracts
+Canonical synthesis and quality records retain `<reasoning>` and grounding
+annotations. A model-specific package may record export-time transformations in
+`model_transforms`; the GLM v2 view maps reasoning tags and removes literal
+`[GENERAL KNOWLEDGE]` markers without changing canonical inputs.
+
+# Manifest Contracts
 
 | Manifest | Writer | Purpose |
 |---|---|---|
@@ -146,7 +152,7 @@ The current package format is `messages_jsonl`.
 | `evaluation_manifest.json` | `evaluation.runner` | Evaluation status, benchmark identity, target identity, case progress, and scorecard paths. |
 | `training_manifest.json` | `scripts.finetune` | Dataset provenance, model/LoRA/export settings, and trainer result. |
 
-## Phase 6 BenchmarkCase
+# Phase 6 BenchmarkCase
 
 Defined in `evaluation/schemas.py`. Each held-out case contains:
 
@@ -161,7 +167,7 @@ complete independently acceptable alternative, not another cumulative set of
 requirements. The answer key is sent only to the judge, never to the evaluated
 target model.
 
-## JudgeVerdict And CaseScore
+# JudgeVerdict And CaseScore
 
 The local judge must return a JSON object containing a bounded `score`, a
 non-empty `reason`, optional numeric `criteria`, and an optional
@@ -177,7 +183,7 @@ The evaluator converts that verdict into `CaseScore`:
   validation-attempt count;
 * `manual_review_recommended` is currently true for every case.
 
-## Evaluation Outputs
+# Evaluation Outputs
 
 After every successful verdict, `evaluation.runner` atomically refreshes:
 

@@ -3,12 +3,12 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Extension Points
+<h1 class="no-index">Extension Points</h1>
 
 Use this page when adding sources, prompt behavior, validators, or packaging
 formats.
 
-## Add A New Source
+# Add A New Source
 
 1. Add source settings to `configs/collection.yaml`.
 2. Create `collectors/<source_key>.py`.
@@ -34,7 +34,7 @@ python -m scripts.synthesize render-prompts \
   --output-dir data/synthesized/dry_run
 ```
 
-## Add A Prompt Template
+# Add A Prompt Template
 
 Use a new prompt template only when existing source-type or content-type
 instructions are not enough.
@@ -50,7 +50,7 @@ Then update the relevant YAML config.
 `synthesizers.prompt_policy.load_prompt_policy` will fail early if the config
 references a missing template.
 
-## Add A Prompt Compactor
+# Add A Prompt Compactor
 
 Create:
 
@@ -77,7 +77,7 @@ compact_for_prompt.skip_source_truncation = True
 Use that sparingly. Velociraptor does it because full VQL bodies are the
 training signal.
 
-## Add A Validator
+# Add A Validator
 
 Prefer putting reusable parsing/checking logic in `validation/` when both Phase
 3 and Phase 4 can use it.
@@ -90,7 +90,7 @@ Use stage wrappers for policy:
 
 Add stable issue codes when a quality result needs to be audited later.
 
-## Tune Quality Scoring
+# Tune Quality Scoring
 
 Start in config:
 
@@ -100,7 +100,7 @@ Start in config:
 
 Change Python only when config cannot express the behavior.
 
-## Add Packaging Format
+# Add Packaging Format
 
 The current packager supports `messages_jsonl` behavior directly in
 `dataset_packaging.runner`.
@@ -113,7 +113,7 @@ If adding another format:
 4. update `configs/packaging.yaml`;
 5. update this guides site and durable state docs.
 
-## Update Documentation
+# Update Documentation
 
 After structural changes, update:
 

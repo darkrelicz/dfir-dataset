@@ -3,14 +3,14 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Synthesis
+<h1 class="no-index">Synthesis</h1>
 
 Phase 3 converts validated raw documents into candidate instruction-response
 pairs.
 
 <puml src="../diagrams/synthesis-sequence.puml" alt="Phase 3 synthesis sequence" width="1000" />
 
-## CLI
+# CLI
 
 `scripts.synthesize` exposes:
 
@@ -22,7 +22,7 @@ python -m scripts.synthesize run
 
 The CLI stays thin. Execution lives in `synthesizers.runner`.
 
-## Document Selection
+# Document Selection
 
 `synthesizers.planner.select_documents` loads raw documents and selects by mode:
 
@@ -35,7 +35,7 @@ The CLI stays thin. Execution lives in `synthesizers.runner`.
 Pilot and subset sampling stratify by source, content type, and word-count
 richness buckets.
 
-## Category Assignment
+# Category Assignment
 
 `assign_categories` reads target weights from
 `configs/task_categories.yaml`. It balances planned pair counts against target
@@ -44,12 +44,12 @@ distribution while respecting each source profile's allowed categories.
 Assignment order prioritizes documents with fewer allowed categories, then uses
 stable hash jitter from `utils.text.stable_index`.
 
-## Difficulty Assignment
+# Difficulty Assignment
 
 `assign_difficulties` uses configured difficulty targets and a stable hash of
 `doc_id`. Current labels are `junior`, `mid`, and `senior`.
 
-## PromptBuilder
+# PromptBuilder
 
 `synthesizers.prompt_builder.PromptBuilder` builds one `PromptRecord` per raw
 document.
@@ -73,7 +73,7 @@ Prompt rendering combines:
 
 The current config requests one pair per document for every source.
 
-## Deterministic Taxonomy Refs
+# Deterministic Taxonomy Refs
 
 `PromptBuilder` suggests one to three taxonomy IDs using:
 
@@ -88,7 +88,7 @@ These refs are stored on `PromptRecord` and rendered into the prompt as JSON.
 Phase 3 validation later overwrites generated `taxonomy_refs` from the prompt
 record.
 
-## Prompt Compaction
+# Prompt Compaction
 
 Prompt-time compactors live under `synthesizers/prompts/compactors/`.
 
@@ -113,7 +113,7 @@ Current source-specific compactors:
 | `loldrivers` | Preserve commands, hashes, detections, CVEs, and selected samples. |
 | `hijacklibs` | Preserve DLL paths, hijack conditions, hashes, and privilege/elevation flags. |
 
-## Gemini Client
+# Gemini Client
 
 `synthesizers.clients.gemini.GeminiClient`:
 
@@ -127,7 +127,7 @@ Current source-specific compactors:
 The client strips unsupported `additionalProperties` keys from the response
 schema but keeps strict local Pydantic validation.
 
-## Run State
+# Run State
 
 `synthesizers.run_state` owns:
 
@@ -140,7 +140,7 @@ schema but keeps strict local Pydantic validation.
 Only accepted/rejected rows with matching `prompt_hash` and model are considered
 complete for skip-present behavior.
 
-## Generated-Output Validation
+# Generated-Output Validation
 
 `synthesizers.validators.validate_generated_pairs` checks:
 
@@ -157,7 +157,7 @@ complete for skip-present behavior.
 It normalizes category, difficulty, source, source doc ID, and taxonomy refs
 from the prompt record before schema validation.
 
-## Retry And Circuit Breaker
+# Retry And Circuit Breaker
 
 API retries use exponential backoff with jitter from `configs/synthesis.yaml`.
 

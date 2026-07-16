@@ -3,7 +3,7 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Source Guide
+<h1 class="no-index">Source Guide</h1>
 
 The selected scope is Core + Tier 1 + Tier 2: all 16 collectors in
 `scripts/collect_all.py`.
@@ -25,7 +25,7 @@ All collectors emit `RawDocument` rows with this common shape:
 }
 ```
 
-## Current Sources
+# Current Sources
 
 | Source | Collector | Content Types | Current Docs | Notes |
 |---|---|---|---:|---|
@@ -46,7 +46,7 @@ All collectors emit `RawDocument` rows with this common shape:
 | `ossem_data_dicts` | `OSSEMDataDictsCollector` | `event_dictionary` | 699 | Keeps best event dictionary candidate by event/version/field richness. |
 | `cybersec_skills` | `CybersecSkillsCollector` | `practitioner_workflow` | 670 | Filters skills below 500 body tokens to avoid thin templates. |
 
-## Source Cache Rules
+# Source Cache Rules
 
 Git-backed collectors clone to `data/raw/.repos/`. ATT&CK STIX is cached at
 `data/raw/.cache/enterprise-attack.json`. These paths are generated data and
@@ -54,7 +54,7 @@ are ignored by git.
 
 Collectors reuse an existing non-empty clone path rather than recloning.
 
-## Thin Source Handling
+# Thin Source Handling
 
 Thin source controls happen later in synthesis:
 
@@ -63,7 +63,7 @@ Thin source controls happen later in synthesis:
 * documents under 250 words generate one pair;
 * prompt compactors reduce prompt size without mutating raw documents.
 
-## Source-Specific Notes
+# Source-Specific Notes
 
 `volatility3_docs` and `mitre_atlas` pin GitHub blob URLs to the collected
 commit when possible. Most other git-backed collectors use the public default

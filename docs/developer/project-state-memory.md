@@ -3,12 +3,12 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Project State Memory
+<h1 class="no-index">Project State Memory</h1>
 
 The project must not rely on chat history as durable memory. Current state,
 decisions, and TODOs belong in repository documents.
 
-## Canonical State Files
+# Canonical State Files
 
 | File | Role |
 |---|---|
@@ -28,7 +28,7 @@ Generated manifests are canonical for run-specific counts:
 * `data/evaluation/<run>/scorecards/llm_judge/scores.json`
 * `data/finetune/<run>/training_manifest.json`
 
-## Operating Guides
+# Operating Guides
 
 These files are reusable guides or templates rather than the canonical phase
 status pages. Some are filled with a current run snapshot when the guide itself
@@ -44,7 +44,7 @@ requires it:
 
 Update them when the process changes. Do not use them for run-specific counts.
 
-## This MarkBind Site
+# This MarkBind Site
 
 `docs/` is the GitHub Pages source for successor-friendly documentation.
 
@@ -56,7 +56,7 @@ It should:
 * keep suggested improvements separate from current behavior;
 * be updated when architecture, commands, contracts, or handoff workflows change.
 
-## Documentation Update Rule
+# Documentation Update Rule
 
 When a change affects project direction, architecture, active work, or durable
 decisions:
@@ -67,7 +67,7 @@ decisions:
 4. update `docs/` when successor-facing navigation or implementation details
    changed.
 
-## Current Accepted Risk To Preserve
+# Current Accepted Risk To Preserve
 
 For the shortened deadline, Phase 5 packages both filtered rows and review rows.
 Review rows are transformed into direct-answer examples. Rejected rows remain

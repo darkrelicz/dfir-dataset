@@ -3,14 +3,14 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Collectors
+<h1 class="no-index">Collectors</h1>
 
 Collectors normalize upstream DFIR/security sources into the shared
 `RawDocument` schema.
 
 <puml src="../diagrams/collector-inheritance.puml" alt="Collector inheritance diagram" width="900" />
 
-## BaseCollector
+# BaseCollector
 
 `collectors.base.BaseCollector` provides:
 
@@ -22,7 +22,7 @@ Collectors normalize upstream DFIR/security sources into the shared
 Collectors track `errors`, `warnings`, `duration`, and `doc_count` locally, then
 return a `CollectionManifest`.
 
-## CLI Orchestration
+# CLI Orchestration
 
 `scripts.collect_all`:
 
@@ -33,9 +33,9 @@ return a `CollectionManifest`.
 5. writes `data/raw/collection_manifest.json`;
 6. prints a Rich summary table.
 
-## Collector Details
+# Collector Details
 
-### `MitreAttackCollector`
+## `MitreAttackCollector`
 
 Input: Enterprise ATT&CK STIX JSON from the configured URL/cache path.
 
@@ -47,7 +47,7 @@ Output:
   and detection strategies when present;
 * metadata includes external references, parent technique, and contributors.
 
-### `SigmaRulesCollector`
+## `SigmaRulesCollector`
 
 Input: `SigmaHQ/sigma` git repository under `rules/`.
 
@@ -60,7 +60,7 @@ Output:
 * metadata includes level, status, logsource fields, ATT&CK IDs, tactic tags,
   false positives, and author.
 
-### `AtomicRedTeamCollector`
+## `AtomicRedTeamCollector`
 
 Input: `redcanaryco/atomic-red-team` `atomics/` YAML files.
 
@@ -73,7 +73,7 @@ Output:
 * metadata includes technique ID, test GUID/index, platforms, executor,
   elevation, cleanup, and dependency flags.
 
-### `CISAAdvisoriesCollector`
+## `CISAAdvisoriesCollector`
 
 Input: `cisagov/CSAF` `csaf_files/**/*.json`.
 
@@ -86,7 +86,7 @@ Output:
 * metadata includes advisory ID, category, IT/OT type, CVEs, publisher, and
   version.
 
-### `Volatility3DocsCollector`
+## `Volatility3DocsCollector`
 
 Input: `volatilityfoundation/volatility3`.
 
@@ -102,7 +102,7 @@ Output:
 The collector uses Python AST parsing. It does not import arbitrary plugin
 modules to inspect them.
 
-### `MitreAtlasCollector`
+## `MitreAtlasCollector`
 
 Input: `mitre-atlas/atlas-data` latest v6 YAML from `dist/manifest.yaml`.
 
@@ -117,7 +117,7 @@ Output:
 The collector loads the repo's parser package in-process without importing the
 full API/database stack.
 
-### `CISAKEVCollector`
+## `CISAKEVCollector`
 
 Input: CISA KEV JSON feed.
 
@@ -129,7 +129,7 @@ Output:
 * metadata includes products, CVE IDs/count, ransomware-linked count, and
   catalog version.
 
-### `KapeFilesCollector`
+## `KapeFilesCollector`
 
 Input: `EricZimmerman/KapeFiles`.
 
@@ -140,7 +140,7 @@ Output:
 * disabled KAPE files under `!Disabled` paths are skipped;
 * metadata records target paths/categories or module tools/processors.
 
-### `HayabusaRulesCollector`
+## `HayabusaRulesCollector`
 
 Input: `Yamato-Security/hayabusa-rules`.
 
@@ -153,7 +153,7 @@ Output:
 * metadata includes rule level, status, logsource fields, tags, references,
   author, modified date, rule type, and details format.
 
-### `LOLBASGTFOBinsCollector`
+## `LOLBASGTFOBinsCollector`
 
 Input:
 
@@ -168,7 +168,7 @@ Output:
 * metadata captures binary names, platforms, functions/categories, MITRE IDs,
   command counts, full paths, detection details, contexts, and related fields.
 
-### `ForensicArtifactsCollector`
+## `ForensicArtifactsCollector`
 
 Input: `ForensicArtifacts/artifacts` YAML data.
 
@@ -180,7 +180,7 @@ Output:
 * metadata includes artifact name, supported OS, source types/count, file paths,
   and registry keys.
 
-### `VelociraptorArtifactsCollector`
+## `VelociraptorArtifactsCollector`
 
 Input: generated Velociraptor artifact reference Markdown pages.
 
@@ -194,7 +194,7 @@ Output:
 * metadata records artifact family, platform, type, tags, parameters, sources,
   VQL presence, permissions, references, tools, and relative path.
 
-### `HijackLibsCollector`
+## `HijackLibsCollector`
 
 Input: `wietze/HijackLibs` YAML entries.
 
@@ -206,7 +206,7 @@ Output:
 * metadata includes DLL name, vendor, hijack types, executable paths, expected
   locations, CVEs, and vulnerable executable metadata.
 
-### `LOLDriversCollector`
+## `LOLDriversCollector`
 
 Input: `magicsword-io/LOLDrivers` YAML entries.
 
@@ -218,7 +218,7 @@ Output:
 * metadata includes driver ID/name, category, tags, CVEs, vendors, products,
   MITRE ID, sample hashes, detections, and sample metadata.
 
-### `OSSEMDataDictsCollector`
+## `OSSEMDataDictsCollector`
 
 Input: `OTRF/OSSEM-DD` YAML event dictionaries.
 
@@ -233,7 +233,7 @@ Output:
 * metadata includes event ID/name/version, platform, log source, fields,
   references, source path, and tags.
 
-### `CybersecSkillsCollector`
+## `CybersecSkillsCollector`
 
 Input: `mukul975/Anthropic-Cybersecurity-Skills` `SKILL.md` files.
 
@@ -246,7 +246,7 @@ Output:
   license, body size, workflow steps, scenarios, tools referenced, and source
   path.
 
-## Adding A Collector
+# Adding A Collector
 
 Use [Extension Points](extension-points.md) for the full change checklist.
 At minimum, add:
