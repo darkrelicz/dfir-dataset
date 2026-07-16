@@ -1,0 +1,40 @@
+benchmark:
+  cases_path: "evaluation/benchmark"
+
+output:
+  base_dir: "data/evaluation"
+
+prompt:
+  system_message: "You are Shepherd, a DFIR AI assistant. Answer as a careful incident responder: stay grounded in evidence, calibrate uncertainty, and avoid unsupported claims."
+  include_context_heading: true
+
+generation:
+  mode: openai_compatible
+  model: "finedtuned-GLM-4.7-Flash-Q4_K_M.gguf"
+  base_url: "http://127.0.0.1:8080/v1"
+  temperature: 1.0
+  top_p: 0.95
+  max_tokens: 36000
+  timeout_seconds: 3600
+  structured_outputs:
+    # Applied only to TTP, IOC, and ranking tasks. Rubric tasks stay free-form.
+    enabled: true
+
+scoring:
+  judge:
+    # Required local OpenAI-compatible judge endpoint.
+    # Replace after calibration; comparisons require matching calibration IDs.
+    calibration_id: "uncalibrated"
+    base_url: "http://127.0.0.1:8081/v1"
+    model: "gemma-4-31B-it-Q4_K_M.gguf"
+    temperature: 0.0
+    top_p: 1.0
+    # Constrain supported OpenAI-compatible servers to a JSON object.
+    response_format: json_object
+    # Forward server-specific fields at the top level of the request.
+    request_overrides:
+      chat_template_kwargs:
+        enable_thinking: false
+    max_tokens: 8000
+    timeout_seconds: 1800
+    validation_retries: 1

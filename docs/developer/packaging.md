@@ -3,13 +3,13 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Packaging
+<h1 class="no-index">Packaging</h1>
 
 Phase 5 exports local chat JSONL for the current Unsloth/GLM training path.
 
 <puml src="../diagrams/packaging-sequence.puml" alt="Phase 5 packaging sequence" width="900" />
 
-## CLI
+# CLI
 
 `scripts.package_dataset` dispatches to `dataset_packaging.runner.run_packaging`.
 
@@ -25,7 +25,16 @@ python -m scripts.package_dataset \
   --output-dir data/packaged/gemini_subset_1
 ```
 
-## Inputs
+The active GLM-specific view uses:
+
+```bash
+python -m scripts.package_dataset \
+  --config configs/packaging_glm47_v2.yaml \
+  --quality-dir data/quality/gemini_subset_1 \
+  --output-dir data/packaged/glm47_dfir_v2
+```
+
+# Inputs
 
 Current config reads:
 
@@ -35,7 +44,7 @@ Current config reads:
 
 The packager does not read Phase 4 `rejected.jsonl`.
 
-## Record Building
+# Record Building
 
 `build_packaged_record` creates:
 
@@ -46,13 +55,13 @@ The packager does not read Phase 4 `rejected.jsonl`.
 * metadata preserving source, taxonomy, mapping, quality, prompt, model, and
   provenance fields.
 
-`assistant_content_for_style` returns:
+`format_content_by_reasoning_style` returns:
 
 * full response for `reasoning`;
 * `final_answer_text(response)` for `direct`;
 * full response as fallback if no final answer can be extracted.
 
-## Response Style Policy
+# Response Style Policy
 
 Current `configs/packaging.yaml`:
 
@@ -66,7 +75,21 @@ response_style:
 This yields the current 75/25 reasoning/direct mix without another generation
 run.
 
-## Splitting
+# GLM-Specific Training View
+
+`configs/packaging_glm47_v2.yaml` adds export-time transforms:
+
+* remove literal `[GENERAL KNOWLEDGE]` annotations from assistant text;
+* convert canonical `<reasoning>` tags to GLM-native `<think>` tags;
+* preserve the applied transforms in record metadata;
+* reject empty responses, retained annotations/canonical tags, and unbalanced
+  `<think>` blocks.
+
+These transforms do not mutate synthesis or quality outputs. The generated
+`package-20260716T053818Z` retains 5,517 records and the original split with no
+source-document overlap.
+
+# Splitting
 
 `split_records_by_source_doc` groups records by
 `metadata.source_doc_id`, shuffles groups with seed 1337, sorts groups by size
@@ -75,7 +98,7 @@ remaining target ratio.
 
 This prevents a source document from appearing in multiple splits.
 
-## Manifest
+# Manifest
 
 `PackagingManifest` records:
 

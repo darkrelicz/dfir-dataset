@@ -15,6 +15,8 @@ package "Configuration" {
   [synthesis.yaml] as SynthesisConfig
   [quality.yaml] as QualityConfig
   [packaging.yaml] as PackagingConfig
+  [evaluation.yaml] as EvaluationConfig
+  [finetune_glm47flash.yaml] as FinetuneConfig
 }
 
 package "Phase 2 Collection" {
@@ -60,10 +62,31 @@ package "Phase 5 Packaging" {
   [packaging_manifest.json] as PackagingManifest
 }
 
+package "Phase 6 Training" {
+  [scripts.finetune] as TrainCLI
+  [Unsloth LoRA SFT] as Trainer
+  [checkpoints + adapter + GGUF] as ModelArtifacts
+  [training_manifest.json] as TrainingManifest
+}
+
+package "Phase 6 Evaluation" {
+  [scripts.run_evaluation] as EvaluateCLI
+  [evaluation.runner] as EvaluationRunner
+  [target client] as TargetClient
+  [local LLM judge] as Judge
+  [predictions + judge scorecard] as EvaluationOutputs
+  [evaluation_manifest.json] as EvaluationManifest
+  [scripts.compare_evaluations] as CompareCLI
+  [comparison report] as ComparisonReport
+}
+
 Maintainer --> CollectCLI
 Maintainer --> SynthesizeCLI
 Maintainer --> QualityCLI
 Maintainer --> PackageCLI
+Maintainer --> TrainCLI
+Maintainer --> EvaluateCLI
+Maintainer --> CompareCLI
 
 CollectionConfig --> CollectCLI
 CollectCLI --> Collectors
@@ -109,5 +132,21 @@ PackageCLI --> Packager
 QualityOutputs --> Packager
 Packager --> PackagedSplits
 Packager --> PackagingManifest
+
+FinetuneConfig --> Trainer
+TrainCLI --> Trainer
+PackagedSplits --> Trainer
+PackagingManifest --> Trainer
+Trainer --> ModelArtifacts
+Trainer --> TrainingManifest
+
+EvaluationConfig --> EvaluationRunner
+EvaluateCLI --> EvaluationRunner
+EvaluationRunner --> TargetClient
+EvaluationRunner --> Judge: after target response
+EvaluationRunner --> EvaluationOutputs
+EvaluationRunner --> EvaluationManifest: atomic checkpoint after verdict
+EvaluationOutputs --> CompareCLI
+CompareCLI --> ComparisonReport
 
 @enduml

@@ -3,13 +3,13 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Validation And Quality
+<h1 class="no-index">Validation And Quality</h1>
 
 Validation is split into pure primitives and stage-specific policy wrappers.
 
 <puml src="../diagrams/quality-activity.puml" alt="Phase 4 quality activity diagram" width="900" />
 
-## Shared Primitives
+# Shared Primitives
 
 | Module | Responsibility |
 |---|---|
@@ -19,7 +19,7 @@ Validation is split into pure primitives and stage-specific policy wrappers.
 | `validation.mappings` | ATT&CK/ATLAS regexes and candidate suffix normalization. |
 | `validation.taxonomy` | Extract valid taxonomy refs from config. |
 
-## Reasoning Contract
+# Reasoning Contract
 
 The canonical response format is:
 
@@ -43,7 +43,7 @@ Phase 4 runs stricter options than Phase 3:
 * final answer is required;
 * min/max reasoning step counts come from `configs/quality.yaml`.
 
-## Phase 3 Validation
+# Phase 3 Validation
 
 Phase 3 is focused on rejecting obvious generation failures before they become
 quality inputs.
@@ -55,7 +55,7 @@ IDs, grounding/tag mismatches, and invented concrete indicators.
 Phase 3 uses `BASIC_INDICATOR_OPTIONS`, so path and event-ID invention checks
 are not as broad as Phase 4.
 
-## Phase 4 Row Quality
+# Phase 4 Row Quality
 
 `quality.validators.validate_row_quality` performs:
 
@@ -75,7 +75,7 @@ are not as broad as Phase 4.
 Reject-severity issues produce `rejected`. Review-severity issues produce
 `review`. No issues produces `filtered`.
 
-## Quality References
+# Quality References
 
 `quality.references.build_quality_references` creates:
 
@@ -87,7 +87,7 @@ Reject-severity issues produce `rejected`. Review-severity issues produce
 If local ATT&CK or ATLAS caches are absent, reference sets for those frameworks
 will be smaller, which can affect mapping validation.
 
-## Tool Validation
+# Tool Validation
 
 A tool is accepted when:
 
@@ -96,7 +96,7 @@ A tool is accepted when:
 
 Unknown tools route to review, not hard rejection.
 
-## Indicator Validation
+# Indicator Validation
 
 Phase 4 extracts concrete indicators from the instruction, response, mapping
 arrays, and tool list, then compares them with the source title, URL, Markdown,
@@ -105,7 +105,7 @@ and metadata.
 For `source_only`, absent concrete indicators are reject-severity. For
 `source_plus_general`, they are review-severity.
 
-## Heuristic Scores
+# Heuristic Scores
 
 `score_candidate` emits five 1-5 scores:
 
@@ -120,7 +120,7 @@ The total is a weighted average using `configs/quality.yaml`.
 Quality scores do not directly set row status. They help rank rows for duplicate
 retention and source-balance movement.
 
-## Dataset Gates
+# Dataset Gates
 
 `quality.dataset.apply_dataset_gates` runs after row validation.
 
@@ -132,7 +132,7 @@ retention and source-balance movement.
 | Difficulty balance | Audits filtered rows against configured difficulty targets. |
 | Taxonomy coverage | Reports covered and missing taxonomy IDs by domain. |
 
-## Output Writing
+# Output Writing
 
 `quality.runner.write_quality_outputs` writes row outputs and distribution
 counts. Only filtered rows contribute to source/category/difficulty/taxonomy

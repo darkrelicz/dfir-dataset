@@ -1,0 +1,78 @@
+run:
+  name: "glm47flash_subset1"
+  seed: 1337
+
+dataset:
+  train_path: "data/packaged/gemini_subset_1/train.jsonl"
+  validation_path: "data/packaged/gemini_subset_1/validation.jsonl"
+  test_path: "data/packaged/gemini_subset_1/test.jsonl"
+  packaging_manifest_path: "data/packaged/gemini_subset_1/packaging_manifest.json"
+  text_field: "text"
+
+model:
+  base_model: "unsloth/GLM-4.7-Flash"
+  max_seq_length: 4096
+  dtype: null 
+  load_in_4bit: true
+  load_in_8bit: false
+  load_in_16bit: false
+  full_finetuning: false
+  trust_remote_code: true
+  unsloth_force_compile: false
+
+lora:
+  rank: 32
+  alpha: 64
+  dropout: 0
+  bias: "none"
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+    - "out_proj"
+  use_gradient_checkpointing: "unsloth"
+  random_state: 1337
+  use_rslora: false
+  loftq_config: None
+
+finetune:
+  output_dir: "data/finetune/glm47_flash_lora_dfir_subset1"
+  max_length: 4096
+  dataset_num_proc: 4
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2e-4
+  num_train_epochs: 1
+  warmup_ratio: 0.1
+  lr_scheduler_type: "cosine"
+  optim: "adamw_8bit"
+  weight_decay: 0.01
+  logging_steps: 10
+  eval_strategy: "steps"
+  eval_steps: 250
+  save_strategy: "steps"
+  save_steps: 250
+  save_total_limit: 3
+  bf16: true
+  fp16: false
+  report_to: "none"
+  train_on_responses_only: true
+  response_masking:
+    # Leave null to let Unsloth auto-detect GLM chat markers. This is safer for
+    # our packaged rows because they include a system turn before the user turn.
+    instruction_part: null
+    response_part: null
+
+export:
+  save_lora_adapter: true
+  adapter_dir: "data/finetune/glm47_flash_subset1/lora_adapter"
+  save_merged_16bit: false
+  merged_16bit_dir: "data/finetune/glm47_flash_subset1/merged_16bit"
+  save_gguf: true
+  gguf_dir: "data/finetune/glm47_flash_subset1/gguf_q4_k_m"
+  gguf_quantization: "q4_k_m"

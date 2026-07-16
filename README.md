@@ -6,7 +6,8 @@ This repository contains the data collection, synthesis, and quality assurance p
 
 The goal is to build a **re-runnable dataset factory** that produces high-quality instruction-response pairs covering key digital forensics and incident response (DFIR) tasks. The resulting dataset will be used to fine-tune a model (e.g., GLM-4.7-Flash) for Shepherd's specialist agents.
 
-See `docs/ARCHITECTURE.md` for design decisions.
+See `docs/developer/architecture.md` for the implementation architecture and
+`project_state/DECISIONS.md` for durable decisions.
 
 ## Quick Start
 
@@ -40,8 +41,8 @@ python -m scripts.collect_all --dry-run
 - `collectors/`: Phase 2 source collection scripts
 - `synthesizers/`: Phase 3 instruction pair generation
 - `quality/`: Phase 4 automated quality scoring
-- `packaging/`: Phase 5 dataset export
-- `evaluation/`: Phase 6 benchmarking
-- `docs/`: Documentation including TAXONOMY.md
+- `dataset_packaging/`: Phase 5 local dataset export
+- `evaluation/`: Phase 6 benchmarking, scoring, and comparison helpers
+- `docs/`: Canonical MarkBind documentation, including the taxonomy reference
 - `configs/`: Pipeline configuration including taxonomy IDs
 - `data/`: Output directory for generated artifacts (ignored by git)

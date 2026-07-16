@@ -6,15 +6,9 @@ split:
 
 format:
   record_format: "messages_jsonl"
-  include_system_message: true
   system_message: "You are Shepherd, a DFIR AI assistant. Answer as a careful incident responder: stay grounded in evidence, calibrate uncertainty, and avoid unsupported claims."
 
 response_style:
   filtered: "reasoning"
   review: "direct"
   direct_transform: "strip_reasoning_block"
-
-hosting:
-  canonical: "local"
-  huggingface_dataset_card: false
-  publish_data_to_huggingface: false

@@ -3,12 +3,12 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Configuration
+<h1 class="no-index">Configuration</h1>
 
 The project keeps policy in YAML where practical. Python should implement
 mechanics and validation, not hide durable project policy in hard-coded branches.
 
-## `configs/collection.yaml`
+# `configs/collection.yaml`
 
 Defines all Phase 2 sources:
 
@@ -20,7 +20,7 @@ Defines all Phase 2 sources:
 `scripts.collect_all` maps source keys from this file to concrete collector
 classes.
 
-## `configs/source_profiles.yaml`
+# `configs/source_profiles.yaml`
 
 Defines Phase 3 source and content-type behavior.
 
@@ -39,7 +39,7 @@ Content-type profiles can specify:
 
 The same file also contains default `pilot_targets` and `subset_targets`.
 
-## `configs/synthesis.yaml`
+# `configs/synthesis.yaml`
 
 Defines teacher-model and generation behavior:
 
@@ -56,7 +56,7 @@ Defines teacher-model and generation behavior:
 
 The Gemini client maps supported controls into `models.generate_content`.
 
-## `configs/task_categories.yaml`
+# `configs/task_categories.yaml`
 
 Defines the five task categories:
 
@@ -77,7 +77,7 @@ Each category has:
 The file also defines category and difficulty distribution targets used by
 planning and quality audits.
 
-## `configs/quality.yaml`
+# `configs/quality.yaml`
 
 Defines Phase 4 quality policy:
 
@@ -94,7 +94,7 @@ Defines Phase 4 quality policy:
 Quality validators and dataset gates read from this file. They do not own the
 canonical taxonomy list.
 
-## `configs/packaging.yaml`
+# `configs/packaging.yaml`
 
 Defines Phase 5 packaging:
 
@@ -102,13 +102,57 @@ Defines Phase 5 packaging:
 * split fractions, seed, and group key;
 * output record format;
 * system message;
-* response-style policy;
-* output paths;
-* hosting policy.
+* response-style policy.
 
-The current packaging policy is local-only and does not publish to Hugging Face.
+The packager writes local JSONL splits and a packaging manifest. It has no
+hosting or publishing behavior.
 
-## Prompt Templates
+`configs/packaging_glm47_v2.yaml` is the active model-specific view. It enables
+GLM reasoning-tag conversion, grounding-annotation removal, and packaged-record
+preflight while preserving the canonical inputs.
+
+# `configs/evaluation.yaml`
+
+Defines the Phase 6 target-generation and local-judge clients:
+
+* `benchmark.cases_path` selects a benchmark JSONL file or directory;
+* `output.base_dir` owns generated evaluation runs;
+* `prompt` defines the target system message and context wrapper;
+* `generation.mode` selects `openai_compatible` generation or prediction-file
+  replay;
+* `generation.model`, sampling fields, token limit, timeout, and
+  `structured_outputs` configure the evaluated model;
+* `scoring.judge` configures the separately served judge model, JSON response
+  format, validation retries, inference overrides, and calibration ID.
+
+Both `base_url` values must be API roots such as
+`http://127.0.0.1:8080/v1`. `OpenAICompatibleClient` appends
+`/chat/completions`. The evaluator has no statistical mode and no evaluator
+selector; a valid `scoring.judge` mapping is required.
+
+The complete judge mapping contributes to the scorecard fingerprint. Once a
+judge has been calibrated, freeze its model, quantization, chat template,
+sampling fields, request overrides, and `calibration_id` for both base and tuned
+runs.
+
+# Fine-Tuning Configurations
+
+`configs/finetune_glm47flash.yaml` preserves the historical v1 run.
+`configs/finetune_glm47flash_v2.yaml` is the active retraining configuration and
+defines:
+
+* packaged train, validation, test, and manifest paths;
+* GLM-4.7-Flash loading and sequence settings;
+* LoRA target modules, rank, alpha, checkpointing, and seed;
+* `finetune` trainer arguments, response-only masking, and checkpoint policy;
+* adapter, merged-model, and GGUF export choices.
+
+V2 preserves rank 32, alpha 64, learning rate `2e-4`, one epoch, and the other
+v1 training settings. It uses `data/packaged/glm47_dfir_v2/`, YAML `null` for
+`loftq_config`, and isolated v2 output paths. The runner now serializes the
+effective `finetune` mapping into the manifest.
+
+# Prompt Templates
 
 Prompt assets live under `synthesizers/prompts/`:
 

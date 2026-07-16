@@ -3,23 +3,24 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-# Current Project State
+<h1 class="no-index">Current Project State</h1>
 
-This page reflects the latest repository state inspected on 2026-07-07. The
+This page reflects the latest repository state inspected on 2026-07-16. The
 generated manifests remain the authoritative record for run-specific counts.
 
-## Phase Status
+# Phase Status
 
 | Phase | Status | Current Artifact |
 |---|---|---|
-| Phase 1 taxonomy | Complete for current scope | `project_state/TAXONOMY.md`, `configs/quality.yaml` |
+| Phase 1 taxonomy | Complete for current scope | `docs/reference/taxonomy.md`, `configs/quality.yaml` |
 | Phase 2 collection | Complete for Core + Tier 1 + Tier 2 | `data/raw/collection_manifest.json` |
 | Phase 3 synthesis | Complete for reduced subset | `data/synthesized/gemini_subset_1/` |
 | Phase 4 quality | Complete by time-boxed acceptance | `data/quality/gemini_subset_1/` |
-| Phase 5 packaging | Complete for local training path | `data/packaged/gemini_subset_1/` |
-| Phase 6 evaluation/training | Active next phase | Not implemented in this repo yet |
+| Phase 5 packaging | GLM v2 training view complete | `data/packaged/glm47_dfir_v2/` |
+| Phase 6 training | V1 rejected; v2 retraining prepared | `configs/finetune_glm47flash_v2.yaml` |
+| Phase 6 evaluation | Exploratory base run complete; calibrated comparison pending | `data/evaluation/glm47-flash-base/` |
 
-## Raw Corpus
+# Raw Corpus
 
 The current raw corpus contains 20,347 documents across 16 collectors.
 
@@ -42,7 +43,7 @@ The current raw corpus contains 20,347 documents across 16 collectors.
 | `ossem_data_dicts` | 699 |
 | `cybersec_skills` | 670 |
 
-## Synthesis Snapshot
+# Synthesis Snapshot
 
 The current synthesis run is `run-20260701T021807Z`:
 
@@ -58,9 +59,9 @@ The current synthesis run is `run-20260701T021807Z`:
 Phase 3 `accepted.jsonl` is candidate synthesis output. It is not final training
 data until Phase 4 quality has run.
 
-## Quality Snapshot
+# Quality Snapshot
 
-The current quality run is `quality-20260707T024506Z`:
+The current quality run is `quality-20260708T064057Z`:
 
 | Status | Pairs |
 |---|---:|
@@ -72,9 +73,9 @@ The current quality run is `quality-20260707T024506Z`:
 For the shortened deadline, the package-eligible set is filtered plus review
 rows. Rejected rows remain ineligible.
 
-## Packaging Snapshot
+# Packaging Snapshot
 
-The current package is `package-20260707T075641Z`:
+The active GLM training view is `package-20260716T053818Z`:
 
 | Split | Records |
 |---|---:|
@@ -92,14 +93,64 @@ Response style mix:
 | Canonical reasoning | 4,152 | 0.7526 |
 | Direct answer | 1,365 | 0.2474 |
 
-Filtered rows keep the canonical `<reasoning>` response. Review rows are
-converted to direct-answer examples by stripping the reasoning block.
+Canonical synthesis and quality data remains unchanged. In the GLM-only view,
+filtered rows map `<reasoning>` to `<think>`, review rows keep only the final
+answer, and literal `[GENERAL KNOWLEDGE]` annotations are removed. Preflight
+confirmed zero retained annotations/canonical tags, zero unbalanced `<think>`
+blocks, zero empty responses, and EOS-terminated rendered examples.
 
-## Current Risk Acceptance
+# Training Snapshot
+
+The first LoRA SFT run is preserved as `train-20260714T025314Z`:
+
+| Field | Value |
+|---|---|
+| Base model | `unsloth/GLM-4.7-Flash` |
+| Method | Unsloth LoRA SFT with a 4-bit-loaded base model |
+| Training records | 4,414 |
+| Epochs / steps | 1 / 552 |
+| Final training loss | 0.95973044 |
+| Runtime | 38,018.77 seconds |
+| LoRA adapter | `data/finetune/glm47_flash_subset1/lora_adapter` |
+| Q4_K_M GGUF | `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf` |
+
+This artifact is rejected. The Web UI and direct-adapter greeting tests repeated
+content and role/template tokens and failed to emit EOS within 256 tokens. V2
+keeps the same LoRA/trainer hyperparameters but uses the cleaned package,
+explicit EOS rendering, 4,096-token preflight, corrected manifest serialization,
+and new output paths. V2 training has not completed yet.
+
+# Evaluation Snapshot
+
+`glm47-flash-base` completed all 68 benchmark cases using the local
+`gemma-4-31B-it-Q4_K_M.gguf` judge. The runner generated and judged each case
+sequentially and checkpointed all run outputs after every verdict.
+
+| Task | Cases | Exploratory Mean |
+|---|---:|---:|
+| AI/LLM ATLAS incident | 8 | 0.6125 |
+| Detection interpretation | 10 | 0.9600 |
+| Forensic artifact analysis | 8 | 0.8750 |
+| Incident report generation | 6 | 1.0000 |
+| IOC extraction | 10 | 0.7000 |
+| Reasoning, uncertainty, and grounding | 8 | 0.6250 |
+| Triage prioritization | 8 | 0.8750 |
+| TTP identification | 10 | 0.5100 |
+| **Overall** | **68** | **0.7588** |
+
+These values are diagnostic only. The scorecard records
+`judge_calibration_id: uncalibrated`, and every case is flagged for manual
+review by the current score builder. A `complete` run status means all cases
+were written; it does not make the judge calibrated or the score deployment
+evidence.
+
+# Current Risk Acceptance
 
 Review rows are included in Phase 5 to preserve enough training volume for the
 current deadline. This is a time-boxed risk acceptance, not a statement that
 the review queue has been fully adjudicated.
 
-Full-corpus synthesis, Hugging Face publishing, evaluation fixtures, and
-training automation are deferred.
+Full-corpus synthesis and Hugging Face publishing are deferred. The next gates
+are to complete v2 training, require EOS termination from the direct adapter,
+then finish judge calibration and rerun complete base and v2 tuned evaluations.
+Shepherd integration remains blocked until both gates pass.

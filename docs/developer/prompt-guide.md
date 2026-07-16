@@ -1,10 +1,15 @@
-# Prompt Guide
+<frontmatter>
+  pageNav: default
+  pageNavTitle: "On This Page"
+</frontmatter>
 
-## Purpose
+<h1 class="no-index">Prompt Guide</h1>
+
+# Purpose
 
 This guide explains how Phase 3 prompts are structured, how to review generated outputs, and how to safely iterate prompts without losing provenance.
 
-## Prompt Architecture
+# Prompt Architecture
 
 Prompt construction uses four layers:
 
@@ -27,7 +32,7 @@ Velociraptor is a special case: VQL is the valuable training signal, so `velocir
 
 Lossy source compactors append a shared note: `[Compacted source view: repeated or lower-priority blocks were omitted. Use only visible details as evidence.]`
 
-## Taxonomy Refs
+# Taxonomy Refs
 
 `PromptBuilder` renders a deterministic JSON list of one to three suggested taxonomy IDs into each prompt:
 
@@ -39,7 +44,7 @@ The full 57-ID taxonomy is not repeated in every prompt. The model should normal
 
 `PromptRecord` also stores the deterministic taxonomy refs. During Phase 3 validation, generated `category`, `difficulty`, `source_doc_id`, `source`, and `taxonomy_refs` are normalized from the prompt record before validation so model typos in provenance metadata do not reject otherwise valid pairs.
 
-## Canonical Response Format
+# Canonical Response Format
 
 All synthesized responses must use the canonical reasoning format:
 
@@ -56,7 +61,7 @@ Final practitioner-ready answer.
 
 Do not switch canonical data to `<think>`. A model-specific Phase 5 exporter may create a training view using `<think>` only if the training recipe requires it.
 
-## Grounding Contract
+# Grounding Contract
 
 The `grounding` field must match the response text:
 
@@ -66,7 +71,7 @@ The `grounding` field must match the response text:
 
 Phase 3 validators reject obvious tag/field mismatches: `source_only` with `[GENERAL KNOWLEDGE]`, and `source_plus_general` with no `[GENERAL KNOWLEDGE]` tag.
 
-## Prompt Review Checklist
+# Prompt Review Checklist
 
 Review dry-run prompts before API generation.
 
@@ -82,7 +87,7 @@ Review dry-run prompts before API generation.
 - [ ] Prompt explicitly bans invented IOCs, paths, hashes, users, hosts, and event records.
 - [ ] Output schema matches `synthesizers.schemas.InstructionPair`.
 
-## Pilot Review Rubric
+# Pilot Review Rubric
 
 Score each pilot pair before any future full-corpus generation or major prompt rerun.
 
@@ -96,7 +101,7 @@ Score each pilot pair before any future full-corpus generation or major prompt r
 | Uncertainty | Confidence and caveats are appropriate |  |
 | Thin-source handling | No padded forensic detail from sparse records |  |
 
-## Prompt Change Review Template
+# Prompt Change Review Template
 
 Use this table in a run note or pull request when prompt behavior changes. Do not use this guide as the prompt history log.
 
@@ -104,7 +109,7 @@ Use this table in a run note or pull request when prompt behavior changes. Do no
 |---|---|---|---|
 |  |  |  |  |
 
-## Common Failure Modes
+# Common Failure Modes
 
 | Failure | Likely Cause | Fix |
 |---|---|---|
@@ -124,7 +129,7 @@ Use this table in a run note or pull request when prompt behavior changes. Do no
 | Recoverable validation failures persist after first generation | Model missed reasoning link, caveat, ID-shape, grounding, or indicator rule | Runner retries once with validator feedback; review remaining rejects for prompt or validator changes |
 | Gemini high-demand `503 UNAVAILABLE` API errors | Temporary model capacity spike | API retry/backoff uses `max_retries`, initial delay, max delay, and jitter from `configs/synthesis.yaml`; rerun with `--skip-present` if needed |
 
-## Smoke Test Procedure
+# Smoke Test Procedure
 
 1. Pick one representative prompt.
 2. Run a one-prompt Gemini job.
@@ -136,7 +141,7 @@ Use this table in a run note or pull request when prompt behavior changes. Do no
 4. Confirm validators behave as expected.
 5. Fix prompt or validator issues before the full pilot.
 
-## Full Pilot Procedure
+# Full Pilot Procedure
 
 1. Render pilot prompts.
 2. Run pilot generation.
@@ -146,7 +151,7 @@ Use this table in a run note or pull request when prompt behavior changes. Do no
 6. Update prompt templates, source profiles, or pair caps.
 7. Re-run pilot if quality is below the selected gate.
 
-## Full Generation Rules
+# Full Generation Rules
 
 - Do not run full synthesis from an invalid raw corpus.
 - Do not run future full-corpus synthesis before smoke and pilot quality are acceptable.

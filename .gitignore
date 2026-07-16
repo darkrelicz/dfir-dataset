@@ -26,6 +26,4 @@ MANIFEST
 .ruff_cache/
 .pytest_cache/
 data/
-*.jsonl
-data/raw/.repos/
-data/raw/.cache/
+unsloth_compiled_cache/

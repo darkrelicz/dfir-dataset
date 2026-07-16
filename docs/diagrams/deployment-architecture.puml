@@ -12,7 +12,7 @@ cloud "GitHub" {
   component "GitHub Pages" as Pages
 }
 
-package "guides/" {
+package "docs/" {
   [MarkBind Markdown pages] as PagesSrc
   [site.json] as SiteJson
   [PlantUML .puml files] as Puml
@@ -22,9 +22,9 @@ package "guides/" {
 component "Node.js 22" as Node
 component "Java + Graphviz" as JavaGraphviz
 component "markbind build" as Build
-artifact "guides/_site" as SiteArtifact
+artifact "docs/_site" as SiteArtifact
 
-Maintainer --> Repo: push guides changes
+Maintainer --> Repo: push docs changes
 Repo --> Actions: workflow trigger
 Actions --> Node
 Actions --> JavaGraphviz
