@@ -1,0 +1,37 @@
+@startuml
+title Phase 6 LoRA Training And Promotion Gates
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant "scripts.finetune" as CLI
+participant "Dataset preflight" as Preflight
+database "Phase 5 package" as Package
+participant "Tokenizer" as Tokenizer
+participant "Unsloth + TRL" as Trainer
+database "checkpoints / adapter" as Artifacts
+participant "Direct-adapter smoke test" as Smoke
+database "GGUF export" as GGUF
+participant "Phase 6 evaluation" as Evaluation
+
+Maintainer -> CLI: finetune --config <versioned config>
+CLI -> Preflight: validate paths and package manifest
+Preflight -> Package: load train, validation, test, manifest
+Preflight --> CLI: counts and provenance
+CLI -> Tokenizer: render chat exactly once
+Tokenizer -> Tokenizer: append EOS; reject > max_length
+CLI -> Trainer: train response-only LoRA
+Trainer -> Package: read rendered train/validation text
+Trainer -> Artifacts: checkpoints, adapter, training manifest
+Maintainer -> Smoke: load direct adapter; bounded hello + DFIR prompts
+Smoke -> Artifacts: generate with EOS configured
+alt EOS and behavior gates pass
+  Smoke --> Maintainer: eligible for promotion
+  Maintainer -> GGUF: export/promote selected artifact
+  Maintainer -> Evaluation: run calibrated benchmark
+else loops, template leakage, or token cap
+  Smoke --> Maintainer: reject artifact and preserve for diagnosis
+end
+
+@enduml

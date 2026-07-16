@@ -16,6 +16,12 @@ Java. Non-sequence diagrams need Graphviz.
 
 Source: `docs/diagrams/pipeline-component.puml`
 
+# Phase 1 Taxonomy And Policy
+
+<puml src="../diagrams/phase1-taxonomy.puml" alt="Phase 1 taxonomy and policy relationships" width="950" />
+
+Source: `docs/diagrams/phase1-taxonomy.puml`
+
 # End-To-End Sequence
 
 <puml src="../diagrams/end-to-end-sequence.puml" alt="End-to-end sequence diagram" width="1000" />
@@ -57,6 +63,12 @@ Source: `docs/diagrams/packaging-sequence.puml`
 <puml src="../diagrams/phase6-evaluation-sequence.puml" alt="Sequential Phase 6 target generation, local judging, and checkpointing" width="1000" />
 
 Source: `docs/diagrams/phase6-evaluation-sequence.puml`
+
+# Phase 6 Training And Promotion
+
+<puml src="../diagrams/phase6-training-sequence.puml" alt="Phase 6 training and promotion gates" width="1000" />
+
+Source: `docs/diagrams/phase6-training-sequence.puml`
 
 # Guides Deployment
 

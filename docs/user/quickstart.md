@@ -5,9 +5,9 @@
 
 <h1 class="no-index">Quick Start</h1>
 
-# Python Environment
+# Install
 
-The repository is a Python 3.11+ data pipeline packaged with setuptools.
+From the repository root:
 
 ```bash
 python -m venv .venv
@@ -15,62 +15,88 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-The `pyproject.toml` entrypoints are:
+Python 3.11 or newer is required. Confirm that the scripts are available:
 
 ```bash
-dfir-collect
-dfir-synthesize
-dfir-quality
-dfir-package
-dfir-evaluate
-dfir-compare-evals
-dfir-train-lora
-```
-
-The module commands used throughout the existing docs are equivalent:
-
-```bash
-python -m scripts.collect_all
+python -m scripts.collect_all --list
 python -m scripts.synthesize --help
-python -m scripts.quality_filter
-python -m scripts.package_dataset
+python -m scripts.quality_filter --help
+python -m scripts.package_dataset --help
+python -m scripts.finetune --help
 python -m scripts.run_evaluation --help
 python -m scripts.compare_evaluations --help
-python -m scripts.finetune --help
 ```
 
-# Current Training Inputs
+# Safe First Run
 
-The active GLM-specific package is already built locally:
+These checks do not call Gemini or start training:
 
 ```bash
+python -m scripts.collect_all --dry-run
+python -m scripts.synthesize validate-raw --raw-dir data/raw
+python -m scripts.synthesize render-prompts \
+  --mode pilot \
+  --limit 10 \
+  --raw-dir data/raw \
+  --output-dir data/synthesized/quickstart_preview
+```
+
+Inspect `data/synthesized/quickstart_preview/prompts.jsonl`. If the source data
+is not present locally, run `python -m scripts.collect_all` first; collection
+downloads public data and updates local Git caches.
+
+# Current Dataset
+
+The active, already packaged v2 training view is:
+
+```text
 data/packaged/glm47_dfir_v2/train.jsonl
 data/packaged/glm47_dfir_v2/validation.jsonl
 data/packaged/glm47_dfir_v2/test.jsonl
+data/packaged/glm47_dfir_v2/packaging_manifest.json
 ```
 
-These files are prepared for v2 retraining. The earlier
-`train-20260714T025314Z` artifact is retained for diagnosis but rejected because
-it looped and did not emit EOS. Use the package manifest and training manifest
-to verify provenance. Phase 6 uses only the local judge configured under
-`scoring.judge`; calibrate and freeze it before producing comparison
-scorecards.
+Do not use the earlier v1 adapter or GGUF: both failed the EOS termination gate.
+See [Current Project State](../current-state/index.md) before training or
+evaluation.
 
-Historical diagnostic artifacts include:
+# Run A Stage
 
-```text
-data/finetune/glm47_flash_lora_dfir_subset1/training_manifest.json
-data/finetune/glm47_flash_subset1/lora_adapter/
-data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf
-data/evaluation/glm47-flash-base/
+The shortest useful commands are:
+
+```bash
+# Phase 2: all sources
+python -m scripts.collect_all
+
+# Phase 3: validate only
+python -m scripts.synthesize validate-raw --raw-dir data/raw
+
+# Phase 4: current candidates
+python -m scripts.quality_filter
+
+# Phase 5: active GLM view
+python -m scripts.package_dataset \
+  --config configs/packaging_glm47_v2.yaml \
+  --quality-dir data/quality/gemini_subset_1 \
+  --output-dir data/packaged/glm47_dfir_v2
+
+# Phase 6: active v2 training configuration (DGX only)
+python -m scripts.finetune --config configs/finetune_glm47flash_v2.yaml
 ```
 
-The existing base scorecard is complete but uncalibrated. Its `0.7588` score is
-useful for pipeline smoke testing only, not as the final comparison baseline.
+The [Running The Pipeline](running-the-pipeline.md) page explains inputs,
+outputs, API requirements, resumption behavior, and release gates for every
+command.
 
-# Guides Site
+# Gemini Secret
 
-The guides site is self-contained under `docs/`.
+Only Phase 3 generation needs an external API key. Put
+`GEMINI_API_KEY=<value>` in the ignored `.env` file or process environment. Do
+not commit it. Prompt rendering and every Phase 2/4/5 operation run without it.
+
+# Documentation Site
+
+The docs use MarkBind:
 
 ```bash
 cd docs
@@ -78,25 +104,5 @@ npm install
 npm run serve
 ```
 
-A static build writes HTML to `docs/_site/`:
-
-```bash
-cd docs
-npm run build
-```
-
-PlantUML diagrams require Java. Non-sequence diagrams also require Graphviz.
-The GitHub Actions workflow installs both for Pages deployment.
-
-# Important Secrets
-
-`GEMINI_API_KEY` is required only when running Phase 3 generation against the
-Gemini API. The runner reads it from `.env` or the process environment. Do not
-commit real API keys.
-
-# Immediate Next Step
-
-Run v2 training with `configs/finetune_glm47flash_v2.yaml`, then require EOS from
-a bounded direct-adapter smoke test. After that gate, finalize benchmark review,
-calibrate the judge, and run new complete base and v2 tuned evaluations. Do not
-use the rejected v1 artifact or exploratory base score for a final claim.
+Run `npm run build` for a static build in `docs/_site/`. PlantUML rendering
+requires Java; non-sequence UML diagrams also require Graphviz.

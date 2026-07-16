@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+title Phase 1 Taxonomy And Policy Relationships
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor Maintainer
+artifact "docs/reference/taxonomy.md\n57 human-readable artifact categories" as TaxonomyDoc
+artifact "configs/quality.yaml\nIDs, coverage, quality policy" as QualityConfig
+artifact "configs/task_categories.yaml\n5 behaviors and target distribution" as TaskConfig
+artifact "configs/source_profiles.yaml\nsource/category eligibility" as SourceProfiles
+artifact "synthesizers/prompts/categories/\nbehavior instructions" as CategoryPrompts
+component "Phase 3 Planner" as Planner
+component "Phase 3 + 4 Validators" as Validators
+component "Coverage Audits" as Audits
+database "Held-out benchmark" as Benchmark
+
+Maintainer --> TaxonomyDoc: define subject coverage
+Maintainer --> QualityConfig: mirror stable IDs and coverage
+Maintainer --> TaskConfig: define learned behaviors
+Maintainer --> SourceProfiles: map sources to behaviors
+Maintainer --> CategoryPrompts: specify response behavior
+
+TaxonomyDoc .. QualityConfig: human/machine views must agree
+QualityConfig --> Validators
+QualityConfig --> Audits
+TaskConfig --> Planner
+TaskConfig --> Audits
+SourceProfiles --> Planner
+CategoryPrompts --> Planner
+Planner --> Benchmark: informs coverage, never supplies training cases
+
+@enduml

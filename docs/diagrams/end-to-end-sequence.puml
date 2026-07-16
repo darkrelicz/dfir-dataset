@@ -60,7 +60,7 @@ Packager -> Packager: strip reasoning for review rows
 Packager -> Packager: split by source_doc_id
 Packager -> PackageOut: train, validation, test, manifest
 
-Maintainer -> TrainCLI: finetune --config configs/finetune_glm47flash.yaml
+Maintainer -> TrainCLI: finetune --config configs/finetune_glm47flash_v2.yaml
 TrainCLI -> Trainer: load package and training config
 Trainer -> PackageOut: read train and validation JSONL
 Trainer -> FinetuneOut: checkpoints, adapter, GGUF, training manifest

@@ -10,8 +10,9 @@ instruction data and evaluating a locally fine-tuned model. It is designed to
 be extended with additional source collectors while preserving shared
 collection, synthesis, quality, packaging, training, and evaluation stages.
 
-* If you are interested in using this project, head over to the [_Quick Start section of the_ **User Guide**](user/quickstart.md).
-* If you are interested about developing this project, the [**Developer Guide**](developer/index.md) is a good place to start.
+* To run the Python scripts, start with the [**User Guide**](user/index.md).
+* To change a pipeline phase, start with the [**Phase Maintenance Guide**](developer/phase-maintenance.md).
+* For the complete handover snapshot, read [**Current State**](current-state/index.md).
 
 # Current Snapshot
 

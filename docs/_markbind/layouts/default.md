@@ -45,6 +45,7 @@
   * [Training And Release]({{baseUrl}}/user/training-and-release.html)
   * [Handover Guide]({{baseUrl}}/user/handover.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
+  * [Phase Maintenance]({{baseUrl}}/developer/phase-maintenance.html)
   * [Architecture]({{baseUrl}}/developer/architecture.html)
   * [Data Contracts]({{baseUrl}}/developer/data-contracts.html)
   * [Collectors]({{baseUrl}}/developer/collectors.html)

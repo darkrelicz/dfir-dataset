@@ -14,9 +14,9 @@ package "Configuration" {
   [task_categories.yaml] as TaskConfig
   [synthesis.yaml] as SynthesisConfig
   [quality.yaml] as QualityConfig
-  [packaging.yaml] as PackagingConfig
+  [packaging_glm47_v2.yaml] as PackagingConfig
   [evaluation.yaml] as EvaluationConfig
-  [finetune_glm47flash.yaml] as FinetuneConfig
+  [finetune_glm47flash_v2.yaml] as FinetuneConfig
 }
 
 package "Phase 2 Collection" {
