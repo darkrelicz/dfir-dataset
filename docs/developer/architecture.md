@@ -15,7 +15,7 @@ server, or model-serving runtime.
 | Language | Python 3.11+ |
 | Packaging | `pyproject.toml` with setuptools |
 | CLI entrypoints | `dfir-collect`, `dfir-synthesize`, `dfir-quality`, `dfir-package`, `dfir-evaluate`, `dfir-compare-evals`, `dfir-train-lora` |
-| Core libraries | `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python` |
+| Core libraries | `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`, `unsloth`, `transformers`, `trl` |
 
 ## Component View
 
@@ -24,6 +24,10 @@ server, or model-serving runtime.
 ## End-To-End Sequence
 
 <puml src="../diagrams/end-to-end-sequence.puml" alt="End-to-end sequence diagram" width="1000" />
+
+## Phase 6 Evaluation Sequence
+
+<puml src="../diagrams/phase6-evaluation-sequence.puml" alt="Sequential Phase 6 target generation, judging, and checkpointing" width="1000" />
 
 ## Main Packages
 
@@ -108,6 +112,9 @@ and the run manifest are atomically refreshed. Partial checkpoints are marked
 IOC, and ranking tasks request structured JSON for inspectability, but the judge
 now evaluates both formatting and content.
 
+These checkpoints do not implement resume. A new invocation starts the case
+loop from the beginning and does not hydrate prior predictions or scores.
+
 The judge receives the answer key, scoring rubric, and `acceptable_variants`.
 Each variant is a complete independently valid alternative. Its structured
 verdict includes a bounded score, concise reason, optional criterion scores, and
@@ -116,7 +123,10 @@ a range-validated matched-variant index.
 `evaluation.comparison` accepts only judge scorecards and requires matching
 benchmark fingerprint, case IDs, judge protocol/configuration fingerprint, and
 calibration ID. Per-task regression gates prevent a headline improvement from
-hiding a material task regression.
+hiding a material task regression. `calibration_id` is reproducibility metadata,
+not an implemented calibration procedure. The comparison currently checks that
+IDs are present and equal but does not reject the placeholder value
+`uncalibrated`; release policy must enforce a real ID until code does.
 
 `scripts.finetune` launches local Unsloth LoRA SFT using
 `configs/finetune_glm47flash.yaml`.
@@ -132,6 +142,15 @@ data/packaged/gemini_subset_1/
 It contains 5,517 records split into 4,414 train, 552 validation, and 551 test
 rows. The split has no `source_doc_id` overlap.
 
+The first training run is `train-20260714T025314Z`. It completed one epoch and
+552 steps with final training loss `0.95973044`, then exported a LoRA adapter
+and Q4_K_M GGUF under `data/finetune/glm47_flash_subset1/`.
+
+The exploratory base evaluation `data/evaluation/glm47-flash-base/` completed
+68/68 cases with overall normalized judge score `0.7588`. Its calibration ID is
+`uncalibrated`, so the result verifies the runner and provides diagnostic cases
+but is not a final baseline. Calibrated base and tuned runs remain outstanding.
+
 ## Important Architectural Decisions
 
 * Raw documents remain complete. Prompt-cost reduction happens only during
@@ -145,3 +164,5 @@ rows. The split has no `source_doc_id` overlap.
   decision.
 * Phase 6 benchmark cases are held out from synthesis/training and must be
   manually reviewed before baseline scoring.
+* A complete evaluation checkpoint is not necessarily calibrated evidence;
+  comparison claims require the same frozen, non-placeholder calibration ID.

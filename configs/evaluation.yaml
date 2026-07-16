@@ -10,12 +10,12 @@ prompt:
 
 generation:
   mode: openai_compatible
-  model: "GLM-4.7-Flash-Q4_K_M.gguf"
+  model: "finedtuned-GLM-4.7-Flash-Q4_K_M.gguf"
   base_url: "http://127.0.0.1:8080/v1"
   temperature: 1.0
   top_p: 0.95
   max_tokens: 36000
-  timeout_seconds: 1800
+  timeout_seconds: 3600
   structured_outputs:
     # Applied only to TTP, IOC, and ranking tasks. Rubric tasks stay free-form.
     enabled: true

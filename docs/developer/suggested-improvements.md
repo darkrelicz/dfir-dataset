@@ -12,8 +12,9 @@ implementation facts.
 
 ### Finalize Phase 6 Benchmark
 
-The evaluator and training scaffolding now exist. Finalize and manually review
-the held-out benchmark cases before fine-tuning.
+The evaluator is implemented, the first LoRA run is complete, and an
+uncalibrated 68-case base run is complete. Finish manual benchmark review and
+record the review owner/date before using it for a calibrated model comparison.
 
 Suggested coverage:
 
@@ -25,9 +26,10 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-Run baseline scoring, post-training scoring, and comparison with the Phase 6
-commands. Record results in `project_state/TRAINING_RECIPE.md` and update
-`project_state/TODO.md`.
+After judge calibration, rerun base scoring, score the existing tuned artifact,
+and compare them with the Phase 6 commands. Do not retrain solely because the
+first training run happened before calibration. Record reviewed results in
+`project_state/TRAINING_RECIPE.md` and update `project_state/TODO.md`.
 
 ### Calibrate And Freeze The Local Judge
 
@@ -52,6 +54,40 @@ enough human labels exist, fit a monotonic ordinal or isotonic score mapping on
 the calibration split; never fit that mapping on the benchmark used for the
 base-versus-tuned claim. Keep periodic human audits because a calibrated judge
 is still a measurement model, not ground truth.
+
+### Repair Training-Manifest Reproducibility
+
+Before another training run:
+
+* serialize the actual `finetune` mapping instead of the nonexistent `training`
+  key;
+* use YAML `null` for `loftq_config`, not the string `None`;
+* record the actual GGUF output path produced by Unsloth;
+* capture the code commit, package versions, CUDA/runtime details, artifact
+  hashes, validation metrics, and selected checkpoint.
+
+The existing artifacts remain usable, but the
+`data/finetune/glm47_flash_lora_dfir_subset1/training_manifest.json` file is not
+a complete standalone reproducibility record without the config and filesystem
+inspection.
+
+### Enforce Evaluation Release Preconditions
+
+Make `evaluation.comparison` reject placeholder calibration IDs such as
+`uncalibrated`, not merely missing or different IDs. Add a calibration-release
+manifest if the ID alone is too weak to bind human agreement results, judge
+artifacts, prompt version, server build, and quantization hashes.
+
+Also add explicit resume semantics to `evaluation.runner`. The current atomic
+checkpoints preserve completed work for inspection but a rerun starts at case
+one and can overwrite the same output directory. Resume should validate the
+benchmark and judge fingerprints, load completed case IDs, and continue only
+missing cases.
+
+Finally, make empty target content a configurable retry or case failure. The
+OpenAI-compatible client currently logs the condition and sends an empty answer
+to the judge, including when all completion tokens were consumed as hidden
+reasoning.
 
 ### Expand Tests
 

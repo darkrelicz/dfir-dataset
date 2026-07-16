@@ -130,7 +130,9 @@ data/packaged/gemini_subset_1/packaging_manifest.json
 
 ## 7. Phase 6
 
-Phase 6 now has evaluator and training scaffolding.
+Phase 6 has a working local training runner, a judge-only evaluator, and guarded
+base-versus-tuned comparison. The first LoRA run and one exploratory base-model
+evaluation are complete; calibrated evaluation is not.
 
 First finalize a held-out benchmark:
 
@@ -138,14 +140,20 @@ First finalize a held-out benchmark:
 evaluation/benchmark/
 ```
 
-Run baseline evaluation before fine-tuning. The evaluator always writes one
-local-judge scorecard. It can score an existing prediction JSONL:
+For future training cycles, run a calibrated baseline before fine-tuning. The
+first recorded LoRA run predates a calibrated baseline, so evaluate its existing
+base and tuned artifacts retrospectively with the same frozen judge.
+
+The evaluator always writes one local-judge scorecard. It can replay an existing
+prediction JSONL keyed by `case_id`:
 
 ```bash
 python -m scripts.run_evaluation \
   --config configs/evaluation.yaml \
   --cases evaluation/benchmark \
-  --predictions data/evaluation/glm47_flash_base_predictions.jsonl \
+  --mode prediction_file \
+  --predictions data/evaluation/<predictions>.jsonl \
+  --run-id <run_id> \
   --model-label glm47_flash_base
 ```
 
@@ -157,8 +165,15 @@ python -m scripts.run_evaluation \
   --config configs/evaluation.yaml \
   --cases evaluation/benchmark \
   --mode openai_compatible \
+  --run-id <run_id> \
   --model-label glm47_flash_base
 ```
+
+Set `generation.base_url` to the OpenAI API root, for example
+`http://127.0.0.1:8080/v1`, not the full `/chat/completions` route. The client
+appends `/chat/completions`. Configure a different API root under
+`scoring.judge.base_url`; target and judge are separate clients and model
+servers.
 
 The runner processes cases sequentially. It generates one target response,
 sends that response to the judge, checkpoints every output artifact, and
@@ -166,7 +181,34 @@ advances only after the verdict and checkpoint succeed. An interrupted run
 therefore retains all fully evaluated cases with `in_progress` status. The final
 case changes the scorecard and manifest status to `complete`.
 
-Launch training only after the baseline manifest exists:
+Checkpointing is crash preservation, not resume support. A rerun does not load
+completed cases from the existing output directory; reusing the same run ID can
+replace the saved files starting with the first new checkpoint. Use a new run
+ID, or deliberately replay a preserved prediction file, until explicit resume
+logic is implemented.
+
+Each checkpoint atomically replaces:
+
+```text
+predictions.jsonl
+scorecards/llm_judge/case_results.jsonl
+scorecards/llm_judge/scores.json
+evaluation_manifest.json
+```
+
+There is no statistical scorer and no parallel case runner. Objective TTP, IOC,
+and ranking prompts request structured target JSON for inspectability, while
+the local judge evaluates both content and format. The judge receives the full
+answer key, rubric, and `acceptable_variants`; each inner variant is a complete
+independently valid alternative. Invalid judge JSON is retried according to
+`scoring.judge.validation_retries`.
+
+The target client logs an empty `content` response but does not retry or fail
+the case; the judge will score the empty candidate. Inspect target
+`finish_reason`, content length, and token limits in logs, especially for models
+that can spend their full token budget in `reasoning_content`.
+
+The recorded training command is:
 
 ```bash
 python -m scripts.finetune \
@@ -185,6 +227,15 @@ python -m scripts.compare_evaluations \
 The comparison accepts only LLM-judge scorecards and rejects a changed judge
 protocol/configuration fingerprint or calibration ID. Qualitatively review
 critical regressions before deployment.
+
+The current comparison code does not reject the literal calibration ID
+`uncalibrated`; it only requires the two IDs to be present and equal. Treat the
+non-placeholder calibration requirement as a release policy until that check is
+enforced in code.
+
+The current `data/evaluation/glm47-flash-base/` run is complete at `0.7588`, but
+its calibration ID is `uncalibrated`. Do not compare it as a final baseline.
+Calibrate and freeze the judge, then produce new complete base and tuned runs.
 
 Record the exact training configuration, checkpoint paths, and results in
 `project_state/TRAINING_RECIPE.md` and `project_state/TODO.md`.

@@ -98,8 +98,9 @@
 ## Training And Hosting
 
 - Dataset hosting is local-only on DGX Sparks storage, not HuggingFace Hub, unless this decision changes.
-- Training is planned as LoRA SFT via Unsloth on GLM-4.7-Flash.
+- Training uses LoRA SFT via Unsloth on GLM-4.7-Flash. The first run completed on 2026-07-14 as `train-20260714T025314Z`.
 - Baseline evaluation must run before fine-tuning, including AI/LLM-specific ATLAS cases.
+- The first LoRA run completed before a calibrated baseline was available. Preserve that chronology rather than rewriting it: evaluate the existing base and tuned artifacts retrospectively with the same calibrated judge before making any improvement claim. Future training runs should restore the baseline-first gate.
 - Phase 6 benchmark cases must be held out from the synthesis/training pipeline and manually reviewed before scoring.
 - Phase 6 uses only a separately served local LLM judge. The statistical scorer and evaluator-selection CLI have been removed; legacy statistical scorecards are not accepted by the comparison command.
 - TTP, IOC, and ranked-action prompts still request structured JSON to make target outputs more inspectable, but formatting and content are now evaluated by the judge rather than a deterministic format gate. Report and reasoning answers remain free-form.
@@ -109,7 +110,7 @@
 - After every successful case verdict, Phase 6 atomically refreshes predictions, case results, aggregate scores, and the evaluation manifest. Partial artifacts are marked `in_progress`; only the final checkpoint is marked `complete` and eligible for comparison.
 - Baseline and tuned comparisons must use the same benchmark fingerprint, case IDs, frozen judge model/quantization, judge protocol, inference configuration, and calibration ID. The scorecard records fingerprints and the comparison command rejects mismatches. Aggregate improvement does not override an unacceptable task-level regression or severe DFIR behavior regression.
 - The Phase 6 evaluator supports local OpenAI-compatible endpoints and prediction-file replay so baseline and tuned runs can be produced by the same scoring path even if model serving changes.
-- The Phase 6 training script keeps Unsloth, Transformers, TRL, datasets, torch, accelerate, and bitsandbytes as DGX environment requirements rather than core package dependencies.
+- `pyproject.toml` currently declares Unsloth, Transformers, and TRL as project dependencies. The `training-cuda130` extra carries the pinned Torch/fsspec constraints, and the matching CUDA Torch wheel must be installed first on DGX. This documents the current implementation, even though a future packaging cleanup may move the entire training stack behind an optional extra.
 - Phase 5 packaging is implemented as `dataset_packaging/`, not `packaging/`, to avoid shadowing Python's common third-party `packaging` library.
 - The current Phase 5 package consumes Phase 4 `filtered.jsonl` plus time-box-accepted `review_queue.jsonl`, excludes `rejected.jsonl`, splits by `source_doc_id`, and preserves quality provenance in record metadata.
 - To match the Unsloth GLM guidance within the available data, filtered rows remain reasoning examples and review rows are converted to direct-answer examples by stripping canonical `<reasoning>` blocks. This yields an approximately 75/25 reasoning/direct mix without additional synthesis cost.

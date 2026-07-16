@@ -108,6 +108,46 @@ Defines Phase 5 packaging:
 
 The current packaging policy is local-only and does not publish to Hugging Face.
 
+## `configs/evaluation.yaml`
+
+Defines the Phase 6 target-generation and local-judge clients:
+
+* `benchmark.cases_path` selects a benchmark JSONL file or directory;
+* `output.base_dir` owns generated evaluation runs;
+* `prompt` defines the target system message and context wrapper;
+* `generation.mode` selects `openai_compatible` generation or prediction-file
+  replay;
+* `generation.model`, sampling fields, token limit, timeout, and
+  `structured_outputs` configure the evaluated model;
+* `scoring.judge` configures the separately served judge model, JSON response
+  format, validation retries, inference overrides, and calibration ID.
+
+Both `base_url` values must be API roots such as
+`http://127.0.0.1:8080/v1`. `OpenAICompatibleClient` appends
+`/chat/completions`. The evaluator has no statistical mode and no evaluator
+selector; a valid `scoring.judge` mapping is required.
+
+The complete judge mapping contributes to the scorecard fingerprint. Once a
+judge has been calibrated, freeze its model, quantization, chat template,
+sampling fields, request overrides, and `calibration_id` for both base and tuned
+runs.
+
+## `configs/finetune_glm47flash.yaml`
+
+Defines the local Unsloth LoRA SFT run:
+
+* packaged train, validation, test, and manifest paths;
+* GLM-4.7-Flash loading and sequence settings;
+* LoRA target modules, rank, alpha, checkpointing, and seed;
+* `finetune` trainer arguments, response-only masking, and checkpoint policy;
+* adapter, merged-model, and GGUF export choices.
+
+The current run loads the base model in 4-bit, trains one epoch with BF16
+trainer precision, and exports an adapter plus Q4_K_M GGUF. The current training
+runner incorrectly serializes `config.get("training", {})` into its manifest
+even though trainer settings live under `finetune`; fix that mismatch before
+using a future manifest as a complete reproducibility record.
+
 ## Prompt Templates
 
 Prompt assets live under `synthesizers/prompts/`:

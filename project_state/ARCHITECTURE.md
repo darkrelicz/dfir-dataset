@@ -9,7 +9,8 @@ This repository is a Python dataset pipeline. The primary product code is not a 
 - Language: Python 3.11+
 - Packaging: `pyproject.toml` with setuptools
 - CLI entrypoints: `dfir-collect`, `dfir-synthesize`, `dfir-quality`, `dfir-package`, `dfir-evaluate`, `dfir-compare-evals`, and `dfir-train-lora`
-- Core libraries: `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`
+- Main libraries: `pydantic`, `pyyaml`, `jsonlines`, `google-genai`, `requests`, `gitpython`, `rich`, `tqdm`, `mitreattack-python`, `unsloth`, `transformers`, and `trl`
+- CUDA-specific training environment: `training-cuda130` adds the pinned Torch/fsspec constraints after installing the matching CUDA Torch wheel.
 - Tests are configured for `pytest`; focused judge-response, sequential-runner, and comparison tests live under `tests/`.
 
 ## Pipeline Layout
@@ -32,7 +33,7 @@ This repository is a Python dataset pipeline. The primary product code is not a 
 - `scripts/quality_filter.py`: Thin CLI for running the Phase 4 quality filter against a Phase 3 `accepted.jsonl`; configures `INFO` stage logs by default.
 - `dataset_packaging/`: Phase 5 local dataset packaging for Unsloth/GLM SFT. It reads Phase 4 filtered and review rows directly, converts configured rows into direct-answer examples, splits by `source_doc_id`, and writes chat JSONL plus a small packaging manifest.
 - `scripts/package_dataset.py`: Thin CLI for running Phase 5 packaging from `configs/packaging.yaml`; configures `INFO` stage logs by default.
-- `evaluation/`: Phase 6 benchmark schemas, structured-output parsing, local LLM judging, OpenAI-compatible and prediction-file model clients, sequential orchestration, judge scorecard output, and before/after comparison helpers.
+- `evaluation/`: Phase 6 benchmark schemas, structured-output parsing, local LLM judging, OpenAI-compatible and prediction-file model clients, sequential orchestration, atomic per-case checkpoints, judge scorecard output, and before/after comparison helpers.
 - `scripts/run_evaluation.py`: Thin CLI for running the Phase 6 evaluator against a local OpenAI-compatible model endpoint or a prediction JSONL file.
 - `scripts/compare_evaluations.py`: Thin CLI for comparing baseline and fine-tuned Phase 6 score outputs.
 - `scripts/finetune.py`: Phase 6 Unsloth LoRA SFT runner for GLM-4.7-Flash.
@@ -116,7 +117,18 @@ The Phase 4 quality gate consumes Phase 3 `accepted.jsonl` and writes `filtered.
 
 Phase 5 packaging splits by `source_doc_id` to prevent leakage and exports local chat-formatted JSONL for training. Under the shortened timeline, the package input is the union of Phase 4 `filtered.jsonl` and `review_queue.jsonl`; the packager does not read or recount `rejected.jsonl`. The current package at `data/packaged/gemini_subset_1/` contains `train.jsonl`, `validation.jsonl`, `test.jsonl`, and `packaging_manifest.json`. Packaged records use a `messages` array with system/user/assistant turns plus metadata preserving `quality_status`, `quality_issues`, `quality_score`, source, category, difficulty, taxonomy refs, and source document IDs. The package keeps filtered rows as `<reasoning>` examples and converts review rows into direct-answer examples by stripping the reasoning block, yielding an approximately 75/25 reasoning/direct mix for Unsloth GLM-4.7-Flash training. Hugging Face dataset-card and upload work are intentionally not implemented for the current local training path.
 
-Phase 6 validates LoRA SFT results on DGX Sparks and integrates the best checkpoint into Shepherd. The evaluator can call a local OpenAI-compatible endpoint or replay prediction JSONL keyed by `case_id`. It writes only `scorecards/llm_judge/`; the former statistical scorer has been removed. TTP, typed IOC, and ranked-action tasks request structured JSON for inspectability, while report and reasoning tasks remain free-form. For each case, the target response is generated first, then the separately configured local judge receives the full answer key, rubric, and `acceptable_variants` and returns a validated JSON verdict. After each verdict, the runner atomically replaces predictions, case results, aggregate scores, and the manifest with a new checkpoint. Partial checkpoints are marked `in_progress`, and comparison rejects them. Scorecards fingerprint the judge protocol/configuration and record a calibration ID. Comparison requires matching benchmark content, case IDs, judge fingerprint, and calibration ID, and rejects excessive per-task regressions. The training runner consumes the Phase 5 package and writes `training_manifest.json`; actual training requires a DGX environment with Unsloth, Transformers v5, TRL, datasets, torch, accelerate, and bitsandbytes installed.
+The first Phase 6 training run, `train-20260714T025314Z`, completed one epoch/552 steps against package `package-20260708T071253Z`. Checkpoints and `training_manifest.json` live under `data/finetune/glm47_flash_lora_dfir_subset1/`; the configured export paths place the final LoRA adapter under `data/finetune/glm47_flash_subset1/lora_adapter/`, and the generated Q4_K_M file is under `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/`. The manifest records training loss about 0.9597 and runtime about 38,019 seconds. It also exposes current reproducibility defects: the manifest's `training` object is empty because the runner reads a nonexistent `training` key instead of `finetune`; `loftq_config` was serialized as the string `None`; and the actual GGUF directory has an added `_gguf` suffix not reflected in the configured path.
+
+Phase 6 evaluation validates the trained artifact before any Shepherd integration. The evaluator can call a local OpenAI-compatible endpoint or replay prediction JSONL keyed by `case_id`. It writes only `scorecards/llm_judge/`; the former statistical scorer has been removed. TTP, typed IOC, and ranked-action tasks request structured JSON for inspectability, while report and reasoning tasks remain free-form. For each case, the target response is generated first, then the separately configured local judge receives the full answer key, rubric, and `acceptable_variants` and returns a validated JSON verdict. After each verdict, the runner atomically replaces `predictions.jsonl`, judge `case_results.jsonl`, aggregate `scores.json`, and `evaluation_manifest.json`. Partial checkpoints are marked `in_progress`, and comparison rejects them. Checkpointing preserves completed work for inspection but does not resume it; a new invocation starts from case one. Scorecards fingerprint the full judge configuration and protocol and record a calibration ID; comparison requires matching benchmark content, case IDs, judge fingerprint, and calibration ID. It does not currently reject the literal placeholder `uncalibrated`, so the non-placeholder requirement remains release policy rather than an enforced code gate. The base-model run `data/evaluation/glm47-flash-base/` completed 68/68 cases at an exploratory overall score of 0.7588. It identifies the judge as uncalibrated, so it is not final comparison evidence. `pyproject.toml` declares Unsloth/Transformers/TRL and the `training-cuda130` extra carries CUDA-specific Torch/fsspec constraints.
+
+### Phase 6 evaluation artifact contract
+
+- `data/evaluation/<run>/predictions.jsonl`: target responses for successfully judged cases only.
+- `data/evaluation/<run>/scorecards/llm_judge/case_results.jsonl`: bounded per-case scores, judge reasons/criteria, acceptable-variant match metadata, and manual-review flags.
+- `data/evaluation/<run>/scorecards/llm_judge/scores.json`: rolling aggregate, completed/planned counts, benchmark fingerprint, judge protocol/config fingerprint, calibration ID, and `run_status`.
+- `data/evaluation/<run>/evaluation_manifest.json`: authoritative run metadata, completed case IDs, planned/completed counts, scorecard paths/configuration, and top-level `in_progress` or `complete` status.
+
+Atomic replacement keeps these four files mutually consistent at each completed-case boundary. It preserves completed work after interruption but does not automatically resume a run; prediction-file replay remains the available recovery path.
 
 ## Remaining Pipeline Gates
 
@@ -124,8 +136,8 @@ The Gemini client uses `models.generate_content` with `response_mime_type="appli
 
 The remaining workflow is intentionally gated around Phase 6 training and later stages:
 
-1. Phase 6 benchmark: finalize and review the tracked benchmark files under `evaluation/benchmark/` before any model run.
-2. Phase 6 baseline: run `python -m scripts.run_evaluation` against untrained GLM-4.7-Flash before fine-tuning.
-3. Phase 6 fine-tuning: train LoRA SFT on GLM-4.7-Flash with Unsloth using `data/packaged/gemini_subset_1/`.
-4. Phase 6 post-training evaluation: rerun the same evaluation suite, compare with `python -m scripts.compare_evaluations`, and integrate into Shepherd only if results improve.
+1. Phase 6 benchmark and calibration: finish manual benchmark review, build the human-scored calibration/holdout sets, and freeze a versioned judge configuration.
+2. Phase 6 base evaluation: complete a calibrated `python -m scripts.run_evaluation` run against untrained GLM-4.7-Flash; exploratory uncalibrated outputs do not satisfy this gate.
+3. Phase 6 tuned evaluation: serve the existing tuned Q4_K_M artifact and rerun the identical benchmark with the frozen judge.
+4. Phase 6 comparison: compare only complete scorecards with `python -m scripts.compare_evaluations`, review critical cases manually, and integrate into Shepherd only if results improve.
 5. Future full-corpus synthesis: if budget returns, rerun a smoke test and reviewed pilot before launching the larger full-generation job. Treat its `accepted.jsonl` as candidate data until Phase 4 passes again.

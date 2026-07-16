@@ -17,7 +17,8 @@ Recommended reading order:
 5. [Synthesis](synthesis.md)
 6. [Validation And Quality](validation-quality.md)
 7. [Packaging](packaging.md)
-8. [Extension Points](extension-points.md)
+8. [Architecture: Phase 6 Evaluation And Training](architecture.md#phase-6-evaluation-and-training)
+9. [Extension Points](extension-points.md)
 
 The [Diagrams](diagrams.md) page renders every PlantUML diagram from
 `docs/diagrams/`.

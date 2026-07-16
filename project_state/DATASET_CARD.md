@@ -2,7 +2,9 @@
 
 ## Purpose
 
-Use this template when packaging a filtered dataset for training or evaluation. 
+Use this template when documenting a packaged training dataset. Phase 6
+evaluation cases are held out separately under `evaluation/benchmark/` and must
+not be drawn from these packaged splits.
 
 Run-specific dataset cards should be generated or filled from:
 
@@ -10,7 +12,7 @@ Run-specific dataset cards should be generated or filled from:
 - `data/synthesized/<run>/generation_manifest.json`
 - `data/quality/<run>/quality_manifest.json`
 - `data/packaged/<run>/packaging_manifest.json`
-- `docs/COVERAGE_MAP.md`
+- `project_state/COVERAGE_MAP.md`
 
 ## Dataset Summary
 
@@ -22,7 +24,8 @@ Run-specific dataset cards should be generated or filled from:
 | Owner |  |
 | Intended use | Fine-tuning Shepherd's DFIR reasoning layer |
 | Hosting | Local DGX Sparks filesystem unless changed |
-| Canonical reasoning format | `<reasoning>` |
+| Canonical source reasoning format | `<reasoning>` |
+| Packaged response styles | Reasoning for filtered rows; direct answer for accepted review rows |
 | Source synthesis run |  |
 | Quality run |  |
 | Packaging run |  |
@@ -41,7 +44,7 @@ Describe what the packaged dataset is designed to teach the model:
 
 Fill this table from the raw collection manifest and quality manifest.
 
-| Source | Raw Docs | Filtered Pairs | License/Attribution Notes | Included |
+| Source | Raw Docs | Package-Eligible Pairs | License/Attribution Notes | Included |
 |---|---:|---:|---|---|
 |  |  |  |  |  |
 
@@ -65,7 +68,7 @@ Canonical packaged record:
 ```json
 {
   "id": "dfir-000001",
-  "conversations": [
+  "messages": [
     {
       "role": "system",
       "content": "You are Shepherd, a DFIR AI assistant..."
@@ -88,7 +91,11 @@ Canonical packaged record:
     "taxonomy_refs": [],
     "source_doc_id": "",
     "source": "",
-    "quality_score": 0.0
+    "quality_status": "filtered",
+    "quality_issues": [],
+    "quality_score": {},
+    "reasoning_style": "reasoning",
+    "response_transform": "none"
   }
 }
 ```
@@ -143,7 +150,7 @@ Record which controls were applied:
 This dataset is intended for:
 
 - Local supervised fine-tuning experiments for Shepherd
-- Evaluation of DFIR task behavior before and after fine-tuning
+- Designing separate held-out evaluations without copying packaged examples
 - Reproducible dataset regeneration and extension
 
 This dataset is not intended for:
@@ -182,4 +189,8 @@ Record exact commands used for the packaged run:
   --raw-dir data/raw \
   --output-dir data/quality/<run> \
   --log-level INFO
+.venv/bin/python -m scripts.package_dataset \
+  --config configs/packaging.yaml \
+  --quality-dir data/quality/<run> \
+  --output-dir data/packaged/<run>
 ```

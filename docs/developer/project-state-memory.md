@@ -24,10 +24,15 @@ Generated manifests are canonical for run-specific counts:
 * `data/synthesized/<run>/generation_manifest.json`
 * `data/quality/<run>/quality_manifest.json`
 * `data/packaged/<run>/packaging_manifest.json`
+* `data/evaluation/<run>/evaluation_manifest.json`
+* `data/evaluation/<run>/scorecards/llm_judge/scores.json`
+* `data/finetune/<run>/training_manifest.json`
 
 ## Operating Guides
 
-These files are reusable guides or templates, not live status pages:
+These files are reusable guides or templates rather than the canonical phase
+status pages. Some are filled with a current run snapshot when the guide itself
+requires it:
 
 * `project_state/HANDOVER.md`
 * `project_state/ADDING_SOURCES.md`

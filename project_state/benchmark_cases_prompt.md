@@ -31,11 +31,13 @@
       }
     ],
     "must_include": [
-      "backward-compatible short alias for current deterministic scorer"
+      "concise high-priority answer cue for the LLM judge"
     ],
-    "acceptable_variants": [],
+    "acceptable_variants": [
+      ["A2", "A1", "A3", "A4", "A5"]
+    ],
     "must_not_include": [
-      "backward-compatible short forbidden phrase"
+      "concise forbidden claim for the LLM judge"
     ],
     "gold_labels": {}
   },
@@ -67,13 +69,12 @@ For each important overclaim or error, create a `forbidden_concepts` entry:
 - `aliases`: 2-5 short bad-claim paraphrases.
 - `description`: why this would be wrong.
 
-Keep `must_include` and `must_not_include` populated for backward compatibility
-with the current deterministic scorer:
+Keep `must_include` and `must_not_include` as concise judge-facing summaries:
 
-- `must_include` should contain one short representative alias from each
+- `must_include` may contain one short representative cue from each critical
   required concept.
-- `must_not_include` should contain one short representative alias from each
-  forbidden concept.
+- `must_not_include` may contain one short representative forbidden claim.
+- These fields are evidence for the LLM judge, not substring-match rules.
 
 Keep structured labels in `gold_labels` whenever possible:
 
@@ -82,7 +83,8 @@ Keep structured labels in `gold_labels` whenever possible:
 - Ordered action IDs or labels for triage ranking.
 - Telemetry, artifacts, platforms, and detection concepts for rubric cases.
 
-The evaluator may require structured model outputs for objective tasks:
+The evaluator requests structured model outputs for objective tasks so the
+judge can inspect labels separately from prose:
 
 - TTP cases: `{"techniques": [...], "answer": "..."}`.
 - IOC cases: `{"iocs": [{"type": "...", "value": "..."}], "answer": "..."}`.
@@ -94,7 +96,9 @@ natural language so the benchmark still measures analyst-facing response quality
 Rubric scoring should reward atomic evidence coverage, limitations, next pivots,
 and avoidance of overclaims. The local judge receives each complete
 `acceptable_variants` entry as an independently valid alternative. Judge scores
-still need calibration and human review before final Phase 6 claims.
+still need calibration and human review before final Phase 6 claims. The
+`scoring.metric` field describes the benchmark objective inherited by the cases;
+all current Phase 6 scores are produced by the local LLM judge.
 
 ## Prompts
 
@@ -110,7 +114,8 @@ Each case must include:
 - a model-facing prompt;
 - any needed evidence/context;
 - an expected answer key with `required_concepts`, `forbidden_concepts`,
-  backward-compatible `must_include` / `must_not_include`, and `gold_labels`;
+  concise `must_include` / `must_not_include` judge cues, `acceptable_variants`,
+  and `gold_labels`;
 - scoring guidance;
 - tags;
 - notes for a human reviewer.
@@ -121,8 +126,8 @@ For rubric-scored cases, write concept-style answer keys:
 - Use `required_concepts` for ideas a correct answer must cover.
 - Use `forbidden_concepts` for overclaims, hallucinations, or wrong inferences.
 - Put short aliases in each concept instead of full prose sentences.
-- Mirror one short alias per concept into `must_include` / `must_not_include`
-  for backward compatibility with substring-based scoring.
+- Use `must_include` / `must_not_include` only as concise judge-facing summaries;
+  the evaluator does not perform substring scoring.
 
 Return JSONL only, one JSON object per line, using this schema:
 {...schema...}
@@ -140,8 +145,9 @@ Requirements:
 - Include expected ATT&CK technique IDs in gold_labels.techniques.
 - Include required_concepts for evidence links, such as specific command lines or artifacts.
 - Include forbidden_concepts for common overclaims.
-- Keep must_include and must_not_include as short backward-compatible aliases.
-- Scoring metric: F1 over technique IDs, plus explanation quality notes.
+- Keep must_include and must_not_include as short judge-facing cues.
+- Benchmark objective label: technique selection plus evidence quality. The
+  current evaluator uses the local LLM judge, not deterministic F1.
 
 Return JSONL only.
 
@@ -157,7 +163,9 @@ Requirements:
 - Include normalized expected indicators in gold_labels.iocs with type and value.
 - Include forbidden_concepts and must_not_include for false positives.
 - Include required_concepts for normalization or classification requirements when useful.
-- Scoring metric: precision, recall, and F1.
+- Benchmark objective label: indicator correctness and completeness. The
+  current evaluator uses the local LLM judge, not deterministic precision,
+  recall, or F1.
 
 Return JSONL only.
 
@@ -174,7 +182,9 @@ Requirements:
 - Include acceptable_variants for equivalent ordering when reasonable.
 - Include required_concepts for the reasoning behind the highest-priority actions.
 - Include forbidden_concepts for destructive, slow, or unsupported recommendations when relevant.
-- Scoring metric: NDCG@5.
+- Benchmark objective label: ranked-action quality. The current evaluator uses
+  the local LLM judge and must consider the primary order plus every complete
+  `acceptable_variants` ordering.
 
 Return JSONL only.
 
@@ -197,8 +207,8 @@ Requirements:
   required telemetry, key fields, false positives, and tuning or validation points.
 - Include forbidden_concepts for common wrong claims such as requiring the wrong
   telemetry source, claiming the rule proves compromise, or ignoring allowlists.
-- Keep must_include and must_not_include populated with short representative aliases.
-- Scoring metric: rubric accuracy out of 5.
+- Keep must_include and must_not_include populated with short judge-facing cues.
+- Judge rubric: interpretation accuracy out of 5.
 
 Return JSONL only.
 
@@ -217,8 +227,8 @@ Requirements:
   meaning, limitations, corroborating evidence, and next pivots.
 - Include forbidden_concepts for overconfident conclusions such as treating one
   artifact as proof of maliciousness, operator identity, or non-execution.
-- Keep must_include and must_not_include populated with short representative aliases.
-- Scoring metric: rubric accuracy out of 5.
+- Keep must_include and must_not_include populated with short judge-facing cues.
+- Judge rubric: artifact-analysis accuracy out of 5.
 
 Return JSONL only.
 
@@ -234,8 +244,8 @@ Requirements:
 - Include at least 1 false-positive or benign-admin case.
 - Include required_concepts for required report sections and evidence-grounded conclusions.
 - Include forbidden_concepts for unsupported attribution, inflated impact, or invented facts.
-- Keep must_include and must_not_include populated with short representative aliases.
-- Scoring metric: report quality rubric from 1-5.
+- Keep must_include and must_not_include populated with short judge-facing cues.
+- Judge rubric: report quality from 1-5.
 
 Return JSONL only.
 
@@ -249,8 +259,8 @@ Requirements:
 - Include incomplete logs, conflicting timestamps, missing host context, partial command lines, and ambiguous alerts.
 - Include required_concepts for uncertainty statements, evidence boundaries, and required corroboration.
 - Include forbidden_concepts for unsupported claims, certainty inflation, and invented evidence.
-- Keep must_include and must_not_include populated with short representative aliases.
-- Scoring metric: reasoning quality rubric from 1-5.
+- Keep must_include and must_not_include populated with short judge-facing cues.
+- Judge rubric: reasoning and grounding quality from 1-5.
 
 Return JSONL only.
 
@@ -272,7 +282,7 @@ Requirements:
 - Include gold_labels.atlas_techniques where appropriate.
 - Include required_concepts for evidence-based risk, likely ATLAS or ATT&CK-style behavior, evidence to collect, and containment.
 - Include forbidden_concepts for hype, unsupported attribution, or claiming model compromise without evidence.
-- Keep must_include and must_not_include populated with short representative aliases.
-- Scoring metric: mixed rubric out of 5.
+- Keep must_include and must_not_include populated with short judge-facing cues.
+- Judge rubric: mixed AI/LLM incident quality out of 5.
 
 Return JSONL only.

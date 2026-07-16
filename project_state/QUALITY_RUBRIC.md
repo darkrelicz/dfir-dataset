@@ -16,9 +16,9 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 
 | Output | Purpose |
 |---|---|
-| `filtered.jsonl` | Pairs accepted for packaging |
+| `filtered.jsonl` | Pairs accepted without row-level issues |
 | `rejected.jsonl` | Pairs rejected with reasons |
-| `review_queue.jsonl` | Pairs that need manual or AI-assisted review |
+| `review_queue.jsonl` | Pairs that need manual or AI-assisted review; the current package includes them only through explicit time-boxed risk acceptance |
 | `quality_manifest.json` | Run metadata, counts, distributions, and audits |
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample for manual rubric scoring |
 

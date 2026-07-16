@@ -5,7 +5,7 @@
 
 # Current Project State
 
-This page reflects the latest repository state inspected on 2026-07-14. The
+This page reflects the latest repository state inspected on 2026-07-16. The
 generated manifests remain the authoritative record for run-specific counts.
 
 ## Phase Status
@@ -17,7 +17,8 @@ generated manifests remain the authoritative record for run-specific counts.
 | Phase 3 synthesis | Complete for reduced subset | `data/synthesized/gemini_subset_1/` |
 | Phase 4 quality | Complete by time-boxed acceptance | `data/quality/gemini_subset_1/` |
 | Phase 5 packaging | Complete for local training path | `data/packaged/gemini_subset_1/` |
-| Phase 6 evaluation/training | Evaluator implemented; baseline pending review | `evaluation/`, `configs/evaluation.yaml`, `configs/finetune_glm47flash.yaml` |
+| Phase 6 training | First LoRA SFT run complete | `data/finetune/glm47_flash_lora_dfir_subset1/training_manifest.json` |
+| Phase 6 evaluation | Exploratory base run complete; calibrated comparison pending | `data/evaluation/glm47-flash-base/` |
 
 ## Raw Corpus
 
@@ -95,12 +96,59 @@ Response style mix:
 Filtered rows keep the canonical `<reasoning>` response. Review rows are
 converted to direct-answer examples by stripping the reasoning block.
 
+## Training Snapshot
+
+The first LoRA SFT run is `train-20260714T025314Z`:
+
+| Field | Value |
+|---|---|
+| Base model | `unsloth/GLM-4.7-Flash` |
+| Method | Unsloth LoRA SFT with a 4-bit-loaded base model |
+| Training records | 4,414 |
+| Epochs / steps | 1 / 552 |
+| Final training loss | 0.95973044 |
+| Runtime | 38,018.77 seconds |
+| LoRA adapter | `data/finetune/glm47_flash_subset1/lora_adapter` |
+| Q4_K_M GGUF | `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf` |
+
+The current training manifest has reproducibility defects that must be fixed
+before another run: its `training` mapping is empty because the runner reads the
+wrong config key, `loftq_config` was serialized as the string `"None"`, and the
+configured GGUF directory differs from the actual `_gguf` output directory.
+
+## Evaluation Snapshot
+
+`glm47-flash-base` completed all 68 benchmark cases using the local
+`gemma-4-31B-it-Q4_K_M.gguf` judge. The runner generated and judged each case
+sequentially and checkpointed all run outputs after every verdict.
+
+| Task | Cases | Exploratory Mean |
+|---|---:|---:|
+| AI/LLM ATLAS incident | 8 | 0.6125 |
+| Detection interpretation | 10 | 0.9600 |
+| Forensic artifact analysis | 8 | 0.8750 |
+| Incident report generation | 6 | 1.0000 |
+| IOC extraction | 10 | 0.7000 |
+| Reasoning, uncertainty, and grounding | 8 | 0.6250 |
+| Triage prioritization | 8 | 0.8750 |
+| TTP identification | 10 | 0.5100 |
+| **Overall** | **68** | **0.7588** |
+
+These values are diagnostic only. The scorecard records
+`judge_calibration_id: uncalibrated`, and every case is flagged for manual
+review by the current score builder. A `complete` run status means all cases
+were written; it does not make the judge calibrated or the score deployment
+evidence.
+
 ## Current Risk Acceptance
 
 Review rows are included in Phase 5 to preserve enough training volume for the
 current deadline. This is a time-boxed risk acceptance, not a statement that
 the review queue has been fully adjudicated.
 
-Full-corpus synthesis and Hugging Face publishing are deferred. Phase 6
-benchmark finalization, baseline scoring, real DGX training, post-training
-scoring, and Shepherd integration remain active next actions.
+Full-corpus synthesis and Hugging Face publishing are deferred. The next gate
+is to finish benchmark review, adjudicate a separate human-scored judge
+calibration set, assign a non-placeholder calibration ID, and rerun complete
+base and tuned evaluations with the frozen judge. Shepherd integration remains
+blocked until that comparison passes both the overall and task-regression gates
+and receives qualitative review.

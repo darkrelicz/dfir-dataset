@@ -143,3 +143,51 @@ The current package format is `messages_jsonl`.
 | `generation_manifest.json` | `synthesizers.runner` | Prompt/generation run summary. |
 | `quality_manifest.json` | `quality.runner` | Quality counts, distributions, and audits. |
 | `packaging_manifest.json` | `dataset_packaging.runner` | Split counts, response styles, and leakage check. |
+| `evaluation_manifest.json` | `evaluation.runner` | Evaluation status, benchmark identity, target identity, case progress, and scorecard paths. |
+| `training_manifest.json` | `scripts.finetune` | Dataset provenance, model/LoRA/export settings, and trainer result. |
+
+## Phase 6 BenchmarkCase
+
+Defined in `evaluation/schemas.py`. Each held-out case contains:
+
+* stable `case_id`, `task_type`, and `difficulty`;
+* target `prompt` and optional incident `context`;
+* `expected_answer` concepts, exclusions, gold labels, and alternatives;
+* per-case metric, maximum points, and rubric;
+* optional tags and notes for human reviewers.
+
+`expected_answer.acceptable_variants` is a list of lists. Each inner list is one
+complete independently acceptable alternative, not another cumulative set of
+requirements. The answer key is sent only to the judge, never to the evaluated
+target model.
+
+## JudgeVerdict And CaseScore
+
+The local judge must return a JSON object containing a bounded `score`, a
+non-empty `reason`, optional numeric `criteria`, and an optional
+`matched_acceptable_variant`. The matched index is zero-based and must point to
+an existing acceptable variant.
+
+The evaluator converts that verdict into `CaseScore`:
+
+* evaluator is always `llm_judge`;
+* raw score is bounded to the case's `max_points`;
+* normalized score is raw score divided by maximum points;
+* details retain the judge model, reason, criteria, matched variant, and
+  validation-attempt count;
+* `manual_review_recommended` is currently true for every case.
+
+## Evaluation Outputs
+
+After every successful verdict, `evaluation.runner` atomically refreshes:
+
+| Output | Contract |
+|---|---|
+| `predictions.jsonl` | Target prediction and model metadata keyed by `case_id`. |
+| `scorecards/llm_judge/case_results.jsonl` | One validated `CaseScore` per completed case. |
+| `scorecards/llm_judge/scores.json` | Overall/task aggregates, case IDs, benchmark fingerprint, judge fingerprints, calibration ID, and run progress. |
+| `evaluation_manifest.json` | Run identity, target configuration identity, case progress, status, and scorecard summary. |
+
+Partial scorecards use `run_status: in_progress`; the last checkpoint changes
+them to `complete`. The comparison command accepts only complete compatible
+scorecards.

@@ -13,6 +13,7 @@ For run-specific values, read generated manifests and the state files named in `
 - `data/raw/collection_manifest.json`
 - `data/synthesized/<run>/generation_manifest.json`
 - `data/quality/<run>/quality_manifest.json`
+- `data/packaged/<run>/packaging_manifest.json`
 
 ## Coverage Inputs
 
@@ -25,6 +26,7 @@ Use these sources when preparing a run-specific coverage report:
 | `data/synthesized/<run>/rejected.jsonl` | Which prompts failed generation or Phase 3 validation |
 | `data/quality/<run>/quality_manifest.json` | Filtered/review/rejected counts, source/category/difficulty distributions, and taxonomy coverage |
 | `data/quality/<run>/review_queue.jsonl` | Fuzzy quality issues requiring human or AI-assisted adjudication |
+| `data/packaged/<run>/packaging_manifest.json` | Which filtered and explicitly accepted review rows reached each source-document-isolated split |
 | `configs/quality.yaml` | Valid taxonomy refs, coverage groupings, and dedupe/balance thresholds |
 | `configs/task_categories.yaml` | Target category and difficulty distributions |
 
@@ -34,7 +36,7 @@ Use consistent labels when summarizing coverage:
 
 | Label | Meaning |
 |---|---|
-| `strong` | Enough filtered examples for training and evaluation |
+| `strong` | Enough package-eligible examples for the intended training use |
 | `moderate` | Usable but shallow, imbalanced, or synthetic-heavy |
 | `thin` | Present but should not be treated as a model strength |
 | `absent` | No meaningful filtered coverage |
@@ -50,6 +52,11 @@ Check coverage along these dimensions:
 - ATT&CK/ATLAS mapping health: summarize valid technique IDs and mapping-related review/rejection pressure.
 - Review pressure: identify sources or categories that mostly route to `review_queue.jsonl`.
 - Rejection pressure: identify sources or categories with high hard-rejection rates.
+
+Training-data coverage and benchmark coverage are different questions. Use the
+quality and packaging manifests for training coverage; use the held-out cases
+under `evaluation/benchmark/` for behavior-evaluation coverage. Never infer that
+a strong judge score proves strong source coverage, or vice versa.
 
 ## Common Gaps To Watch
 

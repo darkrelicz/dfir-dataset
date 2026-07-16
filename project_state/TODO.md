@@ -2,10 +2,14 @@
 
 ## Immediate
 
-- Finalize and manually review the tracked benchmark files under `evaluation/benchmark/` before any baseline or tuned-model scoring.
-- Build and adjudicate a stratified human-scored calibration set, freeze the judge configuration, then run the local-judge baseline before LoRA SFT.
-- Use `data/packaged/gemini_subset_1/train.jsonl`, `validation.jsonl`, and `test.jsonl` as the current local Unsloth SFT inputs.
-- Record the exact Unsloth/GLM training configuration, checkpoint paths, and evaluation results once training starts.
+- Finish reviewing the 68 tracked benchmark cases under `evaluation/benchmark/` and record the review owner/date.
+- Treat the completed `data/evaluation/glm47-flash-base/` run and its 0.7588 overall score as exploratory because its scorecard says `judge_calibration_id: uncalibrated`; do not compare it as a final baseline.
+- Build and adjudicate a stratified human-scored calibration set, assign a non-placeholder `calibration_id`, freeze the judge configuration, and rerun complete calibrated base and tuned evaluations before comparison or integration.
+- Enforce the calibration policy in `evaluation.comparison`: reject placeholder IDs such as `uncalibrated`, not only missing or mismatched values.
+- Add fingerprint-safe evaluation resume support; current atomic checkpoints preserve completed cases but a rerun starts from case one and may overwrite the same run directory.
+- Add configurable retry/failure behavior for empty target `content`; the current client only warns and passes the empty answer to the judge.
+- Preserve the completed `train-20260714T025314Z` manifest, checkpoints, adapter, and GGUF under `data/finetune/`; record their hashes before promotion.
+- Fix training-manifest reproducibility before another training run: serialize the actual `finetune` config instead of the currently empty `training` block, use YAML `null` instead of the string `None` for `loftq_config`, and reconcile configured export paths with the actual `_gguf` output directory.
 - Treat full review-queue adjudication and manual spot-check completion as deferred quality hardening unless the timeline expands.
 
 ## Phase 3 Synthesis
@@ -47,11 +51,11 @@
 
 ## Phase 6 Training And Evaluation
 
-- Current status: judge-only evaluator implementation complete pending calibration and reviewed baseline execution. `evaluation/` implements sequential target generation and local LLM judging, atomic per-case checkpoints, structured target-output requests, acceptable-variant handling, prediction replay, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
+- Current status: the first LoRA SFT run is complete, while calibrated evaluation remains incomplete. `train-20260714T025314Z` reached one epoch/552 steps and exported adapter/GGUF artifacts under `data/finetune/`. The uncalibrated base-model evaluation under `data/evaluation/glm47-flash-base/` completed 68/68 cases at 0.7588 and is diagnostic only. `evaluation/` implements sequential target generation and local LLM judging, atomic per-case checkpoints, structured target-output requests, acceptable-variant handling, prediction replay, benchmark fingerprints, and guarded baseline-vs-tuned comparison.
 - `configs/evaluation.yaml` requires a separate local OpenAI-compatible judge endpoint. The former statistical evaluator modes and scorecard have been removed.
 - `scripts/finetune.py` and `configs/finetune_glm47flash.yaml` provide the local DGX/Unsloth LoRA SFT runner.
-- Run baseline evaluation before fine-tuning.
-- Fine-tune GLM-4.7-Flash with LoRA SFT via Unsloth after the baseline manifest exists.
+- Calibrate and freeze the judge, then run complete base and tuned evaluations. An `in_progress` or `uncalibrated` manifest does not satisfy the comparison gate.
+- Do not rerun training merely because the calibrated baseline was not completed first; evaluate the existing tuned artifact retrospectively against a calibrated base run, and only retrain if the reviewed result or reproducibility defects justify it.
 - Run post-training evaluation with the same benchmark and frozen judge, then compare with `scripts/compare_evaluations.py`.
 - Integrate into Shepherd only if the reviewed judge scorecard improves without unacceptable task-level or critical-behavior regressions.
 

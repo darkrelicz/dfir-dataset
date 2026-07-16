@@ -52,6 +52,12 @@ Source: `docs/diagrams/quality-activity.puml`
 
 Source: `docs/diagrams/packaging-sequence.puml`
 
+## Phase 6 Evaluation
+
+<puml src="../diagrams/phase6-evaluation-sequence.puml" alt="Sequential Phase 6 target generation, local judging, and checkpointing" width="1000" />
+
+Source: `docs/diagrams/phase6-evaluation-sequence.puml`
+
 ## Guides Deployment
 
 <puml src="../diagrams/deployment-architecture.puml" alt="Guides deployment architecture" width="900" />
