@@ -132,7 +132,7 @@ data/packaged/glm47_dfir_v2/packaging_manifest.json
 
 This model-specific view removes literal `[GENERAL KNOWLEDGE]` annotations,
 maps canonical `<reasoning>` blocks to `<think>`, and runs response/tag
-preflight. Canonical synthesis and quality data is not modified.
+validation. Canonical synthesis and quality data is not modified.
 
 # 7. Phase 6
 
@@ -223,8 +223,9 @@ python -m scripts.finetune \
 ```
 
 After training, load the direct adapter and run bounded greeting and DFIR
-prompts. Require EOS before exporting/serving the GGUF. Do not evaluate a model
-that reaches the token cap or emits role/template delimiters.
+prompts. Every successful run already saves the adapter and GGUF; require EOS
+before promoting or serving that GGUF. Do not evaluate a model that reaches the
+token cap or emits role/template delimiters.
 
 Then rerun the same evaluator against the fine-tuned model and compare:
 

@@ -1,5 +1,4 @@
 run:
-  name: "glm47flash_subset1_v2"
   seed: 1337
 
 dataset:
@@ -7,18 +6,10 @@ dataset:
   validation_path: "data/packaged/glm47_dfir_v2/validation.jsonl"
   test_path: "data/packaged/glm47_dfir_v2/test.jsonl"
   packaging_manifest_path: "data/packaged/glm47_dfir_v2/packaging_manifest.json"
-  text_field: "text"
 
 model:
   base_model: "unsloth/GLM-4.7-Flash"
-  max_seq_length: 4096
-  dtype: null
-  load_in_4bit: true
-  load_in_8bit: false
-  load_in_16bit: false
-  full_finetuning: false
-  trust_remote_code: true
-  unsloth_force_compile: false
+  max_seq_length: 8192
 
 lora:
   rank: 32
@@ -36,12 +27,9 @@ lora:
     - "out_proj"
   use_gradient_checkpointing: "unsloth"
   random_state: 1337
-  use_rslora: false
-  loftq_config: null
 
 finetune:
   output_dir: "data/finetune/glm47_flash_lora_dfir_v2"
-  max_length: 4096
   dataset_num_proc: 4
   per_device_train_batch_size: 1
   per_device_eval_batch_size: 1
@@ -59,18 +47,8 @@ finetune:
   save_steps: 250
   save_total_limit: 3
   bf16: true
-  fp16: false
-  report_to: "none"
-  train_on_responses_only: true
-  response_masking:
-    instruction_part: null
-    response_part: null
 
 export:
-  save_lora_adapter: true
   adapter_dir: "data/finetune/glm47_flash_v2/lora_adapter"
-  save_merged_16bit: false
-  merged_16bit_dir: "data/finetune/glm47_flash_v2/merged_16bit"
-  save_gguf: true
   gguf_dir: "data/finetune/glm47_flash_v2/gguf_q4_k_m"
   gguf_quantization: "q4_k_m"

@@ -11,8 +11,8 @@ database "Phase 5 package" as Package
 participant "Tokenizer" as Tokenizer
 participant "Unsloth + TRL" as Trainer
 database "checkpoints / adapter" as Artifacts
+database "GGUF artifact" as GGUF
 participant "Direct-adapter smoke test" as Smoke
-database "GGUF export" as GGUF
 participant "Phase 6 evaluation" as Evaluation
 
 Maintainer -> CLI: finetune --config <versioned config>
@@ -24,11 +24,12 @@ Tokenizer -> Tokenizer: append EOS; reject > max_length
 CLI -> Trainer: train response-only LoRA
 Trainer -> Package: read rendered train/validation text
 Trainer -> Artifacts: checkpoints, adapter, training manifest
+Trainer -> GGUF: save configured quantization
 Maintainer -> Smoke: load direct adapter; bounded hello + DFIR prompts
 Smoke -> Artifacts: generate with EOS configured
 alt EOS and behavior gates pass
   Smoke --> Maintainer: eligible for promotion
-  Maintainer -> GGUF: export/promote selected artifact
+  Maintainer -> GGUF: promote/serve generated artifact
   Maintainer -> Evaluation: run calibrated benchmark
 else loops, template leakage, or token cap
   Smoke --> Maintainer: reject artifact and preserve for diagnosis

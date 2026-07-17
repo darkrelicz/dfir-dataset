@@ -59,8 +59,8 @@ is still a measurement model, not ground truth.
 
 ## Complete Training Reproducibility Metadata
 
-The runner now serializes the effective `finetune` mapping and v2 uses YAML
-`null` for `loftq_config`. After v2 completes, still record:
+The runner serializes the effective training mappings. After a run completes,
+still record:
 
 * the actual GGUF output path produced by Unsloth;
 * capture the code commit, package versions, CUDA/runtime details, artifact

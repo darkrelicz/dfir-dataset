@@ -158,6 +158,12 @@ Unsloth must be imported before datasets/TRL/Transformers. The runner enforces
 this order because TRL's entropy metric cannot consume Unsloth fused-loss empty
 logits when the patch is missed.
 
+Every successful training run saves both the direct LoRA adapter and a GGUF
+artifact using the configured `gguf_dir` and `gguf_quantization`. There is no
+switch to skip GGUF creation. The post-training smoke test controls whether the
+generated GGUF may be promoted, served, or evaluated; it does not control
+whether the file is created.
+
 # Training Results
 
 | Metric | Value | Notes |

@@ -56,7 +56,7 @@
 - `configs/evaluation.yaml` requires a separate local OpenAI-compatible judge endpoint. The former statistical evaluator modes and scorecard have been removed.
 - `scripts/finetune.py` and `configs/finetune_glm47flash_v2.yaml` provide the active local DGX/Unsloth LoRA SFT path. Unsloth must import before TRL/Transformers so its fused-loss trainer patch is installed.
 - Calibrate and freeze the judge, then run complete base and tuned evaluations. An `in_progress` or `uncalibrated` manifest does not satisfy the comparison gate.
-- Do not evaluate or promote the v1 tuned artifact. Complete and smoke-test v2 first; only an EOS-terminating adapter is eligible for GGUF export and calibrated comparison.
+- Do not evaluate or promote the v1 tuned artifact. Every training run saves a GGUF, but only an EOS-terminating adapter makes that GGUF eligible for promotion and calibrated comparison.
 - Run post-training evaluation with the same benchmark and frozen judge, then compare with `scripts/compare_evaluations.py`.
 - Integrate into Shepherd only if the reviewed judge scorecard improves without unacceptable task-level or critical-behavior regressions.
 

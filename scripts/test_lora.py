@@ -3,7 +3,7 @@ import time
 import torch
 from unsloth import FastLanguageModel
 
-ADAPTER_PATH = "data/finetune/glm47_flash_subset1/lora_adapter"
+ADAPTER_PATH = "data/finetune/glm47_flash_v2/lora_adapter"
 MAX_SEQ_LENGTH = 4096
 MAX_NEW_TOKENS = 256
 

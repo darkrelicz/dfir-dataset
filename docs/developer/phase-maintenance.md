@@ -367,8 +367,9 @@ See [Packaging](packaging.md).
 ## Responsibility
 
 Training validates the Phase 5 inputs, renders each conversation exactly once,
-appends EOS, rejects overlength rows, performs Unsloth LoRA SFT, and optionally
-exports the adapter, merged model, and GGUF.
+appends EOS, rejects overlength rows, performs Unsloth LoRA SFT, and saves both
+the LoRA adapter and its configured GGUF quantization. These two artifacts are
+mandatory outputs of every successful training run.
 
 ## Files To Update
 
@@ -384,7 +385,7 @@ exports the adapter, merged model, and GGUF.
 1. Copy the last config to a new versioned file and isolate all output paths.
 2. Pin the exact package manifest and split files.
 3. Change one coherent factor at a time: data view, template/EOS handling,
-   LoRA parameters, optimizer schedule, or export format.
+   LoRA parameters, optimizer schedule, or GGUF quantization.
 4. Keep `unsloth` imported before datasets/TRL/Transformers inside the training
    path so its fused-loss patches install first.
 5. Preserve one-time chat rendering: after producing the text field, remove
@@ -405,7 +406,7 @@ python -m scripts.finetune --config configs/<new_finetune_config>.yaml
    or thinking/template delimiters.
 4. Run several representative DFIR prompts and inspect grounding, termination,
    and formatting.
-5. Only then export/promote GGUF and proceed to evaluation.
+5. Only then promote or serve the generated GGUF and proceed to evaluation.
 
 The current `scripts/test_lora.py` has a hard-coded v1 adapter path. Update or
 parameterize it before using it for v2; do not accidentally retest the rejected
