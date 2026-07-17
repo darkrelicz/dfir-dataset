@@ -122,8 +122,8 @@ Defines the Phase 6 target-generation and local-judge clients:
 * `benchmark.cases_path` selects a benchmark JSONL file or directory;
 * `output.base_dir` owns generated evaluation runs;
 * `prompt` defines the target system message and context wrapper;
-* `generation.mode` selects `openai_compatible` generation or prediction-file
-  replay;
+* `generation.mode` is exactly `openai_compatible` for target generation or
+  `prediction_file` for saved-answer replay;
 * `generation.model`, sampling fields, token limit, timeout, and
   `structured_outputs` configure the evaluated model;
 * `scoring.judge` configures the separately served judge model, JSON response
@@ -133,6 +133,9 @@ Both `base_url` values must be API roots such as
 `http://127.0.0.1:8080/v1`. `OpenAICompatibleClient` appends
 `/chat/completions`. The evaluator has no statistical mode and no evaluator
 selector; a valid `scoring.judge` mapping is required.
+
+Server-specific request fields belong only under `request_overrides`; the
+former `extra_body` alias is not supported.
 
 The complete judge mapping contributes to the scorecard fingerprint. Once a
 judge has been calibrated, freeze its model, quantization, chat template,

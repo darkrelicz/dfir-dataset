@@ -155,6 +155,13 @@ reuse them as final baseline or tuned evidence.
 The evaluator always writes one local-judge scorecard. It can replay an existing
 prediction JSONL keyed by `case_id`:
 
+```json
+{"case_id":"phase6-ai-atlas-001","prediction":"Candidate answer text"}
+```
+
+Use one row per selected benchmark case. The loader requires `prediction` and
+rejects duplicate case IDs; `response`, `output`, and `answer` are not aliases.
+
 ```bash
 python -m scripts.run_evaluation \
   --config configs/evaluation.yaml \
@@ -199,10 +206,13 @@ Each checkpoint atomically replaces:
 
 ```text
 predictions.jsonl
-scorecards/llm_judge/case_results.jsonl
-scorecards/llm_judge/scores.json
+scorecard/case_results.jsonl
+scorecard/scores.json
 evaluation_manifest.json
 ```
+
+`openai_compatible` and `prediction_file` are the only accepted generation mode
+names. Historical aliases such as `replay` and `predictions` are not accepted.
 
 There is no statistical scorer and no parallel case runner. Objective TTP, IOC,
 and ranking prompts request structured target JSON for inspectability, while
@@ -240,7 +250,7 @@ python -m scripts.compare_evaluations \
   --output-dir data/evaluation/comparisons/<comparison_name>
 ```
 
-The comparison accepts only LLM-judge scorecards and rejects a changed judge
+The comparison accepts only complete scorecards and rejects a changed judge
 protocol/configuration fingerprint or calibration ID. Qualitatively review
 critical regressions before deployment.
 

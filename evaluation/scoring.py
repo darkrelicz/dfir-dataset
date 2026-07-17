@@ -8,47 +8,28 @@ def build_case_score(
     case: BenchmarkCase,
     score: float,
     details: dict[str, Any],
-    *,
-    metric: str | None = None,
-    manual_review_recommended: bool = True,
 ) -> CaseScore:
     """Build one bounded LLM-judge score for a benchmark case."""
 
-    max_points = float(case.scoring.max_points or 5.0)
+    max_points = float(case.scoring.max_points)
     bounded_score = max(0.0, min(float(score), max_points))
     return CaseScore(
         case_id=case.case_id,
         task_type=case.task_type,
-        evaluator="llm_judge",
-        metric=metric or f"llm_judge:{case.scoring.metric}",
+        metric=case.scoring.metric,
         score=round(bounded_score, 4),
-        normalized_score=round(
-            bounded_score / max_points if max_points else 0.0,
-            4,
-        ),
+        normalized_score=round(bounded_score / max_points, 4),
         max_points=max_points,
         details=details,
-        manual_review_recommended=manual_review_recommended,
     )
 
 
 def aggregate_scores(
     scores: list[CaseScore],
     *,
-    benchmark_fingerprint: str | None = None,
+    benchmark_fingerprint: str,
 ) -> dict[str, Any]:
-    """Aggregate one judge scorecard without blending evaluator types."""
-
-    if not scores:
-        return {
-            "evaluator": "llm_judge",
-            "overall_normalized_score": 0.0,
-            "task_scores": {},
-            "case_ids": [],
-        }
-    evaluators = {score.evaluator for score in scores}
-    if evaluators != {"llm_judge"}:
-        raise ValueError("The scorecard may contain only llm_judge results")
+    """Aggregate the local judge scores for a non-empty benchmark subset."""
 
     by_task: dict[str, list[CaseScore]] = defaultdict(list)
     for score in scores:
@@ -60,19 +41,13 @@ def aggregate_scores(
         task_scores[task_type] = {
             "cases": len(task_cases),
             "mean_normalized_score": round(sum(normalized) / len(normalized), 4),
-            "manual_review_recommended": sum(
-                1 for case in task_cases if case.manual_review_recommended
-            ),
         }
 
     overall = sum(score.normalized_score for score in scores) / len(scores)
-    result = {
-        "evaluator": "llm_judge",
+    return {
         "overall_normalized_score": round(overall, 4),
         "task_scores": task_scores,
         "metric_counts": dict(Counter(score.metric for score in scores)),
         "case_ids": sorted(score.case_id for score in scores),
+        "benchmark_fingerprint": benchmark_fingerprint,
     }
-    if benchmark_fingerprint:
-        result["benchmark_fingerprint"] = benchmark_fingerprint
-    return result

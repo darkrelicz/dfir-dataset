@@ -2,7 +2,6 @@ import argparse
 import hashlib
 import json
 import logging
-import re
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -10,9 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from evaluation.judge import LocalLLMJudge, judge_reproducibility_metadata
-from evaluation.model_clients import build_client
+from evaluation.model_clients import EvaluationClient, build_client
 from evaluation.scoring import aggregate_scores
 from evaluation.schemas import BenchmarkCase, CaseScore, EvaluationManifest
+from evaluation.structured_output import structured_output_instruction
 from utils.io import (
     load_jsonl_rows,
     load_yaml,
@@ -49,7 +49,7 @@ def run_evaluation(args: argparse.Namespace) -> int:
 
     logger.info(
         "Starting Phase 6 evaluation: run_id=%s cases=%s output_dir=%s "
-        "model_label=%s model=%s mode=%s evaluator=llm_judge",
+        "model_label=%s model=%s mode=%s",
         run_id,
         cases_path,
         output_dir,
@@ -60,7 +60,10 @@ def run_evaluation(args: argparse.Namespace) -> int:
 
     stage_started = time.perf_counter()
     client = build_client(mode, generation_config, input_predictions_path)
-    judge = build_judge(scoring_config)
+    judge_config = scoring_config.get("judge")
+    if not isinstance(judge_config, dict):
+        raise ValueError("scoring.judge configuration is required for LLM judging")
+    judge = LocalLLMJudge(judge_config)
     log_stage_complete(logger, "initialized evaluation clients", stage_started)
 
     stage_started = time.perf_counter()
@@ -77,15 +80,15 @@ def run_evaluation(args: argparse.Namespace) -> int:
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    scorecard_manifest: dict[str, dict[str, Any]] = {}
+    scorecard_summary: dict[str, Any] = {}
 
     def checkpoint_outputs(
         completed_predictions: list[dict[str, Any]],
         completed_scores: list[CaseScore],
         is_complete: bool,
     ) -> None:
-        nonlocal scorecard_manifest
-        scorecard_manifest = write_evaluation_checkpoint(
+        nonlocal scorecard_summary
+        scorecard_summary = write_evaluation_checkpoint(
             output_dir=output_dir,
             predictions=completed_predictions,
             scores=completed_scores,
@@ -103,7 +106,7 @@ def run_evaluation(args: argparse.Namespace) -> int:
         )
 
     stage_started = time.perf_counter()
-    predictions, scores = evaluate_cases(
+    evaluate_cases(
         cases,
         client=client,
         judge=judge,
@@ -117,39 +120,29 @@ def run_evaluation(args: argparse.Namespace) -> int:
         logger,
         "completed prediction and scoring",
         stage_started,
-        f"cases={len(cases)} evaluator=llm_judge",
+        f"cases={len(cases)}",
     )
 
-    overall_score = scorecard_manifest["llm_judge"]["overall_normalized_score"]
+    overall_score = scorecard_summary["overall_normalized_score"]
     log_stage_complete(logger, "completed Phase 6 evaluation", overall_started)
     print(
         "Evaluation complete: "
-        f"cases={len(cases)}, llm_judge={overall_score:.4f}, output={output_dir}"
+        f"cases={len(cases)}, score={overall_score:.4f}, output={output_dir}"
     )
     return 0
-
-
-def build_judge(
-    scoring_config: dict[str, Any],
-) -> LocalLLMJudge:
-    judge_config = scoring_config.get("judge")
-    if not isinstance(judge_config, dict):
-        raise ValueError("scoring.judge configuration is required for LLM judging")
-    return LocalLLMJudge(judge_config)
 
 
 def evaluate_cases(
     cases: list[BenchmarkCase],
     *,
-    client: Any,
+    client: EvaluationClient,
     judge: LocalLLMJudge,
     prompt_config: dict[str, Any],
     generation_config: dict[str, Any],
     model_label: str,
     model_name: str,
-    on_case_complete: Callable[[list[dict[str, Any]], list[CaseScore], bool], None]
-    | None = None,
-) -> tuple[list[dict[str, Any]], list[CaseScore]]:
+    on_case_complete: Callable[[list[dict[str, Any]], list[CaseScore], bool], None],
+) -> None:
     """Generate and judge each benchmark case sequentially."""
 
     predictions: list[dict[str, Any]] = []
@@ -164,13 +157,31 @@ def evaluate_cases(
             case.task_type,
             case.scoring.metric,
         )
-        prediction = generate_prediction(
-            case,
-            client=client,
-            prompt_config=prompt_config,
-            generation_config=generation_config,
+        target_started = time.perf_counter()
+        logger.info(
+            "Starting target generation: case_id=%s task_type=%s metric=%s",
+            case.case_id,
+            case.task_type,
+            case.scoring.metric,
         )
-        score = judge_prediction(case, prediction, judge)
+        messages = build_messages(case, prompt_config, generation_config)
+        prediction = client.generate(case, messages)
+        log_stage_complete(
+            logger,
+            "finished target generation",
+            target_started,
+            f"case_id={case.case_id}",
+        )
+
+        judge_started = time.perf_counter()
+        logger.info("Starting LLM judgement: case_id=%s", case.case_id)
+        score = judge.score(case, prediction)
+        log_stage_complete(
+            logger,
+            "finished LLM judgement",
+            judge_started,
+            f"case_id={case.case_id}",
+        )
         predictions.append(
             {
                 "case_id": case.case_id,
@@ -181,57 +192,13 @@ def evaluate_cases(
             }
         )
         scores.append(score)
-        if on_case_complete is not None:
-            on_case_complete(predictions, scores, index == len(cases))
+        on_case_complete(predictions, scores, index == len(cases))
         log_stage_complete(
             logger,
             "finished case",
             case_started,
             f"case_id={case.case_id} progress={index}/{len(cases)}",
         )
-    return predictions, scores
-
-
-def generate_prediction(
-    case: BenchmarkCase,
-    *,
-    client: Any,
-    prompt_config: dict[str, Any],
-    generation_config: dict[str, Any],
-) -> str:
-    started = time.perf_counter()
-    logger.info(
-        "Starting target generation: case_id=%s task_type=%s metric=%s",
-        case.case_id,
-        case.task_type,
-        case.scoring.metric,
-    )
-    messages = build_messages(case, prompt_config, generation_config)
-    prediction = client.generate(case, messages)
-    log_stage_complete(
-        logger,
-        "finished target generation",
-        started,
-        f"case_id={case.case_id}",
-    )
-    return prediction
-
-
-def judge_prediction(
-    case: BenchmarkCase,
-    prediction: str,
-    judge: LocalLLMJudge,
-) -> CaseScore:
-    started = time.perf_counter()
-    logger.info("Starting LLM judgement: case_id=%s", case.case_id)
-    score = judge.score(case, prediction)
-    log_stage_complete(
-        logger,
-        "finished LLM judgement",
-        started,
-        f"case_id={case.case_id}",
-    )
-    return score
 
 
 def write_scorecard(
@@ -242,8 +209,8 @@ def write_scorecard(
     *,
     planned_case_count: int,
     is_complete: bool,
-) -> dict[str, dict[str, Any]]:
-    scorecard_dir = output_dir / "scorecards" / "llm_judge"
+) -> dict[str, Any]:
+    scorecard_dir = output_dir / "scorecard"
     case_results_path = scorecard_dir / "case_results.jsonl"
     scores_path = scorecard_dir / "scores.json"
     write_jsonl_atomic(
@@ -267,28 +234,25 @@ def write_scorecard(
     )
     write_json_atomic(scores_path, aggregate)
     return {
-        "llm_judge": {
-            "evaluator": "llm_judge",
-            "case_results_path": str(case_results_path),
-            "scores_path": str(scores_path),
-            "overall_normalized_score": aggregate["overall_normalized_score"],
-            "task_scores": aggregate["task_scores"],
-            "run_status": run_status,
-            "completed_case_count": len(scores),
-            "planned_case_count": planned_case_count,
-            "config": {
-                "model": judge_config.get("model"),
-                "base_url": judge_config.get("base_url"),
-                "temperature": judge_config.get("temperature", 0.0),
-                "top_p": judge_config.get("top_p", 1.0),
-                "max_tokens": judge_config.get("max_tokens"),
-                "timeout_seconds": judge_config.get("timeout_seconds"),
-                "response_format": judge_config.get("response_format"),
-                "request_overrides": judge_config.get("request_overrides", {}),
-                "validation_retries": judge_config.get("validation_retries", 1),
-                **judge_metadata,
-            },
-        }
+        "case_results_path": str(case_results_path),
+        "scores_path": str(scores_path),
+        "overall_normalized_score": aggregate["overall_normalized_score"],
+        "task_scores": aggregate["task_scores"],
+        "run_status": run_status,
+        "completed_case_count": len(scores),
+        "planned_case_count": planned_case_count,
+        "config": {
+            "model": judge_config.get("model"),
+            "base_url": judge_config.get("base_url"),
+            "temperature": judge_config.get("temperature", 0.0),
+            "top_p": judge_config.get("top_p", 1.0),
+            "max_tokens": judge_config.get("max_tokens"),
+            "timeout_seconds": judge_config.get("timeout_seconds"),
+            "response_format": judge_config.get("response_format"),
+            "request_overrides": judge_config.get("request_overrides", {}),
+            "validation_retries": judge_config.get("validation_retries", 1),
+            **judge_metadata,
+        },
     }
 
 
@@ -308,11 +272,11 @@ def write_evaluation_checkpoint(
     model_label: str,
     model_name: str,
     generation_mode: str,
-) -> dict[str, dict[str, Any]]:
+) -> dict[str, Any]:
     """Atomically refresh every run artifact after a completed case."""
 
     write_jsonl_atomic(output_dir / "predictions.jsonl", predictions)
-    scorecard_manifest = write_scorecard(
+    scorecard_summary = write_scorecard(
         output_dir,
         scores,
         benchmark_fingerprint,
@@ -331,11 +295,10 @@ def write_evaluation_checkpoint(
         model_label=model_label,
         model=model_name,
         generation_mode=generation_mode,
-        evaluator_mode="llm_judge",
         case_count=len(scores),
         case_ids=sorted(score.case_id for score in scores),
         benchmark_fingerprint=benchmark_fingerprint,
-        scorecards=scorecard_manifest,
+        scorecard=scorecard_summary,
     )
     write_json_atomic(
         output_dir / "evaluation_manifest.json",
@@ -348,7 +311,7 @@ def write_evaluation_checkpoint(
         manifest.status,
         output_dir,
     )
-    return scorecard_manifest
+    return scorecard_summary
 
 
 def write_json_atomic(path: Path, data: Any) -> None:
@@ -421,49 +384,5 @@ def build_messages(
         messages.append({"role": "system", "content": system_message})
     messages.append({"role": "user", "content": "\n\n".join(user_parts)})
     return messages
-
-
-def structured_output_instruction(
-    case: BenchmarkCase,
-    generation_config: dict[str, Any],
-) -> str | None:
-    config = generation_config.get("structured_outputs", {})
-    if not bool(config.get("enabled", True)):
-        return None
-    family = objective_output_family(case.scoring.metric)
-    if family == "technique_f1":
-        return (
-            "Output format: Return one JSON object with `techniques` as an array of "
-            "ATT&CK or ATLAS IDs and `answer` as your concise evidence-based explanation."
-        )
-    if family == "ioc_f1":
-        return (
-            "Output format: Return one JSON object with `iocs` as an array of objects "
-            "having `type` and `value`, plus `answer` as a concise explanation. Use "
-            "normalized, refanged indicator values."
-        )
-    if family == "ndcg":
-        return (
-            "Output format: Return one JSON object with `ranked_actions` as an ordered "
-            "array of action IDs and `answer` as your concise ranking rationale."
-        )
-    return None
-
-
-def objective_output_family(metric: str) -> str | None:
-    normalized = re.sub(r"[^a-z0-9]+", "_", metric.casefold()).strip("_")
-    if normalized in {"f1", "technique_f1", "attack_f1", "atlas_f1"}:
-        return "technique_f1"
-    if normalized in {"ioc_f1", "precision_recall", "precision_recall_f1"}:
-        return "ioc_f1"
-    if normalized.startswith("ndcg"):
-        return "ndcg"
-    return None
-
-
 def slug(value: str) -> str:
     return "".join(char.lower() if char.isalnum() else "_" for char in value).strip("_")
-
-
-def message_char_count(messages: list[dict[str, str]]) -> int:
-    return sum(len(message.get("content", "")) for message in messages)

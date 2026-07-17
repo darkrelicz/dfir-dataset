@@ -24,7 +24,7 @@ Generated manifests are canonical for run-specific counts:
 * `data/quality/<run>/quality_manifest.json`
 * `data/packaged/<run>/packaging_manifest.json`
 * `data/evaluation/<run>/evaluation_manifest.json`
-* `data/evaluation/<run>/scorecards/llm_judge/scores.json`
+* `data/evaluation/<run>/scorecard/scores.json`
 * `data/finetune/<run>/training_manifest.json`
 
 # Canonical Stable Documentation

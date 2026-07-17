@@ -112,7 +112,7 @@ before producing baseline and tuned scorecards; the comparison command rejects
 drift in these fields.
 
 Every successful verdict atomically refreshes `predictions.jsonl`,
-`scorecards/llm_judge/case_results.jsonl`, `scorecards/llm_judge/scores.json`,
+`scorecard/case_results.jsonl`, `scorecard/scores.json`,
 and `evaluation_manifest.json`. Do not treat an `in_progress` checkpoint as the
 baseline gate. A scorecard labeled `uncalibrated` is exploratory even if its run
 status is `complete`.

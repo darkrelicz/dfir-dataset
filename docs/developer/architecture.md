@@ -108,8 +108,8 @@ contract without mutating canonical inputs.
 
 `evaluation.runner` loads held-out benchmark cases and calls either a local
 OpenAI-compatible model endpoint or a prediction JSONL file. A separately
-configured local judge is mandatory, and the runner writes only
-`scorecards/llm_judge/`. Cases are processed sequentially: the target response
+configured local judge is mandatory, and the runner writes one scorecard under
+`scorecard/`. Cases are processed sequentially: the target response
 is generated, that response is judged, and only then does the runner advance to
 the next case. After every verdict, predictions, case results, aggregate scores,
 and the run manifest are atomically refreshed. Partial checkpoints are marked
@@ -125,13 +125,20 @@ Each variant is a complete independently valid alternative. Its structured
 verdict includes a bounded score, concise reason, optional criterion scores, and
 a range-validated matched-variant index.
 
-`evaluation.comparison` accepts only judge scorecards and requires matching
-benchmark fingerprint, case IDs, judge protocol/configuration fingerprint, and
-calibration ID. Per-task regression gates prevent a headline improvement from
-hiding a material task regression. `calibration_id` is reproducibility metadata,
-not an implemented calibration procedure. The comparison currently checks that
-IDs are present and equal but does not reject the placeholder value
-`uncalibrated`; release policy must enforce a real ID until code does.
+`evaluation.comparison` accepts complete scorecards and requires matching
+benchmark fingerprint, case IDs, task types, judge protocol/configuration
+fingerprint, and calibration ID. Per-task regression gates prevent a headline
+improvement from hiding a material task regression. `calibration_id` is
+reproducibility metadata, not an implemented calibration procedure. The
+comparison currently checks that IDs are present and equal but does not reject
+the placeholder value `uncalibrated`; release policy must enforce a real ID
+until code does.
+
+The evaluator exposes exactly two target-input modes: `openai_compatible` calls
+the target server, while `prediction_file` replays saved target answers. There
+are no alternate mode aliases or evaluator-selection fields. Existing
+uncalibrated runs under the former `scorecards/llm_judge/` layout are historical
+diagnostics and are not inputs to the current comparison command.
 
 `scripts.finetune` launches local Unsloth LoRA SFT. The active path uses
 `configs/finetune_glm47flash_v3.yaml`. It renders conversations once, appends

@@ -2,8 +2,52 @@ import json
 import re
 from typing import Any
 
+from evaluation.schemas import BenchmarkCase
+
 
 JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
+
+
+def structured_output_instruction(
+    case: BenchmarkCase,
+    generation_config: dict[str, Any],
+) -> str | None:
+    """Return the target response contract for objective benchmark tasks."""
+
+    config = generation_config.get("structured_outputs", {})
+    if not bool(config.get("enabled", True)):
+        return None
+    family = objective_output_family(case.scoring.metric)
+    if family == "technique_f1":
+        return (
+            "Output format: Return one JSON object with `techniques` as an array of "
+            "ATT&CK or ATLAS IDs and `answer` as your concise evidence-based explanation."
+        )
+    if family == "ioc_f1":
+        return (
+            "Output format: Return one JSON object with `iocs` as an array of objects "
+            "having `type` and `value`, plus `answer` as a concise explanation. Use "
+            "normalized, refanged indicator values."
+        )
+    if family == "ndcg":
+        return (
+            "Output format: Return one JSON object with `ranked_actions` as an ordered "
+            "array of action IDs and `answer` as your concise ranking rationale."
+        )
+    return None
+
+
+def objective_output_family(metric: str) -> str | None:
+    """Map current benchmark metrics to their structured response family."""
+
+    normalized = metric.casefold()
+    if normalized == "f1":
+        return "technique_f1"
+    if normalized == "precision_recall_f1":
+        return "ioc_f1"
+    if normalized == "ndcg@5":
+        return "ndcg"
+    return None
 
 
 def parse_json_object(text: str) -> dict[str, Any] | None:

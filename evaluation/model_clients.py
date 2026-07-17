@@ -51,12 +51,9 @@ class OpenAICompatibleClient:
         self.max_tokens = int(config.get("max_tokens", 1200))
         self.timeout = int(config.get("timeout_seconds", 180))
         self.response_format = normalize_response_format(config.get("response_format"))
-        request_overrides = config.get(
-            "request_overrides",
-            config.get("extra_body", {}),
-        )
+        request_overrides = config.get("request_overrides", {})
         if not isinstance(request_overrides, dict):
-            raise ValueError("request_overrides/extra_body must be a mapping")
+            raise ValueError("request_overrides must be a mapping")
         reserved = RESERVED_REQUEST_FIELDS.intersection(request_overrides)
         if reserved:
             raise ValueError(
@@ -204,14 +201,14 @@ def build_client(
     predictions_path: Path | None,
 ) -> EvaluationClient:
     normalized = mode.strip().lower()
-    if normalized in {"prediction_file", "predictions", "replay"}:
+    if normalized == "prediction_file":
         if predictions_path is None:
             raise ValueError(
                 "prediction_file mode requires --predictions or "
                 "generation.predictions_path in the evaluation config"
             )
         return PredictionFileClient(predictions_path)
-    if normalized in {"openai", "openai_compatible", "chat_completions"}:
+    if normalized == "openai_compatible":
         return OpenAICompatibleClient(config)
     raise ValueError(f"Unsupported evaluation generation mode: {mode}")
 
@@ -229,15 +226,13 @@ def load_prediction_file(path: Path) -> dict[str, str]:
             case_id = row.get("case_id")
             if not case_id:
                 raise ValueError(f"Prediction row {line_number} missing case_id")
-            prediction = (
-                row.get("prediction")
-                or row.get("response")
-                or row.get("output")
-                or row.get("answer")
-            )
-            if prediction is None:
+            case_id = str(case_id)
+            if case_id in predictions:
                 raise ValueError(
-                    f"Prediction row {line_number} missing prediction/response/output"
+                    f"Prediction row {line_number} duplicates case_id={case_id}"
                 )
-            predictions[str(case_id)] = str(prediction)
+            prediction = row.get("prediction")
+            if prediction is None:
+                raise ValueError(f"Prediction row {line_number} missing prediction")
+            predictions[case_id] = str(prediction)
     return predictions

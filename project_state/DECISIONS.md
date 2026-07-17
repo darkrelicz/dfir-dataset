@@ -40,4 +40,5 @@ This file records durable choices and accepted constraints. Current run status b
 - A completed optimizer run is not releasable. The direct adapter must emit EOS on bounded smoke prompts before GGUF promotion, serving, or evaluation.
 - Benchmark cases are derived separately from synthesis/training and require manual review. Future training cycles should establish a calibrated baseline before tuning.
 - Evaluation stage uses one separately served local LLM judge. Target generation and judging remain sequential, with atomic checkpoints after every successful verdict.
+- Evaluation has exactly two target-input modes: `openai_compatible` and `prediction_file`. Prediction replay requires canonical `case_id` and `prediction` fields with unique case IDs. Judge-only artifacts use one singular `scorecard/` directory and carry no evaluator-selection metadata.
 - Base/tuned comparisons require identical benchmark identity, case IDs, judge model and quantization, protocol, inference settings, and a real calibrated non-placeholder ID. Aggregate gains cannot override material task-level or severe DFIR regressions.

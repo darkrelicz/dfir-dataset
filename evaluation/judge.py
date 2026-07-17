@@ -111,7 +111,6 @@ def build_judge_messages(
 ) -> list[dict[str, str]]:
     answer_key = case.expected_answer.model_dump(mode="json")
     scoring = case.scoring.model_dump(mode="json")
-    acceptable_variants = case.expected_answer.acceptable_variants
     payload = {
         "case_id": case.case_id,
         "task_type": case.task_type,
@@ -119,7 +118,6 @@ def build_judge_messages(
         "context": case.context,
         "candidate_answer": prediction,
         "answer_key": answer_key,
-        "acceptable_variants": acceptable_variants,
         "scoring": scoring,
     }
     max_points = float(case.scoring.max_points)
@@ -149,7 +147,7 @@ def build_judge_messages(
                 '"criteria": {"criterion_name": number}, '
                 '"matched_acceptable_variant": integer_or_null}\n'
                 "`matched_acceptable_variant` is a zero-based index into "
-                "`acceptable_variants`, or null when none applies.\n\n"
+                "`answer_key.acceptable_variants`, or null when none applies.\n\n"
                 + json.dumps(payload, ensure_ascii=True, indent=2)
             ),
         },

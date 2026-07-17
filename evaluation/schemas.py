@@ -27,7 +27,7 @@ class ScoringConfig(BaseModel):
     """Per-case metric and rubric settings."""
 
     metric: str = "rubric"
-    max_points: float = 5.0
+    max_points: float = Field(default=5.0, gt=0)
     rubric: list[Any] = Field(default_factory=list)
 
 
@@ -50,13 +50,11 @@ class CaseScore(BaseModel):
 
     case_id: str
     task_type: str
-    evaluator: Literal["llm_judge"] = "llm_judge"
     metric: str
     score: float
     normalized_score: float
     max_points: float
     details: dict[str, Any] = Field(default_factory=dict)
-    manual_review_recommended: bool = False
 
 
 class JudgeVerdict(BaseModel):
@@ -88,8 +86,7 @@ class EvaluationManifest(BaseModel):
     model_label: str
     model: str
     generation_mode: str
-    evaluator_mode: Literal["llm_judge"] = "llm_judge"
     case_count: int
     case_ids: list[str]
     benchmark_fingerprint: str
-    scorecards: dict[str, dict[str, Any]]
+    scorecard: dict[str, Any]

@@ -434,7 +434,7 @@ complete baseline/tuned scorecards pass overall and task regression gates.
 | Cases and answer keys | `evaluation/benchmark/*.jsonl` |
 | Benchmark schema | `evaluation/schemas.py` |
 | Prompt construction/client mode/checkpoints | `evaluation/runner.py`, `evaluation/model_clients.py` |
-| Structured target output | `evaluation/structured_output.py` |
+| Structured-output instructions and judge JSON parsing | `evaluation/structured_output.py` |
 | Judge protocol | `evaluation/judge.py`, `evaluation/scoring.py` |
 | Compatibility/release gates | `evaluation/comparison.py` |
 | Endpoint and decoding policy | `configs/evaluation.yaml` |
