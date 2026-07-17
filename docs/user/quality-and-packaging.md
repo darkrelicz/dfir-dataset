@@ -90,25 +90,27 @@ The packager is `dataset_packaging.runner.run_packaging`, dispatched by
 Active GLM config:
 
 * quality input directory: `data/quality/gemini_subset_1`
-* output directory: `data/packaged/glm47_dfir_v2`
+* output directory: `data/packaged/glm47_v3`
 * splits: 80 percent train, 10 percent validation, 10 percent test
 * split grouping: `source_doc_id`
 * seed: 1337
 
-The current time-boxed package consumes both `filtered.jsonl` and
-`review_queue.jsonl`.
+The v3 package consumes only `filtered.jsonl`. Rows in `review_queue.jsonl` are
+not loaded, and a non-filtered `quality_status` in the filtered input fails
+packaging validation.
 
 Response style policy:
 
 | Quality status | Packaged style |
 |---|---|
-| `filtered` | Keep canonical `<reasoning>` response |
-| `review` | Strip the reasoning block and keep the final answer |
+| `filtered` | Deterministic 75% reasoning / 25% direct split |
+| `review` | Excluded |
 | `rejected` | Excluded |
 
-The GLM v2 exporter then removes literal `[GENERAL KNOWLEDGE]` annotations and
-maps retained reasoning blocks from `<reasoning>` to `<think>`. These transforms
-are recorded in metadata and apply only to the training view.
+The GLM v3 exporter strips the canonical reasoning block from direct examples,
+removes literal `[GENERAL KNOWLEDGE]` annotations, and maps retained reasoning
+blocks from `<reasoning>` to `<think>`. These transforms are recorded in metadata
+and apply only to the training view.
 
 The output record shape is `messages_jsonl`:
 
@@ -128,6 +130,7 @@ The output record shape is `messages_jsonl`:
 }
 ```
 
-`package-20260716T053818Z` has 5,517 records and no source-document overlap.
-Preflight found no retained grounding annotations/canonical reasoning tags,
-unbalanced thinking blocks, empty responses, or rendered examples missing EOS.
+`package-20260717T040952Z` has 4,152 records: 3,322 train, 415 validation,
+and 415 test. It contains 3,114 reasoning and 1,038 direct examples with no
+source-document overlap. Validation found no retained grounding annotations,
+canonical reasoning tags, unbalanced thinking blocks, or empty responses.

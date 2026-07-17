@@ -94,13 +94,15 @@ Phase 4 deliberately does not call Phase 3's generated-output validators.
 
 ## Phase 5 Packaging
 
-`dataset_packaging.runner` reads Phase 4 filtered and review rows, builds
-chat-style message records, splits by `source_doc_id`, writes train/validation/test
-JSONL, and creates a packaging manifest. The package name is
+`dataset_packaging.runner` reads only Phase 4 `filtered.jsonl`, verifies every
+row is marked `quality_status: filtered`, builds chat-style message records,
+splits by `source_doc_id`, writes train/validation/test JSONL, and creates a
+packaging manifest. The package name is
 `dataset_packaging/` to avoid shadowing Python's third-party `packaging` module.
-The GLM v2 configuration additionally removes grounding annotations, converts
-canonical reasoning tags to native thinking tags, and runs packaged-record
-preflight without mutating canonical inputs.
+The GLM v3 configuration deterministically assigns a 75% reasoning / 25%
+direct-response mix, removes grounding annotations, converts retained canonical
+reasoning tags to native thinking tags, and validates the resulting GLM tag
+contract without mutating canonical inputs.
 
 ## Phase 6 Evaluation And Training
 
@@ -132,7 +134,7 @@ IDs are present and equal but does not reject the placeholder value
 `uncalibrated`; release policy must enforce a real ID until code does.
 
 `scripts.finetune` launches local Unsloth LoRA SFT. The active path uses
-`configs/finetune_glm47flash_v2.yaml`. It renders conversations once, appends
+`configs/finetune_glm47flash_v3.yaml`. It renders conversations once, appends
 EOS explicitly, rejects oversized examples, removes `messages` before TRL can
 reapply the chat template, and imports Unsloth before TRL so fused-loss patches
 are installed.
@@ -142,16 +144,18 @@ are installed.
 The active GLM training package is:
 
 ```text
-data/packaged/glm47_dfir_v2/
+data/packaged/glm47_v3/
 ```
 
-It contains 5,517 records split into 4,414 train, 552 validation, and 551 test
-rows. The split has no `source_doc_id` overlap.
+It contains 4,152 filtered-only records split into 3,322 train, 415 validation,
+and 415 test rows. It has 3,114 reasoning and 1,038 direct examples, with no
+`source_doc_id` overlap.
 
 The first training run, `train-20260714T025314Z`, completed one epoch and 552
 steps but is rejected: direct-adapter and Web UI tests looped, emitted template
-tokens, and did not emit EOS. V2 retraining is prepared with unchanged
-hyperparameters and isolated output paths, but is not complete.
+tokens, and did not emit EOS. V2 training completed, but its exploratory tuned
+evaluation scored 0.6831 versus the base model's 0.7588. V3 is now the active
+candidate configuration; no v3 training run is complete.
 
 The exploratory base evaluation `data/evaluation/glm47-flash-base/` completed
 68/68 cases with overall normalized judge score `0.7588`. Its calibration ID is
@@ -171,8 +175,7 @@ but is not a final baseline. Calibrated base and tuned runs remain outstanding.
 * Gemini 2.5 Flash is the primary teacher model for canonical generation.
 * Alternate teacher models must run as separate labeled jobs.
 * Phase 3 `accepted.jsonl` is candidate data, not final training data.
-* Phase 5 currently packages filtered plus review rows by explicit time-boxed
-  decision.
+* Phase 5 packages only filtered rows; review and rejected rows are excluded.
 * Phase 6 benchmark cases are held out from synthesis/training and must be
   manually reviewed before baseline scoring.
 * A complete evaluation checkpoint is not necessarily calibrated evidence;

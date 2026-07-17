@@ -11,20 +11,25 @@ Document the exact training and evaluation procedure used for Shepherd fine-tuni
 
 # Active Retraining Summary
 
-- Status: prepared; training not yet complete
-- Configuration: `configs/finetune_glm47flash_v2.yaml`
-- Dataset version: `package-20260716T053818Z`
-- Dataset path: `data/packaged/glm47_dfir_v2/`
-- Output checkpoint path: `data/finetune/glm47_flash_lora_dfir_v2/`
-- Output adapter path: `data/finetune/glm47_flash_v2/lora_adapter`
-- Output GGUF path prefix: `data/finetune/glm47_flash_v2/gguf_q4_k_m`
-- Hyperparameters: unchanged from v1
+- Status: pending the `lora_dropout` runner fix; no training run is complete
+- Configuration: `configs/finetune_glm47flash_v3.yaml`
+- Dataset version: `package-20260717T040952Z`
+- Dataset path: `data/packaged/glm47_v3/`
+- Output checkpoint path: `data/finetune/glm47_v3/`
+- Output adapter path: `data/finetune/glm47_v3/lora_adapter`
+- Output GGUF path prefix: `data/finetune/glm47_v3/gguf_q4_k_m`
+- Hyperparameters: rank 16, alpha 32, dropout 0.05, attention-only targets, learning rate `2e-5`
 
-The v2 package keeps the same 5,517 eligible records and split membership. Its
-GLM-only view removes literal `[GENERAL KNOWLEDGE]` annotations, maps canonical
-`<reasoning>` blocks to `<think>`, and validates tag balance and nonempty
-responses. The trainer renders once, appends EOS explicitly, rejects examples
-over 4,096 tokens, and removes `messages` before TRL preprocessing.
+The v3 package contains only the 4,152 filtered rows. Its GLM-only view derives
+3,114 reasoning and 1,038 direct examples, removes literal
+`[GENERAL KNOWLEDGE]` annotations, maps retained `<reasoning>` blocks to
+`<think>`, and validates tag balance and nonempty responses. The trainer renders
+once, appends EOS explicitly, rejects examples over 4,096 tokens, and removes
+`messages` before TRL preprocessing.
+
+Before starting v3, change the `lora_dropout` conversion in
+`scripts/finetune.py` from `int` to `float`; otherwise the configured `0.05`
+is applied as zero.
 
 # Historical V1 Run Summary
 
@@ -43,14 +48,14 @@ over 4,096 tokens, and removes `messages` before TRL preprocessing.
 - GGUF/export path: `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf`
 - Promotion status: rejected; direct-adapter and Web UI greeting tests looped and did not emit EOS
 
-# Active V2 Dataset Inputs
+# Active V3 Dataset Inputs
 
 | Input | Path | Records | Notes |
 |---|---|---:|---|
-| Train | `data/packaged/glm47_dfir_v2/train.jsonl` | 4,414 | GLM-native view; grouped by `source_doc_id` |
-| Validation | `data/packaged/glm47_dfir_v2/validation.jsonl` | 552 | No source-document overlap |
-| Test | `data/packaged/glm47_dfir_v2/test.jsonl` | 551 | No source-document overlap |
-| Packaging manifest | `data/packaged/glm47_dfir_v2/packaging_manifest.json` | 5,517 | `package-20260716T053818Z` |
+| Train | `data/packaged/glm47_v3/train.jsonl` | 3,322 | GLM-native view; grouped by `source_doc_id` |
+| Validation | `data/packaged/glm47_v3/validation.jsonl` | 415 | No source-document overlap |
+| Test | `data/packaged/glm47_v3/test.jsonl` | 415 | No source-document overlap |
+| Packaging manifest | `data/packaged/glm47_v3/packaging_manifest.json` | 4,152 | `package-20260717T040952Z` |
 
 # Historical V1 Dataset Inputs
 
@@ -84,7 +89,8 @@ Record:
 For future training runs, complete baseline evaluation before fine-tuning. The
 first run (`train-20260714T025314Z`) completed before a calibrated baseline and
 subsequently failed termination tests, so it is not eligible for retrospective
-comparison. Use only an EOS-approved v2 artifact for tuned evaluation.
+comparison. V2 completed but regressed in exploratory evaluation. Use only an
+EOS-approved v3 artifact for the next tuned evaluation.
 
 Default command for generating and judging through the configured local
 OpenAI-compatible endpoints:
@@ -133,10 +139,11 @@ are not calibrated baseline values.
 | Base model | GLM-4.7-Flash |
 | Method | LoRA SFT |
 | Framework | Unsloth |
-| LoRA rank | 32 |
-| LoRA alpha | 64 |
-| LoRA dropout | 0 |
-| Learning rate | 2e-4 |
+| LoRA rank | 16 |
+| LoRA alpha | 32 |
+| LoRA dropout | 0.05 |
+| LoRA targets | `q_proj`, `k_proj`, `v_proj`, `o_proj` |
+| Learning rate | 2e-5 |
 | Epochs | 1 |
 | Batch size | 1 per device |
 | Gradient accumulation | 8 |
@@ -151,7 +158,7 @@ are not calibrated baseline values.
 
 ```bash
 python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v2.yaml
+  --config configs/finetune_glm47flash_v3.yaml
 ```
 
 Unsloth must be imported before datasets/TRL/Transformers. The runner enforces
@@ -164,7 +171,7 @@ switch to skip GGUF creation. The post-training smoke test controls whether the
 generated GGUF may be promoted, served, or evaluated; it does not control
 whether the file is created.
 
-# Training Results
+# Historical V1 Training Results
 
 | Metric | Value | Notes |
 |---|---:|---|
@@ -176,7 +183,7 @@ whether the file is created.
 
 # Post-Training Evaluation
 
-Before benchmark evaluation, load the direct v2 adapter and run bounded greeting
+Before benchmark evaluation, load the direct v3 adapter and run bounded greeting
 and DFIR prompts. Require a concise completion and an emitted EOS token. Do not
 export, serve, or evaluate a checkpoint that reaches the token cap or emits
 `<|user|>`/template delimiters. After this smoke gate, use the same benchmark as
@@ -235,7 +242,7 @@ Decision:
 
 Rationale:
 
-# Export
+# Historical V1 Export
 
 | Artifact | Path | Notes |
 |---|---|---|

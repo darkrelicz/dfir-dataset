@@ -113,21 +113,22 @@ The quality runner logs major stages at INFO level and writes:
 
 ```bash
 python -m scripts.package_dataset \
-  --config configs/packaging_glm47_v2.yaml \
+  --config configs/packaging_glm47_v3.yaml \
   --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/glm47_dfir_v2
+  --output-dir data/packaged/glm47_v3
 ```
 
-The current packager consumes `filtered.jsonl` plus `review_queue.jsonl`, then
-splits by `source_doc_id`.
+The current packager consumes only `filtered.jsonl`, rejects any row whose
+embedded status is not `filtered`, assigns the configured reasoning/direct mix,
+and then splits by `source_doc_id`.
 
 Output:
 
 ```text
-data/packaged/glm47_dfir_v2/train.jsonl
-data/packaged/glm47_dfir_v2/validation.jsonl
-data/packaged/glm47_dfir_v2/test.jsonl
-data/packaged/glm47_dfir_v2/packaging_manifest.json
+data/packaged/glm47_v3/train.jsonl
+data/packaged/glm47_v3/validation.jsonl
+data/packaged/glm47_v3/test.jsonl
+data/packaged/glm47_v3/packaging_manifest.json
 ```
 
 This model-specific view removes literal `[GENERAL KNOWLEDGE]` annotations,
@@ -138,8 +139,8 @@ validation. Canonical synthesis and quality data is not modified.
 
 Phase 6 has a working local training runner, a judge-only evaluator, and guarded
 base-versus-tuned comparison. The first LoRA run completed but failed the
-termination smoke gate and is rejected. V2 retraining is prepared but not yet
-complete; calibrated evaluation is also pending.
+termination smoke gate and is rejected. V2 completed but regressed in
+exploratory evaluation. V3 training and calibrated evaluation are pending.
 
 First finalize a held-out benchmark:
 
@@ -147,9 +148,9 @@ First finalize a held-out benchmark:
 evaluation/benchmark/
 ```
 
-For future training cycles, run a calibrated baseline before fine-tuning. The
-first recorded LoRA run predates a calibrated baseline, so evaluate its existing
-base and tuned artifacts retrospectively with the same frozen judge.
+For the v3 cycle, calibrate and freeze the judge before producing the comparison
+scorecards. Existing base and v2 scorecards are uncalibrated diagnostics; do not
+reuse them as final baseline or tuned evidence.
 
 The evaluator always writes one local-judge scorecard. It can replay an existing
 prediction JSONL keyed by `case_id`:
@@ -217,9 +218,12 @@ that can spend their full token budget in `reasoning_content`.
 
 The active training command is:
 
+First change the `lora_dropout` conversion in `scripts/finetune.py` from `int`
+to `float`; otherwise v3's configured 0.05 is applied as zero.
+
 ```bash
 python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v2.yaml
+  --config configs/finetune_glm47flash_v3.yaml
 ```
 
 After training, load the direct adapter and run bounded greeting and DFIR

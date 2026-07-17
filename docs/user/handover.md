@@ -29,7 +29,7 @@ Before handing over the project, make sure the successor can find:
 - Quality outputs and the relevant `quality_manifest.json`.
 - Packaging outputs and the relevant `packaging_manifest.json`, if packaging exists.
 - Evaluation manifests, predictions, and LLM-judge scorecards under `data/evaluation/`.
-- The rejected v1 `train-20260714T025314Z` outputs for failure analysis, the v2 package manifest under `data/packaged/glm47_dfir_v2/`, and any completed v2 training manifest under `data/finetune/glm47_flash_lora_dfir_v2/`.
+- The rejected v1 outputs, the regressed v2 artifacts/evaluation, the active v3 package manifest under `data/packaged/glm47_v3/`, and any future v3 training manifest under `data/finetune/glm47_v3/`.
 
 # Successor Orientation
 
@@ -37,10 +37,10 @@ Explain these points during handover:
 
 - Phase 3 `accepted.jsonl` is candidate synthesis output, not final training data.
 - Phase 4 `filtered.jsonl` is the first dataset eligible for packaging.
-- `review_queue.jsonl` is included in the current Phase 5 package by explicit time-boxed risk acceptance and transformed into direct-answer examples. Rejected rows remain excluded.
+- `review_queue.jsonl` and `rejected.jsonl` are excluded from the active Phase 5 package. Only rows in `filtered.jsonl` with `quality_status: filtered` are eligible.
 - Splits must be by `source_doc_id` to avoid leakage.
 - Canonical responses use `<reasoning>`, not `<think>`.
-- Model-specific exporters may transform formatting only at packaging time. The GLM v2 view removes `[GENERAL KNOWLEDGE]` and maps `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
+- Model-specific exporters may transform formatting only at packaging time. The GLM v3 view derives a seeded 75% reasoning / 25% direct mix, removes `[GENERAL KNOWLEDGE]`, and maps retained `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
 - A completed training loop is not a release gate. The direct adapter must emit EOS on bounded smoke prompts before GGUF promotion or evaluation.
 - Import Unsloth before datasets/TRL/Transformers in the training process so the fused-loss trainer patch is installed.
 - Full-corpus generation should be treated as a separate budget decision.
@@ -96,18 +96,18 @@ python -m scripts.collect_all
 
 ```bash
 .venv/bin/python -m scripts.package_dataset \
-  --config configs/packaging.yaml \
+  --config configs/<packaging_config>.yaml \
   --quality-dir data/quality/<run> \
   --output-dir data/packaged/<run>
 ```
 
-For the current GLM v2 view:
+For the current GLM v3 view:
 
 ```bash
 .venv/bin/python -m scripts.package_dataset \
-  --config configs/packaging_glm47_v2.yaml \
+  --config configs/packaging_glm47_v3.yaml \
   --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/glm47_dfir_v2
+  --output-dir data/packaged/glm47_v3
 ```
 
 ## Run Phase 6 Evaluation
@@ -129,7 +129,7 @@ For prediction replay, add `--mode prediction_file --predictions <path>`.
 
 ```bash
 .venv/bin/python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v2.yaml
+  --config configs/finetune_glm47flash_v3.yaml
 
 .venv/bin/python -m scripts.compare_evaluations \
   --baseline-dir data/evaluation/<baseline_run> \

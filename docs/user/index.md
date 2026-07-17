@@ -53,8 +53,8 @@ collect_all -> synthesize -> quality_filter -> package_dataset
 ```
 
 Do not bypass a stage by feeding Phase 3 `accepted.jsonl` directly to packaging
-or training. It is candidate data. The current package is built from Phase 4
-filtered and explicitly accepted review rows.
+or training. It is candidate data. The active package is built only from Phase
+4 filtered rows; review and rejected rows remain excluded.
 
 # Before You Run Anything
 

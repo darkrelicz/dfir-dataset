@@ -299,8 +299,8 @@ python -m scripts.quality_filter \
 - Local ATT&CK and ATLAS caches support reproducible ID validation; missing or
   stale caches can change reference behavior.
 - Heuristic scores rank quality; they do not prove factual correctness.
-- The present inclusion of review rows in packaging is a time-boxed exception,
-  not a default quality claim.
+- Review rows are not eligible for active packaging until they are adjudicated
+  into filtered output.
 
 ## UML
 
@@ -330,7 +330,8 @@ train/validation/test splits grouped by `source_doc_id`.
 
 1. Create a new model-specific config rather than changing canonical quality
    rows in place.
-2. Define how filtered and review statuses map to assistant response styles.
+2. Define the reasoning/direct fractions for filtered rows; they must sum to
+   1.0.
 3. Make transforms one-way at export time and retain original provenance in
    metadata.
 4. Split groups, not individual rows. Every row derived from one
@@ -351,8 +352,8 @@ python -m scripts.package_dataset \
   counts, and zero `source_doc_id` overlap in `packaging_manifest.json`.
 - Parse every output line and verify roles are system/user/assistant in order.
 - Check empty responses, balanced tags, forbidden annotations, and stable IDs.
-- Never include `rejected.jsonl`. The packager reads only filtered and review
-  files by design.
+- The packager reads only `filtered.jsonl`; any embedded status other than
+  `filtered` is a validation failure.
 - Keep this package named `dataset_packaging/`; renaming it to `packaging/`
   would shadow the common third-party library.
 
@@ -408,9 +409,8 @@ python -m scripts.finetune --config configs/<new_finetune_config>.yaml
    and formatting.
 5. Only then promote or serve the generated GGUF and proceed to evaluation.
 
-The current `scripts/test_lora.py` has a hard-coded v1 adapter path. Update or
-parameterize it before using it for v2; do not accidentally retest the rejected
-artifact.
+The current `scripts/test_lora.py` has a hard-coded v2 adapter path. Update or
+parameterize it before testing v3; do not accidentally test the wrong artifact.
 
 ## UML
 

@@ -67,11 +67,8 @@ decisions:
 4. update the canonical `docs/` page when stable architecture, commands,
    contracts, workflows, or successor guidance changed.
 
-# Current Accepted Risk To Preserve
+# Current Packaging Policy
 
-For the shortened deadline, Phase 5 packages both filtered rows and review rows.
-Review rows are transformed into direct-answer examples. Rejected rows remain
-excluded.
-
-This belongs in state docs and manifests because it changes how future readers
-should interpret the packaged dataset.
+Phase 5 packages only filtered rows. Review and rejected rows remain excluded.
+The active GLM v3 view derives a deterministic 75% reasoning / 25% direct mix
+from filtered rows without mutating Phase 4 outputs.

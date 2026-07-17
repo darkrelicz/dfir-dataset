@@ -31,7 +31,7 @@ Use these sources when preparing a run-specific coverage report:
 | `data/synthesized/<run>/rejected.jsonl` | Which prompts failed generation or Phase 3 validation |
 | `data/quality/<run>/quality_manifest.json` | Filtered/review/rejected counts, source/category/difficulty distributions, and taxonomy coverage |
 | `data/quality/<run>/review_queue.jsonl` | Fuzzy quality issues requiring human or AI-assisted adjudication |
-| `data/packaged/<run>/packaging_manifest.json` | Which filtered and explicitly accepted review rows reached each source-document-isolated split |
+| `data/packaged/<run>/packaging_manifest.json` | Which filtered rows reached each source-document-isolated split and their response-style mix |
 | `configs/quality.yaml` | Valid taxonomy refs, coverage groupings, and dedupe/balance thresholds |
 | `configs/task_categories.yaml` | Target category and difficulty distributions |
 

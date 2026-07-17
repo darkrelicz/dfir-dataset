@@ -137,8 +137,9 @@ The current package format is `messages_jsonl`.
 
 Canonical synthesis and quality records retain `<reasoning>` and grounding
 annotations. A model-specific package may record export-time transformations in
-`model_transforms`; the GLM v2 view maps reasoning tags and removes literal
-`[GENERAL KNOWLEDGE]` markers without changing canonical inputs.
+`model_transforms`; the GLM v3 view maps retained reasoning tags, derives direct
+answers for the configured subset, and removes literal `[GENERAL KNOWLEDGE]`
+markers without changing canonical inputs.
 
 # Manifest Contracts
 

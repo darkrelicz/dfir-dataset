@@ -6,7 +6,7 @@
 <h1 class="no-index">Current Project State</h1>
 
 This is the complete handover snapshot for the repository as inspected on
-2026-07-16. It records what exists, what is usable, what was rejected, and what
+2026-07-17. It records what exists, what is usable, what was rejected, and what
 must happen next. Generated manifests remain authoritative for the exact facts
 of an individual run.
 
@@ -20,10 +20,10 @@ of an individual run.
 | Teacher model | `gemini-2.5-flash` through the direct Gemini API |
 | Training target | `unsloth/GLM-4.7-Flash`, 4-bit base, LoRA SFT |
 | Hosting | Local DGX storage; Hugging Face publishing deferred |
-| Current usable dataset | `data/packaged/glm47_dfir_v2/` |
-| Current usable model | None; v1 is rejected and v2 is not trained |
+| Current usable dataset | `data/packaged/glm47_v3/` |
+| Current usable model | None; v1 is rejected, v2 regressed, and no v3 run is complete |
 | Current evaluation evidence | Exploratory only; the judge is uncalibrated |
-| Release status | Blocked on v2 EOS smoke test and calibrated comparison |
+| Release status | Blocked on v3 training, EOS smoke test, and calibrated comparison |
 
 The repository is a data pipeline, not a web API, model server, or Shepherd
 application. The site under `docs/` is the maintainer documentation for that
@@ -36,10 +36,10 @@ pipeline.
 | 1. Taxonomy and task design | Complete for current scope | Project plan and DFIR requirements | `docs/reference/taxonomy.md`, `configs/task_categories.yaml`, `configs/quality.yaml` |
 | 2. Collection | Complete for 16 sources | `configs/collection.yaml` and public sources | `data/raw/collection_manifest.json` |
 | 3. Synthesis | Complete for reduced subset | Phase 2 raw JSONL | `data/synthesized/gemini_subset_1/` |
-| 4. Quality | Complete by time-boxed acceptance | Phase 3 `accepted.jsonl` | `data/quality/gemini_subset_1/` |
-| 5. Packaging | GLM v2 view complete | Phase 4 filtered + review rows | `data/packaged/glm47_dfir_v2/` |
-| 6. Training | V1 rejected; v2 prepared | Phase 5 GLM package | `configs/finetune_glm47flash_v2.yaml` |
-| 6. Evaluation | Exploratory base run complete | 68 held-out cases | `data/evaluation/glm47-flash-base/` |
+| 4. Quality | Complete for reduced subset | Phase 3 `accepted.jsonl` | `data/quality/gemini_subset_1/` |
+| 5. Packaging | Filtered-only GLM v3 view complete | Phase 4 `filtered.jsonl` | `data/packaged/glm47_v3/` |
+| 6. Training | V1 rejected; v2 regressed; v3 pending runner fix | Phase 5 GLM package | `configs/finetune_glm47flash_v3.yaml` |
+| 6. Evaluation | Exploratory base and v2-tuned runs complete | 68 held-out cases | `data/evaluation/glm47-flash-base/`, `data/evaluation/glm47-flash-finetuned_v2_1/` |
 
 # Implemented Pipeline
 
@@ -151,31 +151,32 @@ grounding tags, concrete indicators, tools, source specificity, operational
 value, duplicates, balance, and distribution. Outputs include the three status
 files, a 100-row deterministic spot-check sample, and `quality_manifest.json`.
 
-For the shortened deadline, filtered and review rows are package-eligible.
-Review rows have **not** been fully adjudicated. Including them is an explicit
-risk acceptance; all rejected rows remain ineligible.
+Only filtered rows are package-eligible in the active v3 policy. Review rows
+remain available for adjudication but are excluded from training, as are all
+rejected rows.
 
 # Phase 5: Packaging Snapshot
 
-The active training view is `package-20260716T053818Z`.
+The active training view is `package-20260717T040952Z`.
 
 | Split | Records |
 |---|---:|
-| Train | 4,414 |
-| Validation | 552 |
-| Test | 551 |
-| Total | 5,517 |
+| Train | 3,322 |
+| Validation | 415 |
+| Test | 415 |
+| Total | 4,152 |
 
 There is no `source_doc_id` overlap among splits. The response mix is:
 
 | Style | Count | Fraction |
 |---|---:|---:|
-| Canonical reasoning | 4,152 | 0.7526 |
-| Direct answer | 1,365 | 0.2474 |
+| GLM reasoning | 3,114 | 0.7500 |
+| Direct answer | 1,038 | 0.2500 |
 
 Canonical synthesis and quality records remain unchanged. Only the GLM export
 view removes literal `[GENERAL KNOWLEDGE]` annotations, maps `<reasoning>` to
-`<think>` for filtered rows, and removes reasoning from review rows. Preflight
+`<think>` for the seeded reasoning subset, and strips reasoning from the seeded
+direct subset. Review rows are never loaded. Validation
 found zero retained annotations/canonical tags, unbalanced `<think>` blocks,
 empty responses, or cross-split source-document overlap.
 
@@ -198,10 +199,14 @@ This model is rejected. Web UI and direct-adapter greeting tests repeated
 content, emitted role/template delimiters, and did not emit EOS within 256 new
 tokens. It must not be evaluated, promoted, or integrated.
 
-V2 keeps the same LoRA/trainer hyperparameters but uses the cleaned GLM package,
-single chat-template rendering, explicit EOS, a 4,096-token length preflight,
-correct manifest serialization, and isolated output paths. Its active config is
-`configs/finetune_glm47flash_v2.yaml`; training has not completed.
+V2 subsequently completed, but its exploratory uncalibrated evaluation scored
+0.6831 versus the base model's 0.7588. It regressed most on IOC extraction and
+TTP identification and is not a release candidate. V3 uses the filtered-only
+package, rank 16 / alpha 32 attention-only LoRA, dropout 0.05, learning rate
+2e-5, and a 4,096-token maximum. Its active config is
+`configs/finetune_glm47flash_v3.yaml`; training has not completed. The runner's
+`lora_dropout` conversion must be changed from `int` to `float` first, otherwise
+the configured 0.05 becomes zero.
 
 # Phase 6: Evaluation Snapshot
 
@@ -234,6 +239,11 @@ rather than retried. Comparison checks compatible complete scorecards and equal
 calibration metadata, but does not yet reject the literal placeholder
 `uncalibrated`.
 
+The v2-tuned run `data/evaluation/glm47-flash-finetuned_v2_1/` also completed
+68/68 cases with the same uncalibrated judge and scored 0.6831 overall. Because
+the comparison is uncalibrated, the result is diagnostic, but the broad
+regression is sufficient to reject v2 as the active candidate.
+
 # Active Configuration
 
 | Concern | Current File |
@@ -243,8 +253,8 @@ calibration metadata, but does not yet reject the literal placeholder
 | Teacher model and retry policy | `configs/synthesis.yaml` |
 | Task mix and quality signals | `configs/task_categories.yaml` |
 | Taxonomy, scoring, dedupe, balance | `configs/quality.yaml` |
-| Active GLM packaging transform | `configs/packaging_glm47_v2.yaml` |
-| Active v2 LoRA run | `configs/finetune_glm47flash_v2.yaml` |
+| Active GLM packaging transform | `configs/packaging_glm47_v3.yaml` |
+| Active v3 LoRA run | `configs/finetune_glm47flash_v3.yaml` |
 | Benchmark, target, and judge | `configs/evaluation.yaml` |
 
 `GEMINI_API_KEY` is the only project API secret and is required only for Phase
@@ -255,17 +265,19 @@ Phase 6 target and judge endpoints are local OpenAI-compatible servers.
 
 In order:
 
-1. Finish manual review of all 68 benchmark cases and record owner/date.
-2. Build and adjudicate a stratified human-scored judge calibration set; assign
-   a real calibration ID and freeze the judge configuration.
-3. Complete v2 training with `configs/finetune_glm47flash_v2.yaml`.
-4. Run a bounded direct-adapter greeting smoke test. Require
+1. Fix the `lora_dropout` cast in `scripts/finetune.py` so v3 uses the configured
+   value of 0.05.
+2. Complete v3 training with `configs/finetune_glm47flash_v3.yaml`.
+3. Run a bounded direct-adapter greeting smoke test. Require
    `EOS generated: True` before GGUF promotion or evaluation.
-5. Record v2 paths, versions, hashes, validation metrics, and selected
+4. Record v3 paths, versions, hashes, validation metrics, and selected
    checkpoint.
-6. Run complete calibrated base and v2 tuned evaluations with the same
+5. Finish manual review of all 68 benchmark cases and record owner/date.
+6. Build and adjudicate a stratified human-scored judge calibration set; assign
+   a real calibration ID and freeze the judge configuration.
+7. Run complete calibrated base and v3 tuned evaluations with the same
    benchmark and judge.
-7. Compare them and review task-level and severe DFIR regressions before any
+8. Compare them and review task-level and severe DFIR regressions before any
    Shepherd integration.
 
 Code hardening still due: reject placeholder calibration IDs in comparison,
@@ -277,7 +289,7 @@ empty target responses.
 Full-corpus synthesis, alternate-teacher comparison, full review-queue
 adjudication, manual spot-check completion, broader test coverage, Tier 3 and
 unstructured sources, CRAFT/RAFT, and Hugging Face publishing are deferred.
-Shepherd integration remains blocked until the v2 termination and calibrated
+Shepherd integration remains blocked until the v3 termination and calibrated
 evaluation gates both pass.
 
 # Sources Of Truth

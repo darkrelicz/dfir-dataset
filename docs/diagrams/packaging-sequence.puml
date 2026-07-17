@@ -7,15 +7,16 @@ autonumber
 participant "scripts.package_dataset" as CLI
 participant "dataset_packaging.runner" as Packager
 database "data/quality/gemini_subset_1" as QualityOut
-database "data/packaged/gemini_subset_1" as PackageOut
+database "data/packaged/glm47_v3" as PackageOut
 
 CLI -> Packager: run_packaging(config)
 Packager -> QualityOut: load quality_manifest.json
 Packager -> QualityOut: load filtered.jsonl
-Packager -> QualityOut: load review_queue.jsonl
+Packager -> Packager: require quality_status = filtered
 Packager -> Packager: build messages records
-Packager -> Packager: keep reasoning for filtered rows
-Packager -> Packager: strip reasoning block for review rows
+Packager -> Packager: assign seeded 75% reasoning / 25% direct
+Packager -> Packager: strip reasoning for direct rows
+Packager -> Packager: map retained reasoning to GLM think tags
 Packager -> Packager: group records by source_doc_id
 Packager -> Packager: split groups with seed 1337
 Packager -> PackageOut: write train.jsonl

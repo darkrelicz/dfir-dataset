@@ -13,25 +13,14 @@ Phase 5 exports local chat JSONL for the current Unsloth/GLM training path.
 
 `scripts.package_dataset` dispatches to `dataset_packaging.runner.run_packaging`.
 
-```bash
-python -m scripts.package_dataset --config configs/packaging.yaml
-```
-
-Optional overrides:
+Always pass the active config and paths explicitly. The current GLM-specific
+view uses:
 
 ```bash
 python -m scripts.package_dataset \
+  --config configs/packaging_glm47_v3.yaml \
   --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/gemini_subset_1
-```
-
-The active GLM-specific view uses:
-
-```bash
-python -m scripts.package_dataset \
-  --config configs/packaging_glm47_v2.yaml \
-  --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/glm47_dfir_v2
+  --output-dir data/packaged/glm47_v3
 ```
 
 # Inputs
@@ -39,10 +28,11 @@ python -m scripts.package_dataset \
 Current config reads:
 
 * `data/quality/gemini_subset_1/filtered.jsonl`
-* `data/quality/gemini_subset_1/review_queue.jsonl`
 * `data/quality/gemini_subset_1/quality_manifest.json`
 
-The packager does not read Phase 4 `rejected.jsonl`.
+The packager does not read Phase 4 `review_queue.jsonl` or `rejected.jsonl`.
+It rejects the filtered input if any row is not marked
+`quality_status: filtered`.
 
 # Record Building
 
@@ -59,25 +49,26 @@ The packager does not read Phase 4 `rejected.jsonl`.
 
 * full response for `reasoning`;
 * `final_answer_text(response)` for `direct`;
-* full response as fallback if no final answer can be extracted.
+* an explicit packaging failure if a direct answer cannot be extracted.
 
 # Response Style Policy
 
-Current `configs/packaging.yaml`:
+Current `configs/packaging_glm47_v3.yaml`:
 
 ```yaml
 response_style:
-  filtered: "reasoning"
-  review: "direct"
-  direct_transform: "strip_reasoning_block"
+  filtered:
+    reasoning: 0.75
+    direct: 0.25
 ```
 
-This yields the current 75/25 reasoning/direct mix without another generation
-run.
+The configured split seed deterministically assigns 75 percent of eligible
+filtered rows to the full reasoning response and strips the reasoning block from
+the remaining 25 percent to create direct-answer examples.
 
 # GLM-Specific Training View
 
-`configs/packaging_glm47_v2.yaml` adds export-time transforms:
+`configs/packaging_glm47_v3.yaml` adds export-time transforms:
 
 * remove literal `[GENERAL KNOWLEDGE]` annotations from assistant text;
 * convert canonical `<reasoning>` tags to GLM-native `<think>` tags;
@@ -86,8 +77,9 @@ run.
   `<think>` blocks.
 
 These transforms do not mutate synthesis or quality outputs. The generated
-`package-20260716T053818Z` retains 5,517 records and the original split with no
-source-document overlap.
+`package-20260717T040952Z` contains 4,152 records: 3,322 train, 415 validation,
+and 415 test, with no source-document overlap. Its response mix is 3,114
+reasoning and 1,038 direct examples.
 
 # Splitting
 

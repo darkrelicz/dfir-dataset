@@ -94,22 +94,26 @@ Defines Phase 4 quality policy:
 Quality validators and dataset gates read from this file. They do not own the
 canonical taxonomy list.
 
-# `configs/packaging.yaml`
+# Packaging Configurations
 
-Defines Phase 5 packaging:
+Packaging configs define:
 
-* quality input directory and filenames;
 * split fractions, seed, and group key;
-* output record format;
 * system message;
 * response-style policy.
 
 The packager writes local JSONL splits and a packaging manifest. It has no
-hosting or publishing behavior.
+hosting or publishing behavior. `configs/packaging.yaml` retains the historical
+scalar response-style shape and is not compatible with the current runner; do
+not use it without migrating `response_style.filtered` to reasoning/direct
+fractions.
 
-`configs/packaging_glm47_v2.yaml` is the active model-specific view. It enables
-GLM reasoning-tag conversion, grounding-annotation removal, and packaged-record
-preflight while preserving the canonical inputs.
+`configs/packaging_glm47_v3.yaml` is the active model-specific view. Its
+`response_style.filtered` mapping requires reasoning/direct fractions that sum
+to 1.0; the current policy is 0.75/0.25. It enables GLM reasoning-tag conversion
+and grounding-annotation removal while preserving canonical inputs.
+Packaged-record validation always runs and derives its tag checks from the
+configured model transformations.
 
 # `configs/evaluation.yaml`
 
@@ -137,20 +141,24 @@ runs.
 
 # Fine-Tuning Configurations
 
-`configs/finetune_glm47flash.yaml` preserves the historical v1 run.
-`configs/finetune_glm47flash_v2.yaml` is the active retraining configuration and
+`configs/finetune_glm47flash.yaml` and
+`configs/finetune_glm47flash_v2.yaml` preserve historical runs.
+`configs/finetune_glm47flash_v3.yaml` is the active retraining configuration and
 defines:
 
 * packaged train, validation, test, and manifest paths;
-* GLM-4.7-Flash loading and sequence settings;
+* the GLM-4.7-Flash base model and sequence length;
 * LoRA target modules, rank, alpha, checkpointing, and seed;
-* `finetune` trainer arguments, response-only masking, and checkpoint policy;
-* adapter, merged-model, and GGUF export choices.
+* `finetune` trainer arguments and checkpoint policy;
+* the adapter and GGUF destinations plus GGUF quantization settings.
 
-V2 preserves rank 32, alpha 64, learning rate `2e-4`, one epoch, and the other
-v1 training settings. It uses `data/packaged/glm47_dfir_v2/`, YAML `null` for
-`loftq_config`, and isolated v2 output paths. The runner now serializes the
-effective `finetune` mapping into the manifest.
+V3 uses `data/packaged/glm47_v3/`, rank 16, alpha 32, dropout 0.05,
+attention-only targets, learning rate `2e-5`, one epoch, and isolated v3 output
+paths. The runner is intentionally specific to 4-bit LoRA SFT: it always
+uses response-only loss masking and saves both the adapter and GGUF artifact.
+GGUF generation cannot be disabled; every configuration must provide
+`gguf_dir` and `gguf_quantization`. The effective mappings are serialized into
+the training manifest.
 
 # Prompt Templates
 

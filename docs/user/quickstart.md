@@ -47,13 +47,13 @@ downloads public data and updates local Git caches.
 
 # Current Dataset
 
-The active, already packaged v2 training view is:
+The active, already packaged v3 training view is:
 
 ```text
-data/packaged/glm47_dfir_v2/train.jsonl
-data/packaged/glm47_dfir_v2/validation.jsonl
-data/packaged/glm47_dfir_v2/test.jsonl
-data/packaged/glm47_dfir_v2/packaging_manifest.json
+data/packaged/glm47_v3/train.jsonl
+data/packaged/glm47_v3/validation.jsonl
+data/packaged/glm47_v3/test.jsonl
+data/packaged/glm47_v3/packaging_manifest.json
 ```
 
 Do not use the earlier v1 adapter or GGUF: both failed the EOS termination gate.
@@ -76,13 +76,16 @@ python -m scripts.quality_filter
 
 # Phase 5: active GLM view
 python -m scripts.package_dataset \
-  --config configs/packaging_glm47_v2.yaml \
+  --config configs/packaging_glm47_v3.yaml \
   --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/glm47_dfir_v2
+  --output-dir data/packaged/glm47_v3
 
-# Phase 6: active v2 training configuration (DGX only)
-python -m scripts.finetune --config configs/finetune_glm47flash_v2.yaml
+# Phase 6: after fixing the lora_dropout cast (DGX only)
+python -m scripts.finetune --config configs/finetune_glm47flash_v3.yaml
 ```
+
+Before training, change the `lora_dropout` conversion in `scripts/finetune.py`
+from `int` to `float`; otherwise v3's configured 0.05 is applied as zero.
 
 The [Running The Pipeline](running-the-pipeline.md) page explains inputs,
 outputs, API requirements, resumption behavior, and release gates for every

@@ -110,7 +110,7 @@ If adding another format:
 1. keep split grouping by `source_doc_id`;
 2. preserve quality/source/prompt metadata;
 3. write split counts and overlap to `PackagingManifest`;
-4. update `configs/packaging.yaml`;
+4. add or update the relevant model-specific packaging config;
 5. update this guides site and durable state docs.
 
 # Update Documentation
