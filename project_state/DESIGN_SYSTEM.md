@@ -22,4 +22,4 @@ The project currently presents information through:
 - `rich` tables are acceptable for collection summaries.
 - Errors and warnings should identify the source collector and next debugging target.
 - Long-running stages should log stable progress identifiers such as source, prompt ID, case ID, and completed/total counts.
-- Partial artifacts must be visibly distinguishable from complete artifacts; Phase 6 uses `in_progress` and `complete` status fields.
+- Partial artifacts must be visibly distinguishable from complete artifacts; Evaluation stage uses `in_progress` and `complete` status fields.
