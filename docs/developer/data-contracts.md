@@ -159,7 +159,9 @@ Defined in `evaluation/schemas.py`. Each held-out case contains:
 * stable `case_id`, `task_type`, and `difficulty`;
 * target `prompt` and optional incident `context`;
 * `expected_answer` concepts, exclusions, gold labels, and alternatives;
-* per-case metric, strictly positive maximum points, and rubric;
+* an explicit `target_output.format` value: `free_form`, `techniques_json`,
+  `iocs_json`, or `ranked_actions_json`;
+* a strictly positive maximum score and local-judge rubric;
 * optional tags and notes for human reviewers.
 
 `expected_answer.acceptable_variants` is a list of lists. Each inner list is one
@@ -180,6 +182,10 @@ The evaluator converts that verdict into `CaseScore`:
 * normalized score is raw score divided by maximum points;
 * details retain the judge model, reason, criteria, matched variant, and
   validation-attempt count.
+
+`CaseScore` does not contain a statistical metric label. All case scores are
+local-judge rubric scores; structured target-output formats do not imply that
+F1, precision/recall, DCG, or NDCG is calculated.
 
 Because the evaluator has only one scoring mechanism, `CaseScore` and
 `EvaluationManifest` do not contain evaluator-selection fields. The manifest

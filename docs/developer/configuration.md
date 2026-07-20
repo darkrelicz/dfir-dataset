@@ -124,8 +124,10 @@ Defines the Phase 6 target-generation and local-judge clients:
 * `prompt` defines the target system message and context wrapper;
 * `generation.mode` is exactly `openai_compatible` for target generation or
   `prediction_file` for saved-answer replay;
-* `generation.model`, sampling fields, token limit, timeout, and
-  `structured_outputs` configure the evaluated model;
+* `generation.model`, sampling fields, token limit, and timeout configure the
+  evaluated model;
+* `generation.structured_outputs.enabled` globally enables or suppresses the
+  JSON instructions declared by each case's `target_output.format`;
 * `scoring.judge` configures the separately served judge model, JSON response
   format, validation retries, inference overrides, and calibration ID.
 

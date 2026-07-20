@@ -17,36 +17,23 @@ def structured_output_instruction(
     config = generation_config.get("structured_outputs", {})
     if not bool(config.get("enabled", True)):
         return None
-    family = objective_output_family(case.scoring.metric)
-    if family == "technique_f1":
+    output_format = case.target_output.format
+    if output_format == "techniques_json":
         return (
             "Output format: Return one JSON object with `techniques` as an array of "
             "ATT&CK or ATLAS IDs and `answer` as your concise evidence-based explanation."
         )
-    if family == "ioc_f1":
+    if output_format == "iocs_json":
         return (
             "Output format: Return one JSON object with `iocs` as an array of objects "
             "having `type` and `value`, plus `answer` as a concise explanation. Use "
             "normalized, refanged indicator values."
         )
-    if family == "ndcg":
+    if output_format == "ranked_actions_json":
         return (
             "Output format: Return one JSON object with `ranked_actions` as an ordered "
             "array of action IDs and `answer` as your concise ranking rationale."
         )
-    return None
-
-
-def objective_output_family(metric: str) -> str | None:
-    """Map current benchmark metrics to their structured response family."""
-
-    normalized = metric.casefold()
-    if normalized == "f1":
-        return "technique_f1"
-    if normalized == "precision_recall_f1":
-        return "ioc_f1"
-    if normalized == "ndcg@5":
-        return "ndcg"
     return None
 
 

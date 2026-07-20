@@ -45,7 +45,7 @@ class OpenAICompatibleClient:
         self.base_url = str(
             config.get("base_url", "http://127.0.0.1:8080/v1")
         ).rstrip("/")
-        self.model = str(config.get("model", "GLM-4.7-Flash"))
+        self.model = str(config.get("model"))
         self.temperature = float(config.get("temperature", 0.0))
         self.top_p = float(config.get("top_p", 1.0))
         self.max_tokens = int(config.get("max_tokens", 1200))

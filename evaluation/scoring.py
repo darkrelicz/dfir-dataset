@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import Any
 
 from evaluation.schemas import BenchmarkCase, CaseScore
@@ -16,7 +16,6 @@ def build_case_score(
     return CaseScore(
         case_id=case.case_id,
         task_type=case.task_type,
-        metric=case.scoring.metric,
         score=round(bounded_score, 4),
         normalized_score=round(bounded_score / max_points, 4),
         max_points=max_points,
@@ -47,7 +46,6 @@ def aggregate_scores(
     return {
         "overall_normalized_score": round(overall, 4),
         "task_scores": task_scores,
-        "metric_counts": dict(Counter(score.metric for score in scores)),
         "case_ids": sorted(score.case_id for score in scores),
         "benchmark_fingerprint": benchmark_fingerprint,
     }

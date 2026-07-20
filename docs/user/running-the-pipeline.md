@@ -214,12 +214,13 @@ evaluation_manifest.json
 `openai_compatible` and `prediction_file` are the only accepted generation mode
 names. Historical aliases such as `replay` and `predictions` are not accepted.
 
-There is no statistical scorer and no parallel case runner. Objective TTP, IOC,
-and ranking prompts request structured target JSON for inspectability, while
-the local judge evaluates both content and format. The judge receives the full
-answer key, rubric, and `acceptable_variants`; each inner variant is a complete
-independently valid alternative. Invalid judge JSON is retried according to
-`scoring.judge.validation_retries`.
+There is no statistical scorer and no parallel case runner. Each case declares
+`target_output.format`; TTP, IOC, and ranking prompts request structured target
+JSON for inspectability, while the local judge evaluates both content and
+format. These formats do not calculate or claim F1 or NDCG. The judge receives
+the full answer key, rubric, and `acceptable_variants`; each inner variant is a
+complete independently valid alternative. Invalid judge JSON is retried
+according to `scoring.judge.validation_retries`.
 
 The target client logs an empty `content` response but does not retry or fail
 the case; the judge will score the empty candidate. Inspect target

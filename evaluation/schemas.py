@@ -24,11 +24,21 @@ class AnswerConcept(BaseModel):
 
 
 class ScoringConfig(BaseModel):
-    """Per-case metric and rubric settings."""
+    """Per-case local-judge rubric settings."""
 
-    metric: str = "rubric"
     max_points: float = Field(default=5.0, gt=0)
     rubric: list[Any] = Field(default_factory=list)
+
+
+class TargetOutput(BaseModel):
+    """Response format requested from the evaluated target model."""
+
+    format: Literal[
+        "free_form",
+        "techniques_json",
+        "iocs_json",
+        "ranked_actions_json",
+    ]
 
 
 class BenchmarkCase(BaseModel):
@@ -40,6 +50,7 @@ class BenchmarkCase(BaseModel):
     prompt: str
     context: str | None = None
     expected_answer: ExpectedAnswer = Field(default_factory=ExpectedAnswer)
+    target_output: TargetOutput
     scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     tags: list[str] = Field(default_factory=list)
     notes_for_human_reviewer: str | None = None
@@ -50,7 +61,6 @@ class CaseScore(BaseModel):
 
     case_id: str
     task_type: str
-    metric: str
     score: float
     normalized_score: float
     max_points: float

@@ -150,19 +150,19 @@ def evaluate_cases(
     for index, case in enumerate(cases, 1):
         case_started = time.perf_counter()
         logger.info(
-            "Starting case %s/%s: case_id=%s task_type=%s metric=%s",
+            "Starting case %s/%s: case_id=%s task_type=%s target_output=%s",
             index,
             len(cases),
             case.case_id,
             case.task_type,
-            case.scoring.metric,
+            case.target_output.format,
         )
         target_started = time.perf_counter()
         logger.info(
-            "Starting target generation: case_id=%s task_type=%s metric=%s",
+            "Starting target generation: case_id=%s task_type=%s target_output=%s",
             case.case_id,
             case.task_type,
-            case.scoring.metric,
+            case.target_output.format,
         )
         messages = build_messages(case, prompt_config, generation_config)
         prediction = client.generate(case, messages)

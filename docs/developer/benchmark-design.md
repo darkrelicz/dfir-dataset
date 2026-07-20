@@ -13,6 +13,9 @@
   "difficulty": "mid",
   "prompt": "Question shown to the model being evaluated.",
   "context": "Optional evidence packet, logs, rule snippet, or scenario.",
+  "target_output": {
+    "format": "techniques_json"
+  },
   "expected_answer": {
     "required_concepts": [
       {
@@ -47,7 +50,6 @@
     "gold_labels": {}
   },
   "scoring": {
-    "metric": "f1",
     "max_points": 5,
     "rubric": []
   },
@@ -88,8 +90,15 @@ Keep structured labels in `gold_labels` whenever possible:
 - Ordered action IDs or labels for triage ranking.
 - Telemetry, artifacts, platforms, and detection concepts for rubric cases.
 
-The evaluator requests structured model outputs for objective tasks so the
-judge can inspect labels separately from prose:
+`target_output.format` explicitly controls the response shape requested from
+the evaluated model. Supported values are:
+
+- `free_form`
+- `techniques_json`
+- `iocs_json`
+- `ranked_actions_json`
+
+Structured formats let the judge inspect labels separately from prose:
 
 - TTP cases: `{"techniques": [...], "answer": "..."}`.
 - IOC cases: `{"iocs": [{"type": "...", "value": "..."}], "answer": "..."}`.
@@ -101,9 +110,9 @@ natural language so the benchmark still measures analyst-facing response quality
 Rubric scoring should reward atomic evidence coverage, limitations, next pivots,
 and avoidance of overclaims. The local judge receives each complete
 `acceptable_variants` entry as an independently valid alternative. Judge scores
-still need calibration and human review before final Phase 6 claims. The
-`scoring.metric` field describes the benchmark objective inherited by the cases;
-all current Phase 6 scores are produced by the local LLM judge.
+still need calibration and human review before final Phase 6 claims. `scoring`
+contains only the point ceiling and judge rubric; the evaluator does not claim
+to calculate statistical or ranking metrics.
 
 # Prompts
 
@@ -151,8 +160,8 @@ Requirements:
 - Include required_concepts for evidence links, such as specific command lines or artifacts.
 - Include forbidden_concepts for common overclaims.
 - Keep must_include and must_not_include as short judge-facing cues.
-- Benchmark objective label: technique selection plus evidence quality. The
-  current evaluator uses the local LLM judge, not deterministic F1.
+- Judge technique selection and evidence quality against the supplied answer
+  key and rubric.
 
 Return JSONL only.
 
@@ -168,9 +177,8 @@ Requirements:
 - Include normalized expected indicators in gold_labels.iocs with type and value.
 - Include forbidden_concepts and must_not_include for false positives.
 - Include required_concepts for normalization or classification requirements when useful.
-- Benchmark objective label: indicator correctness and completeness. The
-  current evaluator uses the local LLM judge, not deterministic precision,
-  recall, or F1.
+- Judge indicator correctness and completeness against the supplied answer key
+  and rubric.
 
 Return JSONL only.
 

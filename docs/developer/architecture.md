@@ -113,9 +113,10 @@ configured local judge is mandatory, and the runner writes one scorecard under
 is generated, that response is judged, and only then does the runner advance to
 the next case. After every verdict, predictions, case results, aggregate scores,
 and the run manifest are atomically refreshed. Partial checkpoints are marked
-`in_progress`; comparison accepts only `complete` scorecards. Objective TTP,
-IOC, and ranking tasks request structured JSON for inspectability, but the judge
-now evaluates both formatting and content.
+`in_progress`; comparison accepts only `complete` scorecards. Each benchmark
+case declares an explicit target-output format. TTP, IOC, and ranking cases
+request structured JSON for inspectability, but the judge evaluates both
+formatting and content without claiming a mathematical F1 or NDCG calculation.
 
 These checkpoints do not implement resume. A new invocation starts the case
 loop from the beginning and does not hydrate prior predictions or scores.
