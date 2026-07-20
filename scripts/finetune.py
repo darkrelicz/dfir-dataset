@@ -106,7 +106,7 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
         r=int(lora_config["rank"]),
         target_modules=list(lora_config["target_modules"]),
         lora_alpha=int(lora_config["alpha"]),
-        lora_dropout=int(lora_config["dropout"]),
+        lora_dropout=float(lora_config["dropout"]),
         bias=str(lora_config["bias"]),
         use_gradient_checkpointing=lora_config.get("use_gradient_checkpointing"),
         random_state=int(lora_config["random_state"]),

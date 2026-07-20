@@ -10,7 +10,7 @@ prompt:
 
 generation:
   mode: openai_compatible
-  model: "finedtuned-GLM-4.7-Flash-Q4_K_M.gguf"
+  model: "finedtuned-GLM-4.7-Flash-Q4_K_M-v4.gguf"
   base_url: "http://127.0.0.1:8080/v1"
   temperature: 1.0
   top_p: 0.95
