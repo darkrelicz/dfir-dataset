@@ -428,7 +428,7 @@ exit is not proof that the smoke gate passed.
 
 <puml src="../diagrams/phase6-training-sequence.puml" alt="Phase 6 training and promotion sequence" width="1000" />
 
-See [Training And Release](../user/training-and-release.md).
+See [Training And Release](training-and-release.md).
 
 # Phase 6B: Benchmark And Evaluation
 

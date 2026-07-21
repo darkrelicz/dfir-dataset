@@ -3,7 +3,12 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-<h1 class="no-index">Source Guide</h1>
+<h1 class="no-index">Source Internals</h1>
+
+This developer reference documents collector coverage, the shared raw-document
+contract, cache behavior, and source-specific normalization. For instructions
+on selecting and collecting sources, see the
+[user-facing source overview](../user/source-overview.md).
 
 The selected scope is Core + Tier 1 + Tier 2: all 16 collectors in
 `scripts/collect_all.py`.

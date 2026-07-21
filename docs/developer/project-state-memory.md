@@ -39,8 +39,8 @@ templates. Important migrated pages include:
 * [Quality Rubric](quality-rubric.md)
 * [Coverage Map](coverage-map.md)
 * [Benchmark Design](benchmark-design.md)
-* [Training And Release](../user/training-and-release.md)
-* [Handover Guide](../user/handover.md)
+* [Training And Release](training-and-release.md)
+* [Developer Handover Guide](handover.md)
 * [DFIR Artifact Taxonomy](../reference/taxonomy.md)
 
 The rendered MarkBind site is the GitHub Pages presentation of these source

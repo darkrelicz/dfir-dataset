@@ -20,10 +20,6 @@
       "title": "User Guides"
     },
     {
-      "src": "user/quickstart.md",
-      "title": "Quick Start"
-    },
-    {
       "src": "current-state/index.md",
       "title": "Current Project State"
     },
@@ -32,20 +28,8 @@
       "title": "Running The Pipeline"
     },
     {
-      "src": "user/source-guide.md",
-      "title": "Source Guide"
-    },
-    {
-      "src": "user/quality-and-packaging.md",
-      "title": "Quality And Packaging"
-    },
-    {
-      "src": "user/training-and-release.md",
-      "title": "Training And Release"
-    },
-    {
-      "src": "user/handover.md",
-      "title": "Handover Guide"
+      "src": "user/source-overview.md",
+      "title": "Source Overview"
     },
     {
       "src": "developer/index.md",
@@ -80,6 +64,10 @@
       "title": "Packaging"
     },
     {
+      "src": "developer/quality-and-packaging.md",
+      "title": "Quality And Packaging"
+    },
+    {
       "src": "developer/configuration.md",
       "title": "Configuration"
     },
@@ -90,6 +78,10 @@
     {
       "src": "developer/adding-sources.md",
       "title": "Adding Sources"
+    },
+    {
+      "src": "developer/source-guide.md",
+      "title": "Source Internals"
     },
     {
       "src": "developer/prompt-guide.md",
@@ -108,6 +100,10 @@
       "title": "Benchmark Design"
     },
     {
+      "src": "developer/training-and-release.md",
+      "title": "Training And Release"
+    },
+    {
       "src": "reference/taxonomy.md",
       "title": "DFIR Artifact Taxonomy"
     },
@@ -118,6 +114,10 @@
     {
       "src": "developer/project-state-memory.md",
       "title": "Project State Memory"
+    },
+    {
+      "src": "developer/handover.md",
+      "title": "Developer Handover"
     },
     {
       "src": "developer/suggested-improvements.md",

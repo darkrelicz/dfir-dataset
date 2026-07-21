@@ -10,38 +10,6 @@ instruction data and evaluating a locally fine-tuned model. It is designed to
 be extended with additional source collectors while preserving shared
 collection, synthesis, quality, packaging, training, and evaluation stages.
 
-* To run the Python scripts, start with the [**User Guide**](user/index.md).
-* To change a pipeline phase, start with the [**Phase Maintenance Guide**](developer/phase-maintenance.md).
-* For the complete handover snapshot, read [**Current State**](current-state/index.md).
-
-# Current Snapshot
-
-As of 2026-07-21, the active handoff path is:
-
-1. Raw source collection under `../data/raw/`.
-2. Reduced-subset Gemini synthesis under `../data/synthesized/gemini_subset_1/`.
-3. Phase 4 quality filtering under `../data/quality/gemini_subset_1/`.
-4. A filtered-only GLM Phase 5 view under `../data/packaged/glm47_v3/`.
-5. Completed v3/v4 LoRA artifacts awaiting a recorded direct-adapter promotion gate; v5 is staged but unrun.
-6. Local LLM-judge calibration, calibrated base/tuned evaluation, and
-   post-training comparison.
-
-The current packaged training inputs are:
-
-* `../data/packaged/glm47_v3/train.jsonl`
-* `../data/packaged/glm47_v3/validation.jsonl`
-* `../data/packaged/glm47_v3/test.jsonl`
-
-The first training run, `train-20260714T025314Z`, exported a LoRA adapter and a
-Q4_K_M GGUF but is rejected because it loops and does not emit EOS. V2 training
-completed but regressed against the base model in exploratory uncalibrated
-evaluation. V3 and the isolated v4 rerun completed and exported adapters and
-GGUFs; neither has a durable passing promotion-gate record. V5 is configured but
-has no manifest. The
-68-case base-model evaluation
-under `../data/evaluation/glm47-flash-base/` is complete with an exploratory score of
-`0.7588`, but its judge calibration ID is `uncalibrated`. It is not valid final
-baseline evidence and predates the current benchmark fingerprint and judge
-protocol. No checked-in scorecard is a complete current-compatible result.
-
-Refer to [**Current State**](current-state/index.md) to find out more about the current project state.
+* If you are interested in using this project, head over to the [*Quick Start section of the **User Guide***](user/index.md#quick-start).
+* If you are interested about developing this project, the [**Developer Guide**](developer/index.md) is a good place to start.
+* Refer to [**Current State**](current-state/index.md) to find out more about the current project state.
