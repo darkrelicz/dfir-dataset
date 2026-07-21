@@ -39,7 +39,7 @@ Each collector must emit records matching `collectors.schemas.RawDocument`:
   "source": "source_key",
   "source_url": "https://example.org/source",
   "title": "Human-readable title",
-  "date_collected": "YYYY-MM-DDTHH:MM:SSZ",
+  "date_collected": "YYYY-MM-DD",
   "date_published": null,
   "content_type": "specific_content_label",
   "content_markdown": "Normalized source content",
@@ -58,8 +58,16 @@ Each collector must emit records matching `collectors.schemas.RawDocument`:
 6. Preserve useful upstream metadata in `metadata`.
 7. Keep `content_markdown` readable and grounded in original source fields.
 8. Add the collector to `scripts/collect_all.py`.
-9. Run the collector alone.
-10. Run all collectors and validate the raw corpus.
+9. Ensure stable IDs remain unique across the complete raw corpus.
+10. Decide and document cache refresh and source-revision provenance behavior.
+11. Add parser fixtures for representative and malformed upstream records.
+12. Run the collector alone.
+13. Run all collectors and validate the raw corpus.
+
+The current base helper does not update an existing clone, and the current
+manifest contract does not generally record a source commit or config
+fingerprint. A collector that promises reproducible or fresh collection must
+implement and record the stronger behavior explicitly.
 
 # Content Type Guidance
 
@@ -116,6 +124,12 @@ content_type_profiles:
 .venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw
 .venv/bin/python -m scripts.synthesize render-prompts --mode pilot --output-dir data/synthesized/dry_run
 ```
+
+After collection, inspect `collection_manifest.json` for errors and expected
+source coverage. Do not use process exit status alone as the success check. A
+single-source invocation replaces the combined manifest with only that result,
+so rerun the full collection when the workflow requires a complete-corpus
+manifest.
 
 # Documentation Updates
 

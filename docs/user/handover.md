@@ -29,7 +29,7 @@ Before handing over the project, make sure the successor can find:
 - Quality outputs and the relevant `quality_manifest.json`.
 - Packaging outputs and the relevant `packaging_manifest.json`, if packaging exists.
 - Evaluation manifests, predictions, and LLM-judge scorecards under `data/evaluation/`.
-- The rejected v1 outputs, the regressed v2 artifacts/evaluation, the active v3 package manifest under `data/packaged/glm47_v3/`, and any future v3 training manifest under `data/finetune/glm47_v3/`.
+- The rejected v1 outputs, regressed v2 evaluation, active v3 package manifest, completed v3/v4 training manifests and exports, and the staged-but-unrun v5 configuration.
 
 # Successor Orientation
 
@@ -42,6 +42,7 @@ Explain these points during handover:
 - Canonical responses use `<reasoning>`, not `<think>`.
 - Model-specific exporters may transform formatting only at packaging time. The GLM v3 view derives a seeded 75% reasoning / 25% direct mix, removes `[GENERAL KNOWLEDGE]`, and maps retained `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
 - A completed training loop is not a release gate. The direct adapter must emit EOS on bounded smoke prompts before GGUF promotion or evaluation.
+- The current smoke script is advisory: it is hard-coded to v4, runs only `hello`, and does not fail its process when EOS is absent.
 - Import Unsloth before datasets/TRL/Transformers in the training process so the fused-loss trainer patch is installed.
 - Full-corpus generation should be treated as a separate budget decision.
 - Phase 6 has one evaluator: the separately served local LLM judge. There is no statistical or combined evaluator mode.
@@ -129,13 +130,17 @@ For prediction replay, add `--mode prediction_file --predictions <path>`.
 
 ```bash
 .venv/bin/python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v3.yaml
+  --config configs/<intended_versioned_finetune_config>.yaml
 
 .venv/bin/python -m scripts.compare_evaluations \
   --baseline-dir data/evaluation/<baseline_run> \
   --tuned-dir data/evaluation/<tuned_run> \
   --output-dir data/evaluation/comparisons/<comparison_name>
 ```
+
+Never rely on the fine-tuning CLI default, which selects the historical v1
+config. Use a fresh output directory; checkpoints are not automatically resumed
+and the completion manifest appears only after GGUF export succeeds.
 
 # Critical Gates
 
@@ -163,6 +168,10 @@ Before Shepherd integration:
 
 - [ ] Direct LoRA adapter passes bounded EOS/termination smoke tests.
 - [ ] Fine-tuned model passes the calibrated local-judge comparison gate.
+- [ ] Release automation parsed `comparison.json`; command exit status is always
+      zero after a completed comparison, including a failed regression gate.
+- [ ] Baseline and tuned target prompts, generation settings, endpoints, and
+      effective served-model identities were frozen and recorded separately.
 - [ ] No critical DFIR task or safety behavior has an unacceptable regression.
 - [ ] No severe regressions on critical DFIR behavior.
 - [ ] Reasoning format remains usable for Shepherd.

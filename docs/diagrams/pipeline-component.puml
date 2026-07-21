@@ -92,7 +92,8 @@ CollectionConfig --> CollectCLI
 CollectCLI --> Collectors
 Collectors -up-|> BaseCollector
 Collectors --> RawJsonl
-Collectors --> CollectionManifest
+Collectors --> CollectCLI : return manifest entries
+CollectCLI --> CollectionManifest : replace with invocation results
 
 SourceProfiles --> Planner
 TaskConfig --> Planner

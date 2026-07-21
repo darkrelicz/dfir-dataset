@@ -22,7 +22,8 @@ Planner -> Planner: assign difficulty buckets
 Planner -> Builder: build PromptRecord per doc
 Builder -> Compactor: create prompt-ready source view
 Builder --> Planner: PromptRecord
-CLI -> Out: write prompts.jsonl
+CLI -> Out: replace prompts.jsonl with current plan
+CLI -> Out: scan accepted/rejected for matching hash + model
 
 loop each non-skipped prompt
   CLI -> Gemini: generate(prompt)
@@ -39,6 +40,12 @@ loop each non-skipped prompt
   end
 end
 
-CLI -> Out: write generation_manifest.json
+CLI -> Out: replace generation_manifest.json for latest invocation
+
+note right of Out
+  accepted, rejected, and raw outputs append
+  and may contain multiple run IDs.
+  The manifest is written only after the loop.
+end note
 
 @enduml

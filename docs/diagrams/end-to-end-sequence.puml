@@ -31,7 +31,8 @@ participant "scripts.compare_evaluations" as CompareCLI
 Maintainer -> CollectCLI: python -m scripts.collect_all
 CollectCLI -> Collectors: run selected or all collectors
 Collectors -> Raw: write <source>/<source>.jsonl
-Collectors -> Raw: write collection_manifest.json
+Collectors --> CollectCLI: return CollectionManifest entries
+CollectCLI -> Raw: replace collection_manifest.json for this invocation
 
 Maintainer -> SynthCLI: validate-raw
 SynthCLI -> Raw: read raw JSONL
@@ -45,14 +46,26 @@ Planner -> Gemini: one prompt at a time
 Gemini -> V3: structured JSON output
 V3 -> V3: schema, reasoning, grounding, indicators, mappings
 V3 -> SynthOut: accepted.jsonl or rejected.jsonl
-Gemini -> SynthOut: raw_outputs.jsonl
-SynthCLI -> SynthOut: prompts.jsonl and generation_manifest.json
+Gemini -> SynthOut: append raw_outputs.jsonl
+SynthCLI -> SynthOut: replace prompts.jsonl and latest invocation manifest
+
+note right of SynthOut
+accepted/rejected/raw streams append;
+resume may retain multiple run IDs
+end note
 
 Maintainer -> QualityCLI: quality_filter
 QualityCLI -> Quality: validate candidate pairs
 Quality -> Raw: load source documents
 Quality -> Quality: row gates, scoring, dataset gates
-Quality -> QualityOut: filtered, review, rejected, sample, manifest
+Quality -> QualityOut: write/append row files; replace sample and manifest
+
+note right of QualityOut
+append mode gates and manifest cover current input only;
+distribution/taxonomy audits do not fail the run;
+manifest omits config/cache fingerprints and reference counts;
+deduplication skips pairs below 8 distinctive tokens
+end note
 
 Maintainer -> PackageCLI: package_dataset
 PackageCLI -> Packager: load filtered rows
@@ -62,7 +75,7 @@ Packager -> Packager: transform GLM response view
 Packager -> Packager: split by source_doc_id
 Packager -> PackageOut: train, validation, test, manifest
 
-Maintainer -> TrainCLI: finetune --config configs/finetune_glm47flash_v3.yaml
+Maintainer -> TrainCLI: finetune --config configs/<versioned config>.yaml
 TrainCLI -> Trainer: load package and training config
 Trainer -> PackageOut: read train and validation JSONL
 Trainer -> FinetuneOut: checkpoints, adapter, GGUF, training manifest
@@ -73,11 +86,22 @@ loop one held-out case at a time
   Target --> EvalCLI: prediction
   EvalCLI -> Judge: case, prediction, answer key, rubric, variants
   Judge --> EvalCLI: validated JSON verdict
-  EvalCLI -> EvalOut: atomically refresh all run artifacts
+  EvalCLI -> EvalOut: individually atomically replace run artifacts
 end
+
+note right of EvalOut
+  Artifact replacements are not one transaction.
+  Manifest is written last as the commit marker.
+end note
 
 Maintainer -> CompareCLI: compare calibrated base and tuned runs
 CompareCLI -> EvalOut: load complete compatible judge scorecards
 CompareCLI -> EvalOut: write JSON and Markdown comparison
+
+note right of CompareCLI
+  Compatibility fingerprints benchmark + judge,
+  not target generation settings.
+  Gate failure is reported but still exits 0.
+end note
 
 @enduml

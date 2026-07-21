@@ -43,7 +43,13 @@ python -m scripts.synthesize render-prompts \
 
 Inspect `data/synthesized/quickstart_preview/prompts.jsonl`. If the source data
 is not present locally, run `python -m scripts.collect_all` first; collection
-downloads public data and updates local Git caches.
+downloads missing public data but reuses existing non-empty Git/cache paths
+without updating them.
+
+The ten-prompt preview is a rendering smoke test, not a representative pilot.
+The global limit is applied after source-target sampling, so the current command
+selects ten `mitre_attack` documents. Omit `--limit` to render the configured
+cross-source pilot.
 
 # Current Dataset
 
@@ -80,12 +86,13 @@ python -m scripts.package_dataset \
   --quality-dir data/quality/gemini_subset_1 \
   --output-dir data/packaged/glm47_v3
 
-# Phase 6: after fixing the lora_dropout cast (DGX only)
-python -m scripts.finetune --config configs/finetune_glm47flash_v3.yaml
+# Phase 6: choose an isolated versioned config (DGX only)
+python -m scripts.finetune --config configs/<versioned_finetune_config>.yaml
 ```
 
-Before training, change the `lora_dropout` conversion in `scripts/finetune.py`
-from `int` to `float`; otherwise v3's configured 0.05 is applied as zero.
+Do not omit `--config`: the command default is the historical v1 experiment.
+V3 and v4 have completed artifacts; v5 is configured but has no completed
+manifest. Read Current State and choose deliberately before spending GPU time.
 
 The [Running The Pipeline](running-the-pipeline.md) page explains inputs,
 outputs, API requirements, resumption behavior, and release gates for every

@@ -35,6 +35,13 @@ The CLI stays thin. Execution lives in `synthesizers.runner`.
 Pilot and subset sampling stratify by source, content type, and word-count
 richness buckets.
 
+`--limit` is applied after the per-source samples have been concatenated in
+`pilot_targets` or `subset_targets` order. It is not a second stratified sample.
+For example, the current `--mode pilot --limit 10` plan contains ten
+`mitre_attack` documents because that source is first in `pilot_targets`. Do not
+use a small global limit when the review requires cross-source representation;
+instead, run the complete pilot plan or change the configured per-source targets.
+
 # Category Assignment
 
 `assign_categories` reads target weights from
@@ -140,6 +147,40 @@ schema but keeps strict local Pydantic validation.
 Only accepted/rejected rows with matching `prompt_hash` and model are considered
 complete for skip-present behavior.
 
+Both kinds of rejection are terminal for `--skip-present`, including
+`status="api_error"`. The command therefore does not retry a transient API error
+on a later invocation when its prompt hash and model still match. Completion is
+detected from the presence of a matching row; it does not verify that all
+`pairs_requested` rows were appended before an interruption.
+
+# Output Directory And Resume Semantics
+
+Synthesis output files do not all have the same replacement behavior:
+
+| Output | Behavior on invocation |
+|---|---|
+| `prompts.jsonl` | Replaced with the current complete prompt plan. |
+| `accepted.jsonl` | Existing file retained; new accepted pairs appended. |
+| `rejected.jsonl` | Existing file retained; new terminal rejections appended. |
+| `raw_outputs.jsonl` | Existing file retained; every new model response appended. |
+| `generation_manifest.json` | Replaced after the generation loop finishes. |
+
+`--skip-present` supports continuing an unchanged plan in the same directory,
+but the resulting JSONL files can contain multiple run IDs. The replacement
+manifest describes only the latest invocation and uses notes for its attempted,
+accepted, rejected, and skipped counts.
+
+Do not reuse an output directory after changing prompts, profiles, task policy,
+source documents, or models. A changed prompt hash causes regeneration, but old
+accepted/rejected rows are not removed; downstream quality would otherwise read
+both old and new accepted rows. Running again without `--skip-present` also
+appends duplicate work.
+
+Writes are not transactional. Accepted, rejected, and raw-output rows survive an
+interruption because they are appended incrementally, but an interrupted final
+line may be incomplete and no current manifest is written until the loop ends.
+Inspect and repair JSONL integrity before continuing an interrupted directory.
+
 # Generated-Output Validation
 
 `synthesizers.validators.validate_generated_pairs` checks:
@@ -167,3 +208,35 @@ errors and hard output requirements.
 For `subset` and `full` modes, the rejection circuit breaker can stop a run
 after the minimum attempted prompt count when rejection rate exceeds the
 configured threshold. It is inactive in pilot mode.
+
+A circuit-breaker stop returns exit code 2 and writes the final manifest with a
+free-form `Stopped early` note. Ordinary API or validation rejections do not by
+themselves make the command fail.
+
+# Configuration Boundaries
+
+The `output` mapping in `configs/synthesis.yaml` is currently descriptive and is
+not read by the runner. `--output-dir` controls the destination, while JSONL and
+manifest writing are unconditional.
+
+Source profiles and pilot/subset targets are loaded from the repository's fixed
+`configs/source_profiles.yaml` path at Python import time; there is no CLI option
+for an alternate source-profile file. Taxonomy suggestion mappings for sources,
+content types, categories, tactics, and platforms are Python constants in
+`synthesizers.prompt_builder`, rather than YAML policy.
+
+Prompt-policy preflight checks that referenced templates exist and that source
+categories are known. Prompt rendering uses `Template.safe_substitute`, so an
+unknown or misspelled placeholder remains literally in the prompt instead of
+failing preflight. Dry-run prompt review must check for unresolved `$...`
+placeholders.
+
+# Generation Manifest Scope
+
+`GenerationManifest` records the run ID, mode, model, creation time, selected
+document and prompt counts, output directory, synthesis-config path, and notes.
+It does not fingerprint the raw corpus, task config, quality config, source
+profiles, prompt templates, compactors, or effective model settings. It also has
+no structured completion status or structured attempted/accepted/rejected/
+skipped counters. Preserve the invoked configuration and code revision
+separately when exact run reproduction is required.

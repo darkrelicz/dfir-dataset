@@ -53,6 +53,17 @@ Git-backed collectors clone to `data/raw/.repos/`. ATT&CK STIX is cached at
 are ignored by git.
 
 Collectors reuse an existing non-empty clone path rather than recloning.
+They do not fetch or pull changes, verify that the directory is a valid clone,
+or compare it with the upstream revision. The ATT&CK collector likewise reuses
+an existing cache file. A normal rerun therefore reproduces the local cache,
+not necessarily the latest upstream source.
+
+When freshness is required, refresh or replace the exact source-specific clone
+or cache before collection, then record the resulting upstream commit or feed
+version outside the current collection manifest. Do not assume `collected_at`
+identifies the upstream revision: the manifest records collection time and
+collector package version, but has no general source-revision or configuration
+fingerprint fields.
 
 # Thin Source Handling
 

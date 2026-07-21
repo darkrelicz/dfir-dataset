@@ -28,7 +28,7 @@ Suggested coverage:
 * AI/LLM ATLAS cases.
 
 Fix the dropout cast, then complete and smoke-test v3. After judge calibration,
-rerun base scoring, score only an EOS-approved v3 artifact, and compare them
+rerun base scoring, score only an artifact that passed the full promotion gate, and compare them
 with the Phase 6 commands. Record reviewed results in
 the [Training And Release](../user/training-and-release.md) page and update
 `project_state/TODO.md`.

@@ -13,7 +13,7 @@ This file is a reusable rubric and operating guide, not a live quality snapshot.
 
 # Implementation Notes
 
-The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local ATT&CK/ATLAS ID reference checks, raw-corpus fallback ID references, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`.
+The implementation lives in `quality/` and is run with `scripts/quality_filter.py`. Phase 3 and Phase 4 share pure validation primitives from `validation/`, while Phase 4 keeps its own row-level policies, local cache-backed ATT&CK/ATLAS ID reference checks, config-backed tool allowlist, heuristic rubric scoring, near-duplicate checks, source/category/difficulty/taxonomy audits, and required output files plus `quality_manifest.json`. There is no raw-document fallback for ATT&CK or ATLAS reference IDs.
 
 The CLI should log each major sub-stage so long runs show visible progress. Semantic unsupported-claim adjudication remains review work because deterministic code cannot reliably prove every fuzzy forensic claim.
 
@@ -21,7 +21,7 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 
 | Output | Purpose |
 |---|---|
-| `filtered.jsonl` | Pairs accepted without row-level issues |
+| `filtered.jsonl` | Pairs accepted by row-level validation and the enforcing dataset gates |
 | `rejected.jsonl` | Pairs rejected with reasons |
 | `review_queue.jsonl` | Pairs that need manual or AI-assisted review; excluded from active packaging until adjudicated |
 | `quality_manifest.json` | Run metadata, counts, distributions, and audits |
@@ -33,11 +33,15 @@ The CLI should log each major sub-stage so long runs show visible progress. Sema
 .venv/bin/python -m scripts.quality_filter \
   --input data/synthesized/<run>/accepted.jsonl \
   --raw-dir data/raw \
-  --output-dir data/quality/<run> \
-  --log-level INFO
+  --output-dir data/quality/<run>
 ```
 
-The logger should report config loading, output preparation, raw document loading, reference-set construction, row-level validation progress, dataset-level audits, JSONL output writing, spot-check sampling, and manifest writing.
+The CLI has no `--log-level` option; it configures INFO logging automatically. The logger should report config loading, output preparation, raw document loading, reference-set construction, row-level validation progress, dataset-level audits, JSONL output writing, spot-check sampling, and manifest writing.
+
+Use a fresh output directory. In replacement mode the runner clears existing
+row-output JSONL before opening the input. `--append` appends row files but
+replaces a current-batch-only manifest and sample, so it is not suitable for a
+self-consistent packaging input.
 
 # Deterministic Validators
 
@@ -49,18 +53,23 @@ These checks should run before heuristic scoring.
 | Source provenance | Missing or unknown `source_doc_id`/`source` |  | Pair must map to a raw source document |
 | Category/difficulty | Invalid label |  | Must match configured labels |
 | Taxonomy refs | Unknown taxonomy IDs |  | Use `configs/quality.yaml` |
-| ATT&CK IDs | Malformed or absent from local ATT&CK STIX/reference cache | Candidate mapping may go to review | Allow `?` suffix for candidate mappings |
-| ATLAS IDs | Malformed or absent from local ATLAS YAML/reference cache | Candidate mapping may go to review | Validate separately from ATT&CK |
-| Tool names |  | Tool absent from source text and allowlist | Configured in `configs/quality.yaml` and expanded from raw tool-like sources |
+| ATT&CK IDs | Malformed or absent from local ATT&CK STIX cache |  | `?` suffix is normalized for cache membership, but response/metadata consistency compares raw values |
+| ATLAS IDs | Malformed or absent from local ATLAS YAML cache |  | Validate separately from ATT&CK; missing cache makes every non-empty ATLAS mapping unknown |
+| Tool names |  | Tool absent from source text and allowlist | Static allowlist from `configs/quality.yaml`; source-text acceptance uses substring matching |
 | Reasoning links | Broken evidence/analysis/conclusion/caveat references | Reasoning step count above configured maximum | Use shared reasoning parser with stricter Phase 4 options |
-| Empty evidence | Evidence lines are empty or purely generic |  |  |
 | Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Use shared grounding helper with Phase 4 reject policy |
-| Final-answer consistency | Final answer introduces unsupported findings |  | May need heuristic or AI-assisted review |
 | Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
+
+There is no standalone empty-evidence validator or general final-answer
+consistency validator. The reasoning parser detects missing/invalid structural
+elements, and indicator validation detects supported concrete artifacts, but a
+generic evidence sentence or a semantically unsupported non-indicator claim can
+still pass deterministic validation. Those cases belong in manual or
+AI-assisted review.
 
 # Heuristic Scoring
 
-Suggested weights:
+Configured weights and the intended manual-review interpretation:
 
 | Dimension | Weight | Score 1 | Score 3 | Score 5 |
 |---|---:|---|---|---|
@@ -75,6 +84,23 @@ Quality scores are descriptive metadata. They are useful for sorting and manual 
 - `filtered`: no row-level issues after deterministic gates
 - `review`: at least one review issue and no reject issue
 - `rejected`: at least one reject issue
+
+The implemented scores are coarse lexical heuristics, not an automated
+adjudication of the full rubric above. In particular:
+
+* factual accuracy starts at 5 and is reduced only by reject-severity
+  `invented_indicator` or `grounding_mismatch` issues;
+* reasoning quality starts at 5 and is reduced only by a reject-severity
+  `reasoning_links_invalid` issue;
+* review-severity invented indicators and overlong reasoning do not reduce
+  those two dimensions;
+* specificity uses source-token overlap and concrete-indicator counts, so an
+  ungrounded indicator can increase specificity while a separate issue routes
+  the row to review or rejection.
+
+Scores influence which rows survive near-duplicate selection and which rows are
+moved during source balancing. Do not interpret a score of 5 as proof of factual
+correctness or semantic source grounding.
 
 # Manual Review Guidance
 
@@ -121,6 +147,25 @@ Run these after filtering:
 | ATT&CK/ATLAS ID validity | Technique IDs are valid against local references |
 | Taxonomy heatmap | Covered, thin, and absent categories visible |
 | Duplicate audit | Sigma/Hayabusa and repeated advisory patterns checked |
+
+Only duplicate detection and source-balance movement can change row status.
+Category, difficulty, and taxonomy audits are reporting checks and do not make
+the process fail. Source balancing is one pass against the initial denominator,
+so manually verify the final source shares against the configured maximum.
+Near-duplicate comparison skips candidates whose instruction plus final answer
+produce fewer than eight distinctive tokens. Exact short pairs can therefore
+survive and require a separate audit if short outputs are admitted.
+
+# Run Success And Append Semantics
+
+A completed command returns success even when all rows are rejected, the input
+is empty, a distribution is outside tolerance, or taxonomy coverage is missing.
+Treat manifest review as part of the acceptance gate.
+
+`--append` does not recompute gates or totals across existing output rows. It
+appends filtered/review/rejected rows, replaces the manual sample, and replaces
+the manifest with counts for only the current input. Do not package from such a
+directory unless it has been rebuilt as one complete non-append batch.
 
 # Spot Check Template
 

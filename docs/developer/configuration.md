@@ -52,9 +52,20 @@ Defines teacher-model and generation behavior:
 * retry/backoff settings;
 * validation retry count;
 * `max_source_chars`;
-* output settings.
+* an `output` mapping retained as descriptive configuration.
 
 The Gemini client maps supported controls into `models.generate_content`.
+
+The runner does not currently read `output.format`, `output.dir`, or
+`output.manifest`. The CLI's `--output-dir` owns the destination, and JSONL plus
+manifest output is always enabled.
+
+`configs/source_profiles.yaml` is loaded from a fixed repository path at import
+time. `--synthesis-config` and `--task-config` do not select an alternate source
+profile file. Taxonomy suggestions based on source, content type, category,
+tactic, and platform are currently hard-coded in
+`synthesizers.prompt_builder`; these are exceptions to the config-first policy
+described above.
 
 # `configs/task_categories.yaml`
 
@@ -93,6 +104,12 @@ Defines Phase 4 quality policy:
 
 Quality validators and dataset gates read from this file. They do not own the
 canonical taxonomy list.
+
+Phase 4 loads this YAML as an untyped mapping and does not apply a configuration
+schema or startup range validation. Keep scoring weights non-negative, Jaccard
+and balance values within their intended 0-1 ranges, reasoning limits coherent,
+and sample sizes non-negative. Invalid-but-numeric values may silently weaken a
+gate or distort score-based ranking rather than fail at startup.
 
 # Packaging Configurations
 
@@ -137,19 +154,36 @@ Both `base_url` values must be API roots such as
 selector; a valid `scoring.judge` mapping is required.
 
 Server-specific request fields belong only under `request_overrides`; the
-former `extra_body` alias is not supported.
+former `extra_body` alias is not supported. The implementation reserves only
+`messages` and `model`; an override can replace standard payload fields such as
+temperature, token limit, or response format. Avoid duplicating those fields,
+because the override wins while the dedicated setting remains misleading.
 
 The complete judge mapping contributes to the scorecard fingerprint. Once a
 judge has been calibrated, freeze its model, quantization, chat template,
 sampling fields, request overrides, and `calibration_id` for both base and tuned
 runs.
 
+Only the complete judge mapping is fingerprinted. Target prompt and generation
+settings, endpoint, overrides, prediction-file identity, and the model actually
+reported by the server are not included in comparison compatibility metadata.
+Freeze and archive the full target configuration and logs separately.
+
+Evaluation YAML has no typed top-level configuration model or range validation.
+Values are converted when clients are built; review timeouts, token limits,
+sampling values, and retry counts before running.
+
 # Fine-Tuning Configurations
 
 `configs/finetune_glm47flash.yaml` and
-`configs/finetune_glm47flash_v2.yaml` preserve historical runs.
-`configs/finetune_glm47flash_v3.yaml` is the active retraining configuration and
-defines:
+`configs/finetune_glm47flash_v2.yaml` preserve historical runs. V3 and v4 have
+completed manifests and exports; v4 differs from v3 only in its isolated output
+paths. V5 is the newest experiment definition, using zero dropout plus attention
+and MLP targets, but it has no completed training manifest. The repository does
+not provide an active-config pointer, and the CLI default still selects the
+historical unversioned v1 config. Always pass the intended version explicitly.
+
+Every fine-tuning config defines:
 
 * packaged train, validation, test, and manifest paths;
 * the GLM-4.7-Flash base model and sequence length;
@@ -157,13 +191,21 @@ defines:
 * `finetune` trainer arguments and checkpoint policy;
 * the adapter and GGUF destinations plus GGUF quantization settings.
 
-V3 uses `data/packaged/glm47_v3/`, rank 16, alpha 32, dropout 0.05,
-attention-only targets, learning rate `2e-5`, one epoch, and isolated v3 output
-paths. The runner is intentionally specific to 4-bit LoRA SFT: it always
+V3/v4 use `data/packaged/glm47_v3/`, rank 16, alpha 32, dropout 0.05,
+attention-only targets, learning rate `2e-5`, and one epoch. V5 retains that
+package, rank, alpha, and learning rate but uses dropout 0 and adds `gate_proj`,
+`up_proj`, and `down_proj`. The runner is intentionally specific to 4-bit LoRA SFT: it always
 uses response-only loss masking and saves both the adapter and GGUF artifact.
 GGUF generation cannot be disabled; every configuration must provide
-`gguf_dir` and `gguf_quantization`. The effective mappings are serialized into
-the training manifest.
+`gguf_dir` and `gguf_quantization`. The raw config mappings are copied into the
+training manifest, but forced runtime choices such as `load_in_4bit=True` and
+`trust_remote_code=True` are not added when absent from the config, and numeric
+casts are not reflected as a normalized effective configuration.
+
+There is no typed fine-tuning configuration schema or range validation. Values
+are cast at their use sites; notably, `bf16` uses Python truth conversion, so a
+quoted string such as `"false"` evaluates as enabled. Keep booleans as YAML
+booleans and validate numeric ranges before committing an expensive run.
 
 # Prompt Templates
 

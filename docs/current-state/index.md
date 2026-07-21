@@ -6,7 +6,7 @@
 <h1 class="no-index">Current Project State</h1>
 
 This is the complete handover snapshot for the repository as inspected on
-2026-07-17. It records what exists, what is usable, what was rejected, and what
+2026-07-21. It records what exists, what is usable, what was rejected, and what
 must happen next. Generated manifests remain authoritative for the exact facts
 of an individual run.
 
@@ -21,9 +21,9 @@ of an individual run.
 | Training target | `unsloth/GLM-4.7-Flash`, 4-bit base, LoRA SFT |
 | Hosting | Local DGX storage; Hugging Face publishing deferred |
 | Current usable dataset | `data/packaged/glm47_v3/` |
-| Current usable model | None; v1 is rejected, v2 regressed, and no v3 run is complete |
-| Current evaluation evidence | Exploratory only; the judge is uncalibrated |
-| Release status | Blocked on v3 training, EOS smoke test, and calibrated comparison |
+| Current usable model | None promoted; v3/v4 completed but lack a durable passing promotion-gate record, and v5 is unrun |
+| Current evaluation evidence | Historical diagnostics only; uncalibrated and generated with an older benchmark fingerprint and judge protocol |
+| Release status | Blocked on an enforcing direct-adapter smoke gate and calibrated comparison |
 
 The repository is a data pipeline, not a web API, model server, or Shepherd
 application. The site under `docs/` is the maintainer documentation for that
@@ -38,8 +38,8 @@ pipeline.
 | 3. Synthesis | Complete for reduced subset | Phase 2 raw JSONL | `data/synthesized/gemini_subset_1/` |
 | 4. Quality | Complete for reduced subset | Phase 3 `accepted.jsonl` | `data/quality/gemini_subset_1/` |
 | 5. Packaging | Filtered-only GLM v3 view complete | Phase 4 `filtered.jsonl` | `data/packaged/glm47_v3/` |
-| 6. Training | V1 rejected; v2 regressed; v3 pending runner fix | Phase 5 GLM package | `configs/finetune_glm47flash_v3.yaml` |
-| 6. Evaluation | Exploratory base and v2-tuned runs complete | 68 held-out cases | `data/evaluation/glm47-flash-base/`, `data/evaluation/glm47-flash-finetuned_v2_1/` |
+| 6. Training | V1 rejected; v2 regressed; v3/v4 completed but unpromoted; v5 staged | Phase 5 GLM package | `data/finetune/glm47_v3/`, `data/finetune/glm47_v4/`, `configs/finetune_glm47flash_v5.yaml` |
+| 6. Evaluation | Exploratory base and v2-tuned runs complete; v3 tuned run stopped at 9/68 | 68 held-out cases | `data/evaluation/glm47-flash-base/`, `data/evaluation/glm47-flash-finetuned_v2_1/`, `data/evaluation/glm47-flash-finetuned_v3/` |
 
 # Implemented Pipeline
 
@@ -203,10 +203,16 @@ V2 subsequently completed, but its exploratory uncalibrated evaluation scored
 0.6831 versus the base model's 0.7588. It regressed most on IOC extraction and
 TTP identification and is not a release candidate. V3 uses the filtered-only
 package, rank 16 / alpha 32 attention-only LoRA, dropout 0.05, learning rate
-2e-5, and a 4,096-token maximum. Its active config is
-`configs/finetune_glm47flash_v3.yaml`; training has not completed. The runner's
-`lora_dropout` conversion must be changed from `int` to `float` first, otherwise
-the configured 0.05 becomes zero.
+2e-5, and a 4,096-token maximum. It completed as
+`train-20260717T042223Z`. V4 repeated that configuration in isolated output paths
+and completed as `train-20260720T062603Z`. Both exported adapters and GGUFs, but
+neither manifest records a passed termination/promotion gate.
+
+The dropout cast is now correctly implemented as `float`. V5 is the newest
+configuration and changes to dropout 0 plus attention and MLP projection targets;
+its output directory has no manifest or artifacts. The repository has no single
+active-config pointer. `scripts.test_lora` and `configs/evaluation.yaml` currently
+point at v4, but this does not establish release approval.
 
 # Phase 6: Evaluation Snapshot
 
@@ -231,18 +237,35 @@ This is diagnostic evidence only. The scorecard uses
 review. `complete` means every case was checkpointed; it does not mean the judge
 is calibrated or the model is releasable.
 
-The evaluator runs target generation and judging sequentially and atomically
-rewrites predictions, case results, aggregate scores, and the manifest after
-each verdict. It preserves crash output but does not resume it: a new invocation
-starts again at case one. Empty target `content` is warned about and judged
+The evaluator runs target generation and judging sequentially and individually
+atomically replaces predictions, case results, aggregate scores, and the manifest
+after each verdict. The four-file update is not transactional; reconcile files
+against the last-written manifest after interruption. It preserves crash output
+but does not resume it: a new invocation starts again at case one. Empty target
+`content` is warned about and judged
 rather than retried. Comparison checks compatible complete scorecards and equal
 calibration metadata, but does not yet reject the literal placeholder
 `uncalibrated`.
+
+The current benchmark fingerprint is `b1fc02a447e4...` and current judge protocol
+is `phase6-judge-v3-target-output`. Every checked-in scorecard uses older
+fingerprint `09b197857e44...` or another historical subset fingerprint and judge
+protocol `phase6-judge-v2-acceptable-variants`. None is a complete compatible
+current result; all published scores below remain historical diagnostics.
+
+Comparison compatibility covers benchmark and judge identity but not target
+prompt/generation settings, endpoint, prediction-file identity, or actual served
+model. A failed regression gate is reported in JSON but the command still exits
+0, so release automation must enforce the field itself.
 
 The v2-tuned run `data/evaluation/glm47-flash-finetuned_v2_1/` also completed
 68/68 cases with the same uncalibrated judge and scored 0.6831 overall. Because
 the comparison is uncalibrated, the result is diagnostic, but the broad
 regression is sufficient to reject v2 as the active candidate.
+
+The uncalibrated v3 tuned run under
+`data/evaluation/glm47-flash-finetuned_v3/` stopped after 9 of 68 cases and is
+marked `in_progress`. It is preserved diagnostic output, not comparable evidence.
 
 # Active Configuration
 
@@ -254,7 +277,8 @@ regression is sufficient to reject v2 as the active candidate.
 | Task mix and quality signals | `configs/task_categories.yaml` |
 | Taxonomy, scoring, dedupe, balance | `configs/quality.yaml` |
 | Active GLM packaging transform | `configs/packaging_glm47_v3.yaml` |
-| Active v3 LoRA run | `configs/finetune_glm47flash_v3.yaml` |
+| Completed LoRA runs | `configs/finetune_glm47flash_v3.yaml`, `configs/finetune_glm47flash_v4.yaml` |
+| Newest staged LoRA experiment | `configs/finetune_glm47flash_v5.yaml` |
 | Benchmark, target, and judge | `configs/evaluation.yaml` |
 
 `GEMINI_API_KEY` is the only project API secret and is required only for Phase
@@ -265,24 +289,27 @@ Phase 6 target and judge endpoints are local OpenAI-compatible servers.
 
 In order:
 
-1. Fix the `lora_dropout` cast in `scripts/finetune.py` so v3 uses the configured
-   value of 0.05.
-2. Complete v3 training with `configs/finetune_glm47flash_v3.yaml`.
-3. Run a bounded direct-adapter greeting smoke test. Require
-   `EOS generated: True` before GGUF promotion or evaluation.
-4. Record v3 paths, versions, hashes, validation metrics, and selected
+1. Replace or extend the advisory v4 smoke script with a parameterized,
+   enforcing gate covering bounded greeting and DFIR prompts, EOS, repetition,
+   and template leakage.
+2. Run that gate against the intended candidate and record the result before
+   promotion or evaluation.
+3. Decide whether v4 or the staged v5 experiment is the next candidate; always
+   pass its versioned config explicitly because the CLI default is historical v1.
+4. Record candidate paths, versions, hashes, validation metrics, and selected
    checkpoint.
 5. Finish manual review of all 68 benchmark cases and record owner/date.
 6. Build and adjudicate a stratified human-scored judge calibration set; assign
    a real calibration ID and freeze the judge configuration.
-7. Run complete calibrated base and v3 tuned evaluations with the same
+7. Run complete calibrated base and tuned evaluations with the same
    benchmark and judge.
 8. Compare them and review task-level and severe DFIR regressions before any
    Shepherd integration.
 
 Code hardening still due: reject placeholder calibration IDs in comparison,
-add fingerprint-safe evaluation resume, and add configurable retry/failure for
-empty target responses.
+fingerprint target-generation inputs, return nonzero for a failed regression
+gate, make checkpoint-set consistency recoverable, add fingerprint-safe
+evaluation resume, and add configurable retry/failure for empty target responses.
 
 # Deferred Work
 

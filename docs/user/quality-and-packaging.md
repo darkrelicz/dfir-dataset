@@ -23,7 +23,7 @@ Outputs:
 
 | File | Purpose |
 |---|---|
-| `filtered.jsonl` | No row-level issues after deterministic gates |
+| `filtered.jsonl` | Accepted by row-level validation and the enforcing dataset gates |
 | `review_queue.jsonl` | Review-severity issues only |
 | `rejected.jsonl` | At least one reject-severity issue |
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample using seed 1337 |
@@ -43,6 +43,13 @@ Phase 4 validates:
 * Grounding field versus `[GENERAL KNOWLEDGE]` tags.
 * Concrete indicators absent from source text.
 
+ATT&CK and ATLAS membership is fail-closed against the expected local cache
+files. There is no fallback to IDs embedded in raw documents. If a cache is
+missing or unreadable, every non-empty mapping list for that framework is
+rejected as unknown; confirm the logged reference counts before accepting a run.
+Those counts and the cache identities are not stored in `quality_manifest.json`,
+so retain the run log when you need durable reference provenance.
+
 Quality scoring is no-API and heuristic. It uses:
 
 * reject issue codes for factual accuracy and reasoning penalties;
@@ -54,6 +61,15 @@ Quality scoring is no-API and heuristic. It uses:
 * caveat presence and response length.
 
 Scores help with ranking and audits. Row status is decided by issue severity.
+They are coarse lexical heuristics, not semantic grading: review-severity
+problems may leave factual or reasoning scores at 5, and a concrete artifact can
+increase specificity even when it is separately flagged as ungrounded. Scores
+also influence duplicate retention and source-balance movement, so inspect issue
+codes alongside scores.
+
+Phase 4 does not generally prove that non-indicator final-answer claims are
+supported, and it has no standalone check for generic-but-nonempty evidence.
+Use the manual sample and review process for those judgments.
 
 # Dataset Gates
 
@@ -67,6 +83,37 @@ After row validation, `quality.dataset.apply_dataset_gates` runs:
 
 The current reduced subset had zero near duplicates and no source-balance
 movement.
+
+Near-duplicate and source-balance processing can change a row's status.
+Category, difficulty, and taxonomy results are audits only; out-of-tolerance or
+missing values do not fail the run. Source balancing uses one pass based on the
+initial filtered total, so verify the reported final source shares manually.
+
+Pairs with fewer than eight distinctive tokens across the instruction and final
+answer are not compared by the near-duplicate gate. Identical short pairs can
+therefore survive; audit short outputs separately if they are allowed.
+
+# Safe Output Handling
+
+Use a new Phase 4 output directory after confirming that the input and raw
+corpus paths are readable. In normal replacement mode, the runner deletes the
+existing filtered, review, and rejected JSONL files before it loads raw documents
+or opens the input. A later failure can leave those files empty while an older
+manifest and spot-check sample remain.
+
+Do not use `--append` for a packaging input. Append mode adds current rows to the
+three existing output streams, but duplicate/balance gates inspect only the
+current input and the manifest and spot-check sample are replaced with
+current-batch-only data.
+
+Process success does not mean the dataset passed a release threshold. Empty or
+all-rejected inputs, ordinary rejection volume, distribution tolerance failures,
+and taxonomy gaps still return success after outputs are written. Inspect counts,
+reference-set logs, final source shares, and every audit before packaging.
+
+The quality configuration has no schema or range validation. Before a run,
+review scoring weights, thresholds, tolerances, reasoning limits, and sample
+sizes; numeric but out-of-range values can silently weaken filtering.
 
 # Current Quality Result
 

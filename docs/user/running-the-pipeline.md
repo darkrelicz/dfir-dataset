@@ -37,6 +37,22 @@ python -m scripts.collect_all --dry-run
 Collector output is written to `data/raw/<source>/<source>.jsonl`. The combined
 collection manifest is `data/raw/collection_manifest.json`.
 
+The manifest contains results from the current invocation only. In particular,
+running one collector with `--source` replaces the existing manifest with a
+one-entry manifest; it does not preserve or merge entries for the other raw
+files. If complete-corpus manifest coverage matters, run all collectors before
+the downstream validation step.
+
+Collection exit status is not currently a reliable success signal: unknown
+sources, collector-reported errors, and exceptions caught by the orchestrator do
+not force a non-zero exit. Always inspect every manifest entry's `errors` and
+`warnings`, confirm that the expected sources are present, and run raw-corpus
+validation before synthesis.
+
+Dry-run validates selection from the loaded YAML only. It does not apply a
+configuration schema, instantiate collectors, inspect local caches, or test
+upstream access.
+
 # 2. Validate Raw Corpus
 
 ```bash
@@ -56,6 +72,11 @@ python -m scripts.synthesize render-prompts \
 ```
 
 Add `--write-prompt-files` for one Markdown file per prompt.
+
+`--limit` truncates the already assembled plan; it does not preserve
+cross-source stratification. With the current configuration, using pilot mode
+with a limit of 10 renders ten `mitre_attack` prompts. Run the full pilot when
+reviewing representation across sources.
 
 Prompt rendering uses:
 
@@ -90,6 +111,25 @@ The runner writes:
 `--skip-present` skips terminal accepted/rejected prompt IDs only when prompt
 hash and model match the current plan.
 
+Rejected prompts are terminal for this check, including transient API failures.
+To retry those prompts without mixing run state, use a new output directory.
+
+Use a new output directory for a new prompt, profile, task-policy, source-corpus,
+or model revision. The runner replaces `prompts.jsonl` and the final manifest,
+but appends accepted, rejected, and raw-output rows. Reusing a directory after a
+prompt change retains stale rows alongside regenerated rows; rerunning without
+`--skip-present` appends duplicate work.
+
+For an unchanged plan, `--skip-present` can continue the directory, and output
+rows may then carry multiple run IDs. The manifest represents only the latest
+invocation. Because it is written at the end, an interrupted directory can
+contain useful appended rows without a current manifest or with a partial final
+JSONL line. Validate JSONL integrity before continuing.
+
+The `output` mapping in `configs/synthesis.yaml` does not control the current
+runner. `--output-dir` selects the destination; JSONL and manifest output are
+always written.
+
 # 5. Run Phase 4 Quality
 
 ```bash
@@ -108,6 +148,28 @@ The quality runner logs major stages at INFO level and writes:
 | `rejected.jsonl` | Rows with reject-severity issues |
 | `manual_spot_check_sample.jsonl` | Deterministic filtered sample |
 | `quality_manifest.json` | Counts, distributions, and audits |
+
+Use a fresh output directory and verify the input and raw paths first. Without
+`--append`, Phase 4 clears existing filtered/review/rejected files before opening
+the input; a later failure can leave an old manifest beside empty row outputs.
+
+`--append` is not an aggregate-resume mode. It appends row files, but gates only
+the current input and replaces the manifest and sample with current-batch-only
+results. Do not pass an append-mode directory to packaging without rebuilding it
+as one complete batch.
+
+Near-duplicate and source-balance gates may move rows. Category, difficulty, and
+taxonomy checks only report audit results. The command returns success after a
+completed pass even for empty/all-rejected inputs or failed distribution audits,
+so inspect manifest counts, final source shares, reference counts, and audit
+flags before continuing.
+
+Reference counts exist only in the run log, not the manifest. Keep that log for
+release provenance. Treat scores as lexical ranking signals rather than proof of
+correctness, and inspect issue codes alongside them. The duplicate gate does not
+compare pairs with fewer than eight distinctive tokens, so separately inspect
+short outputs. Phase 4 also does not range-check quality configuration values;
+review weights, thresholds, tolerances, limits, and sample sizes before running.
 
 # 6. Package Dataset
 
@@ -140,7 +202,10 @@ validation. Canonical synthesis and quality data is not modified.
 Phase 6 has a working local training runner, a judge-only evaluator, and guarded
 base-versus-tuned comparison. The first LoRA run completed but failed the
 termination smoke gate and is rejected. V2 completed but regressed in
-exploratory evaluation. V3 training and calibrated evaluation are pending.
+exploratory evaluation. V3 and its isolated v4 rerun completed training and
+export, but the repository has no durable passing promotion-gate record. V5 is
+configured but has no training manifest or artifacts. Calibrated evaluation is
+still pending.
 
 First finalize a held-out benchmark:
 
@@ -148,7 +213,7 @@ First finalize a held-out benchmark:
 evaluation/benchmark/
 ```
 
-For the v3 cycle, calibrate and freeze the judge before producing the comparison
+For the next candidate cycle, calibrate and freeze the judge before producing the comparison
 scorecards. Existing base and v2 scorecards are uncalibrated diagnostics; do not
 reuse them as final baseline or tuned evidence.
 
@@ -202,7 +267,7 @@ replace the saved files starting with the first new checkpoint. Use a new run
 ID, or deliberately replay a preserved prediction file, until explicit resume
 logic is implemented.
 
-Each checkpoint atomically replaces:
+Each checkpoint atomically replaces each of these files in sequence:
 
 ```text
 predictions.jsonl
@@ -210,6 +275,11 @@ scorecard/case_results.jsonl
 scorecard/scores.json
 evaluation_manifest.json
 ```
+
+The directory update is not transactional as a whole. A crash between file
+replacements can leave different case counts across artifacts. The manifest is
+written last; after interruption, treat it as the commit marker and reconcile
+its case IDs/count with predictions, case results, and aggregate scores.
 
 `openai_compatible` and `prediction_file` are the only accepted generation mode
 names. Historical aliases such as `replay` and `predictions` are not accepted.
@@ -227,20 +297,33 @@ the case; the judge will score the empty candidate. Inspect target
 `finish_reason`, content length, and token limits in logs, especially for models
 that can spend their full token budget in `reasoning_content`.
 
-The active training command is:
+The client also discards response-model identity, finish reason, usage, and
+reasoning content after logging them. A server model mismatch is a warning, not
+a failure, and saved predictions contain the configured model name rather than
+proof of the served model.
 
-First change the `lora_dropout` conversion in `scripts/finetune.py` from `int`
-to `float`; otherwise v3's configured 0.05 is applied as zero.
+The dropout conversion is already fixed. Always select a versioned config
+explicitly because the CLI default remains the historical v1 configuration:
 
 ```bash
 python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v3.yaml
+  --config configs/<intended_versioned_finetune_config>.yaml
 ```
+
+Use a fresh output directory. Preflight checks path existence but does not
+validate package rows, reconcile counts, or verify split separation. Test JSONL
+is not consumed by training. Check those contracts independently. Checkpoints
+are not resumed, and the manifest is written only after adapter and GGUF export;
+partial artifacts may therefore exist without current manifest metadata.
 
 After training, load the direct adapter and run bounded greeting and DFIR
 prompts. Every successful run already saves the adapter and GGUF; require EOS
 before promoting or serving that GGUF. Do not evaluate a model that reaches the
 token cap or emits role/template delimiters.
+
+The current smoke script points at v4, runs only `hello`, and prints rather than
+enforces EOS success. A zero exit code is not a passing release gate; add the
+documented DFIR, repetition, and template-leakage checks and record their result.
 
 Then rerun the same evaluator against the fine-tuned model and compare:
 
@@ -255,10 +338,20 @@ The comparison accepts only complete scorecards and rejects a changed judge
 protocol/configuration fingerprint or calibration ID. Qualitatively review
 critical regressions before deployment.
 
+It does not fingerprint target prompts, sampling/token settings, structured
+output policy, request overrides, endpoint, prediction file, or served model.
+Archive and compare those inputs separately for both runs. Judge `criteria` are
+free-form explanations; only their numeric ranges are checked, not their names,
+sum, or agreement with the scalar score.
+
 The current comparison code does not reject the literal calibration ID
 `uncalibrated`; it only requires the two IDs to be present and equal. Treat the
 non-placeholder calibration requirement as a release policy until that check is
 enforced in code.
+
+The comparison command also exits 0 when its JSON reports
+`passes_regression_gate: false`. CI and release scripts must parse that field and
+fail explicitly.
 
 The current `data/evaluation/glm47-flash-base/` run is complete at `0.7588`, but
 its calibration ID is `uncalibrated`. Do not compare it as a final baseline.

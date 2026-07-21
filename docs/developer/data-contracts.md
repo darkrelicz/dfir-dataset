@@ -41,6 +41,14 @@ Each collector returns a manifest entry with:
 `scripts.collect_all` writes the combined list to
 `data/raw/collection_manifest.json`.
 
+The file is scoped to the most recent CLI invocation. Running with `--source`
+overwrites it with only that source's result, even when other source JSONL files
+remain in `data/raw/`. Normal collector results contain all fields above. If an
+exception escapes collector construction, collection, or manifest creation, the
+CLI currently writes a reduced dictionary containing only `collector`,
+`document_count`, `errors`, `warnings`, and `duration_seconds`; that fallback row
+is not validated as `CollectionManifest`.
+
 # PromptRecord
 
 Defined in `synthesizers/schemas.py`.
@@ -84,6 +92,27 @@ Phase 3 overwrites deterministic provenance fields from `PromptRecord` before
 schema validation, because the teacher model should not be trusted for those
 values.
 
+# GenerationManifest
+
+Defined in `synthesizers/schemas.py`. It contains:
+
+* `run_id`, `mode`, `model`, and `created_at`;
+* selected `source_doc_count` and planned `prompt_count`;
+* `output_dir` and the synthesis `config_path`;
+* free-form `notes`.
+
+The manifest is scoped to the latest invocation and is replaced only after the
+generation loop finishes. When `--skip-present` continues work, accepted,
+rejected, and raw-output JSONL files can contain rows from older run IDs even
+though the manifest has one current run ID. Attempted, accepted, rejected,
+skipped, circuit-breaker, and early-stop information is stored only in notes,
+not typed fields.
+
+The contract has no completion status or fingerprints for raw inputs, task and
+quality configs, source profiles, prompt assets, compactors, or effective model
+settings. An interrupted run can therefore have durable appended rows but no
+current manifest.
+
 # QualityCandidate And QualityDecision
 
 `QualityCandidate` is the Phase 4 input schema. It mirrors `InstructionPair`,
@@ -94,6 +123,19 @@ but ignores extra fields because Phase 3 rows include run metadata.
 * `status`: `filtered`, `review`, or `rejected`;
 * `issues`: deterministic and heuristic issue codes;
 * `score`: a `QualityScore` with five dimensions and total.
+
+# QualityManifest Scope
+
+`QualityManifest` describes the input processed by the current invocation. It
+contains row counts, issue counts, filtered-only distributions, dataset audits,
+paths, timestamps, and notes. It does not fingerprint the input, raw corpus,
+quality/task configs, or reference caches, and it has no success/status or append
+mode field.
+
+In normal mode the manifest is replaced after row files and the spot-check sample
+are written. In `--append` mode, row files retain older rows while the manifest
+and sample are replaced with current-batch-only results; manifest counts therefore
+do not describe the complete directory.
 
 # Packaged Record
 
@@ -147,10 +189,10 @@ markers without changing canonical inputs.
 |---|---|---|
 | `collection_manifest.json` | `scripts.collect_all` | Raw collection summary. |
 | `generation_manifest.json` | `synthesizers.runner` | Prompt/generation run summary. |
-| `quality_manifest.json` | `quality.runner` | Quality counts, distributions, and audits. |
+| `quality_manifest.json` | `quality.runner` | Quality counts, distributions, and audits for the current invocation. It does not record config fingerprints, reference-cache paths/hashes, or loaded reference counts. |
 | `packaging_manifest.json` | `dataset_packaging.runner` | Split counts, response styles, and leakage check. |
 | `evaluation_manifest.json` | `evaluation.runner` | Evaluation status, benchmark identity, target identity, case progress, and scorecard paths. |
-| `training_manifest.json` | `scripts.finetune` | Dataset provenance, model/LoRA/export settings, and trainer result. |
+| `training_manifest.json` | `scripts.finetune` | Selected packaging-manifest fields, raw model/LoRA/trainer/export mappings, and a stringified trainer result. Written only after GGUF export; it omits status, input/config hashes, code and environment versions, structured evaluation metrics, selected checkpoint, actual GGUF filename, and smoke-gate results. |
 
 # Phase 6 BenchmarkCase
 
@@ -175,6 +217,10 @@ The local judge must return a JSON object containing a bounded `score`, a
 non-empty `reason`, optional numeric `criteria`, and an optional
 `matched_acceptable_variant`. The matched index is zero-based and must point to
 an existing acceptable variant.
+
+`criteria` is free-form explanatory metadata. The parser range-checks each value
+against the case's overall maximum, but it does not require rubric criterion
+names or reconcile criterion values with the scalar score.
 
 The evaluator converts that verdict into `CaseScore`:
 
@@ -207,15 +253,21 @@ aliases such as `response`, `output`, and `answer` are not accepted.
 
 # Evaluation Outputs
 
-After every successful verdict, `evaluation.runner` atomically refreshes:
+After every successful verdict, `evaluation.runner` individually atomically
+replaces, in order:
 
 | Output | Contract |
 |---|---|
-| `predictions.jsonl` | Target prediction and model metadata keyed by `case_id`. |
+| `predictions.jsonl` | Target text plus configured model name/label keyed by `case_id`. It omits the actual response model, finish reason, usage, reasoning content, and effective generation settings. |
 | `scorecard/case_results.jsonl` | One validated `CaseScore` per completed case. |
 | `scorecard/scores.json` | Overall/task aggregates, case IDs, benchmark fingerprint, judge fingerprints, calibration ID, and run progress. |
-| `evaluation_manifest.json` | Run identity, target configuration identity, case progress, status, and scorecard summary. |
+| `evaluation_manifest.json` | Run identity, requested target model/label, generation mode, case progress, status, and scorecard summary. It does not fingerprint the target prompt/config, endpoint, overrides, prediction file, or effective served model. |
 
 Partial scorecards use `run_status: in_progress`; the last checkpoint changes
 them to `complete`. The comparison command accepts only complete compatible
 scorecards.
+
+Each file replacement is atomic, but the four replacements are sequential and
+not transactional as a group. After interruption, use the manifest as the last
+commit marker and verify that prediction, case-result, aggregate, and manifest
+case IDs/counts agree.

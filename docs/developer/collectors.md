@@ -22,6 +22,15 @@ Collectors normalize upstream DFIR/security sources into the shared
 Collectors track `errors`, `warnings`, `duration`, and `doc_count` locally, then
 return a `CollectionManifest`.
 
+`_clone_repo()` is cache reuse, not synchronization. If the clone path is
+non-empty, collection uses it as-is: the helper does not verify that it is a Git
+repository and does not fetch, pull, or record its revision. Most source URLs in
+raw documents point at a default branch rather than the exact collected commit.
+
+`_write_documents()` opens the canonical source JSONL in write mode. It does not
+write to a temporary file and atomically replace the destination, so an
+interrupted write can leave partial output.
+
 # CLI Orchestration
 
 `scripts.collect_all`:
@@ -32,6 +41,17 @@ return a `CollectionManifest`.
 4. runs collectors sequentially;
 5. writes `data/raw/collection_manifest.json`;
 6. prints a Rich summary table.
+
+The combined manifest describes the current CLI invocation, not everything that
+may exist under `data/raw/`. A single-source run therefore replaces the manifest
+with one entry. The CLI also currently exits successfully after unknown-source
+selection, collector-reported errors, or caught fatal exceptions. Treat the
+manifest error fields and raw-corpus validation as required success checks.
+
+`--dry-run` checks that the configured source selection can be constructed from
+the loaded YAML. There is no collection configuration schema, and dry-run does
+not instantiate collectors, inspect caches, contact upstreams, or validate
+collector-specific values.
 
 # Collector Details
 

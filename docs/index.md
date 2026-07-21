@@ -16,14 +16,14 @@ collection, synthesis, quality, packaging, training, and evaluation stages.
 
 # Current Snapshot
 
-As of 2026-07-17, the active handoff path is:
+As of 2026-07-21, the active handoff path is:
 
 1. Raw source collection under `../data/raw/`.
 2. Reduced-subset Gemini synthesis under `../data/synthesized/gemini_subset_1/`.
 3. Phase 4 quality filtering under `../data/quality/gemini_subset_1/`.
 4. A filtered-only GLM Phase 5 view under `../data/packaged/glm47_v3/`.
-5. V3 LoRA training and a mandatory direct-adapter EOS smoke gate.
-6. Local LLM-judge calibration, calibrated base/v3 tuned evaluation, and
+5. Completed v3/v4 LoRA artifacts awaiting a recorded direct-adapter promotion gate; v5 is staged but unrun.
+6. Local LLM-judge calibration, calibrated base/tuned evaluation, and
    post-training comparison.
 
 The current packaged training inputs are:
@@ -35,10 +35,13 @@ The current packaged training inputs are:
 The first training run, `train-20260714T025314Z`, exported a LoRA adapter and a
 Q4_K_M GGUF but is rejected because it loops and does not emit EOS. V2 training
 completed but regressed against the base model in exploratory uncalibrated
-evaluation. V3 training is pending the runner's `lora_dropout` type fix. The
+evaluation. V3 and the isolated v4 rerun completed and exported adapters and
+GGUFs; neither has a durable passing promotion-gate record. V5 is configured but
+has no manifest. The
 68-case base-model evaluation
 under `../data/evaluation/glm47-flash-base/` is complete with an exploratory score of
 `0.7588`, but its judge calibration ID is `uncalibrated`. It is not valid final
-baseline evidence.
+baseline evidence and predates the current benchmark fingerprint and judge
+protocol. No checked-in scorecard is a complete current-compatible result.
 
 Refer to [**Current State**](current-state/index.md) to find out more about the current project state.

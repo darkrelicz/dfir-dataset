@@ -19,7 +19,7 @@ and manifest artifacts under `data/`.
 | Validate or generate synthesis data | `python -m scripts.synthesize` |
 | Filter candidate pairs | `python -m scripts.quality_filter` |
 | Build train/validation/test files | `python -m scripts.package_dataset` |
-| Train the GLM LoRA | `python -m scripts.finetune` |
+| Train the GLM LoRA | `python -m scripts.finetune --config configs/<versioned_finetune_config>.yaml` |
 | Evaluate or compare a model | `python -m scripts.run_evaluation` / `python -m scripts.compare_evaluations` |
 | Understand source coverage | [Source Guide](source-guide.md) |
 | Understand quality/package policy | [Quality And Packaging](quality-and-packaging.md) |
@@ -43,6 +43,9 @@ After `pip install -e .`, each module also has a console command.
 Use `--help` before changing defaults. The documentation uses module commands
 so it is always clear which source file runs.
 
+Fine-tuning is the exception where the default is historical v1 state. Always
+pass an explicit versioned config and use isolated output paths.
+
 # Normal Operating Path
 
 ```text
@@ -63,8 +66,9 @@ or training. It is candidate data. The active package is built only from Phase
    active paths and rejected artifacts.
 3. Give every new run its own output directory unless intentionally resuming
    Phase 3 with `--skip-present`.
-4. Inspect the generated manifest and process exit status before using output
-   downstream.
+4. Inspect the generated manifest, including errors, warnings, and expected
+   source coverage, before using output downstream. Collection process exit
+   status alone is not currently a reliable success gate.
 5. Never treat a completed training or evaluation process as a release by
    itself; Phase 6 has explicit termination, calibration, and regression gates.
 

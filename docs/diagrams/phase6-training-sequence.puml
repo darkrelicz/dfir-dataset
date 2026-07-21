@@ -16,17 +16,31 @@ participant "Direct-adapter smoke test" as Smoke
 participant "Phase 6 evaluation" as Evaluation
 
 Maintainer -> CLI: finetune --config <versioned config>
-CLI -> Preflight: validate paths and package manifest
-Preflight -> Package: load train, validation, test, manifest
-Preflight --> CLI: counts and provenance
+CLI -> Preflight: check four configured paths exist
+Preflight -> Package: read selected packaging-manifest fields
+Preflight --> CLI: unverified counts and provenance summary
+note right of Preflight
+  No row parsing, count reconciliation,
+  split-overlap check, or config schema.
+  Test JSONL is not consumed by SFT.
+end note
 CLI -> Tokenizer: render chat exactly once
 Tokenizer -> Tokenizer: append EOS; reject > max_length
 CLI -> Trainer: train response-only LoRA
 Trainer -> Package: read rendered train/validation text
-Trainer -> Artifacts: checkpoints, adapter, training manifest
+Trainer -> Artifacts: checkpoints, then adapter
 Trainer -> GGUF: save configured quantization
+CLI -> Artifacts: write manifest only after GGUF succeeds
+note right of Artifacts
+  No resume_from_checkpoint support.
+  Partial artifacts can lack a current manifest.
+end note
 Maintainer -> Smoke: load direct adapter; bounded hello + DFIR prompts
 Smoke -> Artifacts: generate with EOS configured
+note right of Smoke
+  Current test_lora.py runs only hello,
+  prints EOS, and does not enforce failure.
+end note
 alt EOS and behavior gates pass
   Smoke --> Maintainer: eligible for promotion
   Maintainer -> GGUF: promote/serve generated artifact

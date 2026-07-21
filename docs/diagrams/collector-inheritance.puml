@@ -52,7 +52,9 @@ note right of BaseCollector
 Each concrete collector writes:
 - data/raw/<source>/<source>.jsonl
 - one RawDocument per logical source item
+Each concrete collector returns:
 - one CollectionManifest entry
+scripts.collect_all writes the combined manifest
 end note
 
 @enduml

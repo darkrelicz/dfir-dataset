@@ -372,6 +372,11 @@ appends EOS, rejects overlength rows, performs Unsloth LoRA SFT, and saves both
 the LoRA adapter and its configured GGUF quantization. These two artifacts are
 mandatory outputs of every successful training run.
 
+Here, “validates” is limited to path existence plus selected packaging-manifest
+metadata. The runner does not reconcile JSONL counts or roles with the manifest,
+verify split overlap, or consume the test split during SFT. Perform the package
+checks from Phase 5 independently before spending GPU time.
+
 ## Files To Update
 
 | Concern | Files |
@@ -395,6 +400,10 @@ mandatory outputs of every successful training run.
    reproducible; add versions, hashes, metrics, and checkpoint selection to the
    handover record.
 
+Always pass `--config`: the CLI default is the historical v1 file. Use a fresh
+output directory. Checkpoints do not imply resume support, and a failure before
+the final manifest write can leave partial outputs without current run metadata.
+
 ```bash
 python -m scripts.finetune --config configs/<new_finetune_config>.yaml
 ```
@@ -409,8 +418,11 @@ python -m scripts.finetune --config configs/<new_finetune_config>.yaml
    and formatting.
 5. Only then promote or serve the generated GGUF and proceed to evaluation.
 
-The current `scripts/test_lora.py` has a hard-coded v2 adapter path. Update or
-parameterize it before testing v3; do not accidentally test the wrong artifact.
+The current `scripts/test_lora.py` has a hard-coded v4 adapter path, exercises
+only a `hello` prompt, and prints rather than enforces its EOS result. Update or
+parameterize it for the artifact under review, inspect its output manually, and
+run the additional DFIR/repetition/template-leakage checks above. A zero process
+exit is not proof that the smoke gate passed.
 
 ## UML
 
@@ -424,8 +436,10 @@ See [Training And Release](../user/training-and-release.md).
 
 Evaluation loads held-out cases, generates or replays one target prediction,
 obtains a structured verdict from a separate local judge, and checkpoints the
-whole run after every successful case. Comparison decides whether compatible
-complete baseline/tuned scorecards pass overall and task regression gates.
+completed prefix after every successful case. Each artifact replacement is
+atomic, but the set is not transactional. Comparison reports whether compatible
+complete baseline/tuned scorecards pass overall and task regression gates; its
+process exit status does not enforce that decision.
 
 ## Files To Update
 
@@ -456,7 +470,9 @@ complete baseline/tuned scorecards pass overall and task regression gates.
    semantics are deliberately redesigned.
 3. Validate bounded judge scores, concise reason, criterion scores, and variant
    indices before checkpointing.
-4. Preserve atomic writes and `in_progress`/`complete` distinction.
+4. Preserve per-file atomic writes and `in_progress`/`complete` distinction.
+   The checkpoint files are not one transaction; keep the manifest last and
+   reconcile case IDs/counts when recovering an interrupted directory.
 5. Update protocol/config fingerprints whenever judge-visible behavior changes.
 6. Calibrate against a human-scored stratified set and assign a non-placeholder
    calibration ID before final runs.
@@ -487,11 +503,20 @@ python -m scripts.compare_evaluations \
   reusing a run ID can overwrite it from case one.
 - Empty target content is currently warned and judged. Inspect finish reasons
   and token use, especially when reasoning consumes the output budget.
+- Target response model, finish reason, usage, and reasoning content are logged
+  but not saved. A configured/served model mismatch is only a warning.
 - `complete` is necessary but not sufficient. Require matching benchmark/case
   IDs, judge protocol/configuration, inference configuration, and a real shared
   calibration ID.
+- Comparison does not verify target prompts, generation settings, endpoints,
+  overrides, prediction-file identity, or served model. Freeze and compare those
+  inputs outside the current scorecard contract.
 - Comparison code currently accepts `uncalibrated` when both sides match. Until
   fixed, enforce the non-placeholder gate procedurally.
+- Comparison returns exit code 0 even when `passes_regression_gate` is false.
+  Automation must inspect `comparison.json` and set its own failing status.
+- Judge criterion names and totals are not reconciled with the declared rubric;
+  treat them as explanatory metadata and review the scalar verdict.
 - Aggregate gain never overrides a severe behavioral or unacceptable task-level
   regression.
 

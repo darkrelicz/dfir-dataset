@@ -114,6 +114,12 @@ still need calibration and human review before final Phase 6 claims. `scoring`
 contains only the point ceiling and judge rubric; the evaluator does not claim
 to calculate statistical or ranking metrics.
 
+The returned `criteria` mapping is not mechanically tied to this rubric. The
+evaluator accepts arbitrary criterion names and checks only that each numeric
+value is within the case's overall score range; it does not sum criteria or
+reconcile them with the scalar verdict. Use criteria to explain and audit the
+judge, not as independently validated subscores.
+
 # Prompts
 
 Review all test cases before using for benchmark
