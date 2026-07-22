@@ -157,3 +157,12 @@ Use this table in a run note or pull request when prompt behavior changes. Do no
 - Do not run future full-corpus synthesis before smoke and pilot quality are acceptable.
 - Preserve all prompt, raw output, accepted, rejected, and manifest files.
 - Keep alternate teacher-model comparisons in separate labeled output directories.
+- Use a new output directory after any prompt, profile, task-policy, source, or
+  model change. Existing accepted/rejected/raw files are append-only, so a hash
+  change does not remove stale rows.
+- Remember that `--skip-present` treats API-error and validation-error rows as
+  terminal. Use a separate retry directory when transient failures should be
+  attempted again.
+- Check dry-run prompts for unresolved `$placeholder` text; template preflight
+  verifies referenced files but `safe_substitute` does not reject unknown
+  placeholders.

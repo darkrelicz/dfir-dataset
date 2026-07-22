@@ -12,10 +12,10 @@ implementation facts.
 
 ## Finalize Phase 6 Benchmark
 
-The evaluator is implemented, the first LoRA run is complete but rejected by
-the termination smoke gate, and an
-uncalibrated 68-case base run is complete. Finish manual benchmark review and
-record the review owner/date before using it for a calibrated model comparison.
+The evaluator is implemented, v1 is rejected by the termination smoke gate, v2
+regressed in exploratory evaluation, and an uncalibrated 68-case base run is
+complete. Finish manual benchmark review and record the review owner/date before
+using it for a calibrated model comparison.
 
 Suggested coverage:
 
@@ -27,10 +27,13 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-Complete and smoke-test the v2 artifact first. After judge calibration, rerun
-base scoring, score only the EOS-approved v2 artifact, and compare them with the
-Phase 6 commands. Record reviewed results in
-the [Training And Release](../user/training-and-release.md) page and update
+V5 training/export is complete, but its initial smoke observations overrode the
+model's multi-token stop list and are not valid termination evidence. Correct
+and enforce the smoke gate, retest the v5 final adapter and checkpoint 250, then
+decide whether v5 or staged v6 is the next candidate. After judge calibration,
+rerun base scoring, score only an artifact that passed the full promotion gate,
+and compare them with the Phase 6 commands. Record reviewed results in
+the [Training And Release](training-and-release.md) page and update
 `project_state/TODO.md`.
 
 ## Calibrate And Freeze The Local Judge
@@ -59,8 +62,8 @@ is still a measurement model, not ground truth.
 
 ## Complete Training Reproducibility Metadata
 
-The runner now serializes the effective `finetune` mapping and v2 uses YAML
-`null` for `loftq_config`. After v2 completes, still record:
+The runner serializes the effective training mappings. After a run completes,
+still record:
 
 * the actual GGUF output path produced by Unsloth;
 * capture the code commit, package versions, CUDA/runtime details, artifact
@@ -99,8 +102,9 @@ exist. Continue with tests for:
 
 ## Resolve Review Queue
 
-The current package includes review rows by time-boxed decision. Future quality
-hardening should adjudicate `review_queue.jsonl`, especially:
+The active package excludes review rows. Future quality hardening should
+adjudicate `review_queue.jsonl` before those examples can enter filtered output,
+especially:
 
 * invented indicators;
 * mapping inconsistencies;
@@ -173,7 +177,8 @@ upload logic unless `project_state/DECISIONS.md` changes.
 
 ## Extend Model-Specific Export Adapters
 
-The GLM v2 exporter now maps `<reasoning>` to `<think>` and removes literal
-grounding annotations without changing canonical inputs. Extend this
+The GLM v3 exporter maps retained `<reasoning>` to `<think>`, derives direct
+answers from the remaining filtered examples, and removes literal grounding
+annotations without changing canonical inputs. Extend this
 config-driven approach for other model families rather than changing synthesis
 outputs.

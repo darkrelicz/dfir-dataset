@@ -2,39 +2,35 @@ run:
   seed: 1337
 
 dataset:
-  train_path: "data/packaged/glm47_dfir_v2/train.jsonl"
-  validation_path: "data/packaged/glm47_dfir_v2/validation.jsonl"
-  test_path: "data/packaged/glm47_dfir_v2/test.jsonl"
-  packaging_manifest_path: "data/packaged/glm47_dfir_v2/packaging_manifest.json"
+  train_path: "data/packaged/glm47_v3/train.jsonl"
+  validation_path: "data/packaged/glm47_v3/validation.jsonl"
+  test_path: "data/packaged/glm47_v3/test.jsonl"
+  packaging_manifest_path: "data/packaged/glm47_v3/packaging_manifest.json"
 
 model:
   base_model: "unsloth/GLM-4.7-Flash"
-  max_seq_length: 8192
+  max_seq_length: 4096
 
 lora:
-  rank: 32
-  alpha: 64
-  dropout: 0
+  rank: 16
+  alpha: 32
+  dropout: 0.05
   bias: "none"
   target_modules:
     - "q_proj"
     - "k_proj"
     - "v_proj"
     - "o_proj"
-    - "gate_proj"
-    - "up_proj"
-    - "down_proj"
-    - "out_proj"
   use_gradient_checkpointing: "unsloth"
   random_state: 1337
 
 finetune:
-  output_dir: "data/finetune/glm47_flash_lora_dfir_v2"
+  output_dir: "data/finetune/glm47_v4"
   dataset_num_proc: 4
   per_device_train_batch_size: 1
   per_device_eval_batch_size: 1
   gradient_accumulation_steps: 8
-  learning_rate: 2e-4
+  learning_rate: 2e-5
   num_train_epochs: 1
   warmup_ratio: 0.1
   lr_scheduler_type: "cosine"
@@ -49,6 +45,6 @@ finetune:
   bf16: true
 
 export:
-  adapter_dir: "data/finetune/glm47_flash_v2/lora_adapter"
-  gguf_dir: "data/finetune/glm47_flash_v2/gguf_q4_k_m"
+  adapter_dir: "data/finetune/glm47_v4/lora_adapter"
+  gguf_dir: "data/finetune/glm47_v4/gguf_q4_k_m"
   gguf_quantization: "q4_k_m"

@@ -58,7 +58,6 @@ def print_summary_table(results: list[dict]):
 def main():
     parser = argparse.ArgumentParser(description="Run DFIR dataset collectors")
     parser.add_argument("--source", type=str, help="Run a specific source collector")
-    parser.add_argument("--dry-run", action="store_true", help="Validate config without collecting")
     parser.add_argument("--list", action="store_true", help="List available collectors")
     args = parser.parse_args()
 
@@ -110,11 +109,6 @@ def main():
         to_run = [args.source]
     else:
         to_run = list(collector_map.keys())
-
-    if args.dry_run:
-        print("Dry run: Config validation successful.")
-        print(f"Would run collectors: {to_run}")
-        return
 
     results = []
     for source in to_run:

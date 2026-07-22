@@ -36,6 +36,10 @@ loop each case, strictly sequential
   Runner -> Output: atomically replace scores.json
   Runner -> Output: atomically replace evaluation_manifest.json
   note right of Output
+    Files are replaced individually,
+    not as one transaction.
+    Manifest is the final commit marker;
+    reconcile case IDs after interruption.
     in_progress until final case
     complete only after final verdict
   end note
@@ -43,5 +47,12 @@ end
 
 Runner --> CLI: overall normalized score
 CLI --> Maintainer: completion summary
+
+note right of CLI
+  Comparison fingerprints benchmark + judge,
+  not target prompt/generation settings.
+  A failed regression gate is written to JSON
+  but comparison still exits 0.
+end note
 
 @enduml

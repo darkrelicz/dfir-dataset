@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from unsloth import FastLanguageModel
+from unsloth.chat_templates import train_on_responses_only
+
 from utils.io import load_json, load_yaml, log_stage_complete, write_json
 
 logger = logging.getLogger(__name__)
@@ -82,11 +85,6 @@ def validate_dataset_inputs(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
-    # Unsloth must patch Transformers/TRL before either package is imported.
-    # Otherwise TRL attempts entropy metrics on Unsloth's fused-loss
-    # EMPTY_LOGITS sentinel and fails before the first optimizer step.
-    from unsloth import FastLanguageModel
-    from unsloth.chat_templates import train_on_responses_only
     from datasets import load_dataset
     from trl.trainer.sft_trainer import SFTTrainer
 
@@ -94,30 +92,24 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
     model_config = config["model"]
     lora_config = config["lora"]
     finetune_config = config["finetune"]
-    export_config = config.get("export", {})
+    export_config = config["export"]
 
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=model_config["base_model"],
         max_seq_length=int(model_config["max_seq_length"]),
-        load_in_4bit=bool(model_config.get("load_in_4bit")),
-        load_in_8bit=bool(model_config.get("load_in_8bit")),
-        load_in_16bit=bool(model_config.get("load_in_16bit")),
-        full_finetuning=bool(model_config.get("full_finetuning")),
-        trust_remote_code=bool(model_config.get("trust_remote_code")),
-        unsloth_force_compile=bool(model_config.get("unsloth_force_compile")),
-    )   
+        load_in_4bit=True,
+        trust_remote_code=True,
+    )
 
     model = FastLanguageModel.get_peft_model(
         model,
         r=int(lora_config["rank"]),
         target_modules=list(lora_config["target_modules"]),
         lora_alpha=int(lora_config["alpha"]),
-        lora_dropout=int(lora_config["dropout"]),
+        lora_dropout=float(lora_config["dropout"]),
         bias=str(lora_config["bias"]),
         use_gradient_checkpointing=lora_config.get("use_gradient_checkpointing"),
         random_state=int(lora_config["random_state"]),
-        use_rslora=bool(lora_config.get("use_rslora", False)),
-        loftq_config=lora_config.get("loftq_config"),
     )
 
     dataset = load_dataset(
@@ -131,13 +123,10 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
     dataset = render_training_dataset(
         dataset,
         tokenizer,
-        text_field=dataset_config.get("text_field", "text"),
-        max_length=int(
-            finetune_config.get("max_length", model_config["max_seq_length"])
-        ),
+        max_length=int(model_config["max_seq_length"]),
     )
 
-    sft_args = build_sft_config(dataset_config, model_config, finetune_config, config)
+    sft_args = build_sft_config(model_config, finetune_config, config)
     trainer = SFTTrainer(
         model=model,
         processing_class=tokenizer,
@@ -145,48 +134,23 @@ def train_with_unsloth(config: dict[str, Any]) -> dict[str, Any]:
         eval_dataset=dataset["validation"],
         args=sft_args,
     )
-    if bool(finetune_config.get("train_on_responses_only", True)):
-        response_masking_config = finetune_config.get("response_masking", {}) or {}
-        instruction_part = response_masking_config.get("instruction_part")
-        response_part = response_masking_config.get("response_part")
-        masking_kwargs = {}
-        if (instruction_part is None) != (response_part is None):
-            raise ValueError(
-                "response_masking.instruction_part and response_masking.response_part "
-                "must both be set, or both be null for Unsloth auto-detection."
-            )
-        if instruction_part is not None or response_part is not None:
-            masking_kwargs["instruction_part"] = str(instruction_part)
-            masking_kwargs["response_part"] = str(response_part)
-        trainer = train_on_responses_only(
-            trainer,
-            num_proc=finetune_config.get("dataset_num_proc"),
-            **masking_kwargs,
-        )
+    trainer = train_on_responses_only(
+        trainer,
+        num_proc=finetune_config["dataset_num_proc"],
+    )
 
     stats = trainer.train()
-    if bool(export_config.get("save_lora_adapter", True)):
-        model.save_pretrained(export_config["adapter_dir"])
-        tokenizer.save_pretrained(export_config["adapter_dir"])
-    if bool(export_config.get("save_merged_16bit", False)):
-        model.save_pretrained_merged(
-            export_config["merged_16bit_dir"],
-            tokenizer,
-            save_method="merged_16bit",
-        )
-    if bool(export_config.get("save_gguf")):
-        model.save_pretrained_gguf(
-            export_config["gguf_dir"],
-            tokenizer,
-            quantization_method=export_config["gguf_quantization"],
-        )
+    model.save_pretrained(export_config["adapter_dir"])
+    tokenizer.save_pretrained(export_config["adapter_dir"])
+    model.save_pretrained_gguf(
+        export_config["gguf_dir"],
+        tokenizer,
+        quantization_method=export_config["gguf_quantization"],
+    )
 
     return {
         "train_result": str(stats),
-        "adapter_dir": export_config.get("adapter_dir"),
-        "merged_16bit_dir": export_config.get("merged_16bit_dir")
-        if bool(export_config.get("save_merged_16bit", False))
-        else None,
+        "adapter_dir": export_config["adapter_dir"],
     }
 
 
@@ -238,14 +202,13 @@ def render_training_dataset(
     dataset: Any,
     tokenizer: Any,
     *,
-    text_field: str,
     max_length: int,
 ) -> Any:
     """Replace source messages with the exact text that TRL must tokenize."""
 
     def format_messages(batch: dict[str, Any]) -> dict[str, list[str]]:
         return {
-            text_field: format_messages_for_training(
+            "text": format_messages_for_training(
                 batch["messages"],
                 tokenizer,
                 max_length=max_length,
@@ -253,7 +216,7 @@ def render_training_dataset(
         }
 
     # Without removing `messages`, TRL identifies the row as conversational and
-    # silently applies the chat template again instead of consuming `text_field`.
+    # silently applies the chat template again instead of consuming `text`.
     return dataset.map(
         format_messages,
         batched=True,
@@ -262,7 +225,6 @@ def render_training_dataset(
 
 
 def build_sft_config(
-    dataset_config: dict[str, Any],
     model_config: dict[str, Any],
     finetune_config: dict[str, Any],
     config: dict[str, Any],
@@ -271,9 +233,9 @@ def build_sft_config(
 
     sft_kwargs: dict[str, Any] = {
         "output_dir": finetune_config["output_dir"],
-        "dataset_text_field": dataset_config.get("text_field", "text"),
-        "dataset_num_proc": finetune_config.get("dataset_num_proc"),
-        "max_length": int(finetune_config.get("max_length", model_config["max_seq_length"])),
+        "dataset_text_field": "text",
+        "dataset_num_proc": finetune_config["dataset_num_proc"],
+        "max_length": int(model_config["max_seq_length"]),
         "per_device_train_batch_size": int(finetune_config["per_device_train_batch_size"]),
         "per_device_eval_batch_size": int(finetune_config["per_device_eval_batch_size"]),
         "gradient_accumulation_steps": int(finetune_config["gradient_accumulation_steps"]),
@@ -289,16 +251,10 @@ def build_sft_config(
         "save_steps": int(finetune_config["save_steps"]),
         "save_total_limit": int(finetune_config["save_total_limit"]),
         "bf16": bool(finetune_config["bf16"]),
-        "fp16": bool(finetune_config["fp16"]),
-        "report_to": str(finetune_config["report_to"]),
+        "report_to": "none",
         "seed": int(config["run"]["seed"]),
+        "warmup_ratio": float(finetune_config["warmup_ratio"]),
     }
-    if "warmup_steps" in finetune_config:
-        sft_kwargs["warmup_steps"] = int(finetune_config["warmup_steps"])
-    else:
-        sft_kwargs["warmup_ratio"] = float(finetune_config["warmup_ratio"])
-    if "max_steps" in finetune_config:
-        sft_kwargs["max_steps"] = int(finetune_config["max_steps"])
     return SFTConfig(**sft_kwargs)
 
 

@@ -24,7 +24,7 @@ Generated manifests are canonical for run-specific counts:
 * `data/quality/<run>/quality_manifest.json`
 * `data/packaged/<run>/packaging_manifest.json`
 * `data/evaluation/<run>/evaluation_manifest.json`
-* `data/evaluation/<run>/scorecards/llm_judge/scores.json`
+* `data/evaluation/<run>/scorecard/scores.json`
 * `data/finetune/<run>/training_manifest.json`
 
 # Canonical Stable Documentation
@@ -39,8 +39,8 @@ templates. Important migrated pages include:
 * [Quality Rubric](quality-rubric.md)
 * [Coverage Map](coverage-map.md)
 * [Benchmark Design](benchmark-design.md)
-* [Training And Release](../user/training-and-release.md)
-* [Handover Guide](../user/handover.md)
+* [Training And Release](training-and-release.md)
+* [Developer Handover Guide](handover.md)
 * [DFIR Artifact Taxonomy](../reference/taxonomy.md)
 
 The rendered MarkBind site is the GitHub Pages presentation of these source
@@ -67,11 +67,8 @@ decisions:
 4. update the canonical `docs/` page when stable architecture, commands,
    contracts, workflows, or successor guidance changed.
 
-# Current Accepted Risk To Preserve
+# Current Packaging Policy
 
-For the shortened deadline, Phase 5 packages both filtered rows and review rows.
-Review rows are transformed into direct-answer examples. Rejected rows remain
-excluded.
-
-This belongs in state docs and manifests because it changes how future readers
-should interpret the packaged dataset.
+Phase 5 packages only filtered rows. Review and rejected rows remain excluded.
+The active GLM v3 view derives a deterministic 75% reasoning / 25% direct mix
+from filtered rows without mutating Phase 4 outputs.

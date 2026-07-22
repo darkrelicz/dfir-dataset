@@ -3,7 +3,12 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-<h1 class="no-index">Source Guide</h1>
+<h1 class="no-index">Source Internals</h1>
+
+This developer reference documents collector coverage, the shared raw-document
+contract, cache behavior, and source-specific normalization. For instructions
+on selecting and collecting sources, see the
+[user-facing source overview](../user/source-overview.md).
 
 The selected scope is Core + Tier 1 + Tier 2: all 16 collectors in
 `scripts/collect_all.py`.
@@ -53,6 +58,17 @@ Git-backed collectors clone to `data/raw/.repos/`. ATT&CK STIX is cached at
 are ignored by git.
 
 Collectors reuse an existing non-empty clone path rather than recloning.
+They do not fetch or pull changes, verify that the directory is a valid clone,
+or compare it with the upstream revision. The ATT&CK collector likewise reuses
+an existing cache file. A normal rerun therefore reproduces the local cache,
+not necessarily the latest upstream source.
+
+When freshness is required, refresh or replace the exact source-specific clone
+or cache before collection, then record the resulting upstream commit or feed
+version outside the current collection manifest. Do not assume `collected_at`
+identifies the upstream revision: the manifest records collection time and
+collector package version, but has no general source-revision or configuration
+fingerprint fields.
 
 # Thin Source Handling
 

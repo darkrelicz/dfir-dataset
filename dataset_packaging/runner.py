@@ -1,6 +1,5 @@
 import logging
 import random
-import re
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -44,20 +43,28 @@ def run_packaging(args) -> int:
     stage_started = time.perf_counter()
     quality_manifest = load_json(input_paths["quality_manifest"], logger)
     filtered_rows = load_jsonl_rows(input_paths["filtered"])
-    review_rows = load_jsonl_rows(input_paths["review"])
-    style_config = config.get("response_style", {})
-    package_rows = [
-        (row, str(style_config.get("filtered")))
+    if not filtered_rows:
+        raise ValueError(f"No rows found in {input_paths['filtered']}")
+    invalid_statuses = sorted({
+        str(row.get("quality_status", "<missing>")).strip()
         for row in filtered_rows
-    ] + [
-        (row, str(style_config.get("review")))
-        for row in review_rows
-    ]
+        if str(row.get("quality_status", "")).strip() != "filtered"
+    })
+    if invalid_statuses:
+        raise ValueError(
+            f"{input_paths['filtered']} contains non-filtered quality statuses: "
+            f"{invalid_statuses}"
+        )
+    package_rows = assign_response_styles(
+        filtered_rows,
+        config.get("response_style", {}),
+        seed=int(config.get("split", {}).get("seed", 1337)),
+    )
     log_stage_complete(
         logger,
         "loaded Phase 4 rows",
         stage_started,
-        f"filtered={len(filtered_rows)} review={len(review_rows)}",
+        f"filtered={len(filtered_rows)}",
     )
 
     created_at = datetime.now(timezone.utc)
@@ -126,9 +133,45 @@ def run_packaging(args) -> int:
 def resolve_input_paths(quality_dir: Path) -> dict[str, Path]:
     return {
         "filtered": quality_dir / "filtered.jsonl",
-        "review": quality_dir / "review_queue.jsonl",
         "quality_manifest": quality_dir / "quality_manifest.json"
     }
+
+
+def assign_response_styles(
+    rows: list[dict[str, Any]],
+    style_config: dict[str, Any],
+    *,
+    seed: int,
+) -> list[tuple[dict[str, Any], str]]:
+    """Assign a reproducible reasoning/direct mix to filtered rows."""
+
+    policy = style_config.get("filtered")
+    if not isinstance(policy, dict):
+        raise ValueError(
+            "response_style.filtered must map reasoning/direct fractions"
+        )
+
+    unsupported = set(policy) - {"reasoning", "direct"}
+    if unsupported:
+        raise ValueError(
+            "response_style.filtered contains unsupported styles: "
+            f"{sorted(unsupported)}"
+        )
+
+    reasoning_fraction = float(policy.get("reasoning", 0.0))
+    direct_fraction = float(policy.get("direct", 0.0))
+    if reasoning_fraction < 0 or direct_fraction < 0:
+        raise ValueError("response-style fractions must be non-negative")
+    if abs(reasoning_fraction + direct_fraction - 1.0) > 1e-9:
+        raise ValueError("response-style fractions must sum to 1.0")
+
+    direct_count = round(len(rows) * direct_fraction)
+    styles = (
+        ["reasoning"] * (len(rows) - direct_count)
+        + ["direct"] * direct_count
+    )
+    random.Random(seed).shuffle(styles)
+    return list(zip(rows, styles))
 
 
 def resolve_output_paths(output_dir: Path) -> dict[str, Path]:
@@ -211,7 +254,9 @@ def format_content_by_reasoning_style(response: str, reasoning_style: str) -> st
     if reasoning_style != "direct":
         return response.strip()
     direct_answer = final_answer_text(response)
-    return (direct_answer or response).strip()
+    if not direct_answer:
+        raise ValueError("Direct response has no extractable final answer")
+    return direct_answer.strip()
 
 
 def apply_model_specific_transforms(
@@ -242,50 +287,75 @@ def apply_model_specific_transforms(
             )
             applied.add("canonical_reasoning_to_glm_think")
 
-    return normalize_transformed_content(transformed), applied
-
-
-def normalize_transformed_content(content: str) -> str:
-    lines = [re.sub(r"[ \t]+$", "", line) for line in content.splitlines()]
-    return "\n".join(lines).strip()
+    normalized = "\n".join(
+        line.rstrip(" \t") for line in transformed.splitlines()
+    ).strip()
+    return normalized, applied
 
 
 def validate_packaged_records(
     records: list[dict[str, Any]],
     config: dict[str, Any],
 ) -> None:
-    preflight_config = config.get("preflight", {})
-    if not bool(preflight_config.get("enabled", False)):
-        return
-
+    transform_config = config.get("model_transform", {})
+    remove_annotations = bool(
+        transform_config.get("remove_general_knowledge_annotations", False)
+    )
+    use_glm_tags = bool(transform_config.get("glm_reasoning_tags", False))
+    expected_tags = (
+        (GLM_REASONING_START, GLM_REASONING_END)
+        if use_glm_tags
+        else (CANONICAL_REASONING_START, CANONICAL_REASONING_END)
+    )
+    forbidden_tags = (
+        (CANONICAL_REASONING_START, CANONICAL_REASONING_END)
+        if use_glm_tags
+        else (GLM_REASONING_START, GLM_REASONING_END)
+    )
     issues: list[str] = []
+
     for record in records:
         record_id = str(record.get("id", "<unknown>"))
         messages = record.get("messages", [])
-        assistant_content = ""
-        if messages and isinstance(messages[-1], dict):
-            assistant_content = str(messages[-1].get("content", "")).strip()
+        expected_roles = ["system", "user", "assistant"]
+        roles = [message.get("role") for message in messages if isinstance(message, dict)]
+        if roles != expected_roles:
+            issues.append(
+                f"{record_id}: expected message roles {expected_roles}, got {roles}"
+            )
 
-        if not assistant_content:
-            issues.append(f"{record_id}: empty assistant response")
-        if GENERAL_KNOWLEDGE_ANNOTATION in assistant_content:
+        contents = [str(message.get("content", "")).strip() for message in messages]
+        empty_roles = [role for role, content in zip(expected_roles, contents) if not content]
+        if empty_roles:
+            issues.append(f"{record_id}: empty messages for roles {empty_roles}")
+
+        metadata = record.get("metadata", {})
+        source_doc_id = str(metadata.get("source_doc_id", "")).strip()
+        if not source_doc_id or source_doc_id == "unknown":
+            issues.append(f"{record_id}: missing source_doc_id")
+
+        reasoning_style = str(metadata.get("reasoning_style", ""))
+        if reasoning_style not in {"reasoning", "direct"}:
+            issues.append(
+                f"{record_id}: invalid reasoning_style {reasoning_style!r}"
+            )
+
+        assistant_content = contents[2]
+        if remove_annotations and GENERAL_KNOWLEDGE_ANNOTATION in assistant_content:
             issues.append(f"{record_id}: retained grounding annotation")
-        if (
-            CANONICAL_REASONING_START in assistant_content
-            or CANONICAL_REASONING_END in assistant_content
-        ):
-            issues.append(f"{record_id}: retained canonical reasoning tag")
-        if assistant_content.count(GLM_REASONING_START) != assistant_content.count(
-            GLM_REASONING_END
-        ):
-            issues.append(f"{record_id}: unbalanced GLM reasoning tags")
 
-        if len(issues) >= 20:
-            break
+        structural_lines = [line.strip() for line in assistant_content.splitlines()]
+        expected_count = 1 if reasoning_style == "reasoning" else 0
+        if any(structural_lines.count(tag) != expected_count for tag in expected_tags):
+            issues.append(
+                f"{record_id}: {reasoning_style} response violates reasoning tag contract"
+            )
+        if any(tag in structural_lines for tag in forbidden_tags):
+            issues.append(f"{record_id}: response contains tags for the wrong model view")
 
     if issues:
         raise ValueError(
-            "Packaged-record preflight failed:\n- " + "\n- ".join(issues)
+            "Packaged-record validation failed:\n- " + "\n- ".join(issues[:20])
         )
 
 

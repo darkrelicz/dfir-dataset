@@ -1,0 +1,53 @@
+@startuml
+title Phase 6 LoRA Training And Promotion Gates
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant "scripts.finetune" as CLI
+participant "Dataset preflight" as Preflight
+database "Phase 5 package" as Package
+participant "Tokenizer" as Tokenizer
+participant "Unsloth + TRL" as Trainer
+database "checkpoints / adapter" as Artifacts
+database "GGUF artifact" as GGUF
+participant "Direct-adapter smoke test" as Smoke
+participant "Phase 6 evaluation" as Evaluation
+
+Maintainer -> CLI: finetune --config <versioned config>
+CLI -> Preflight: check four configured paths exist
+Preflight -> Package: read selected packaging-manifest fields
+Preflight --> CLI: unverified counts and provenance summary
+note right of Preflight
+  No row parsing, count reconciliation,
+  split-overlap check, or config schema.
+  Test JSONL is not consumed by SFT.
+end note
+CLI -> Tokenizer: render chat exactly once
+Tokenizer -> Tokenizer: append EOS; reject > max_length
+CLI -> Trainer: train response-only LoRA
+Trainer -> Package: read rendered train/validation text
+Trainer -> Artifacts: checkpoints, then adapter
+Trainer -> GGUF: save configured quantization
+CLI -> Artifacts: write manifest only after GGUF succeeds
+note right of Artifacts
+  No resume_from_checkpoint support.
+  Partial artifacts can lack a current manifest.
+end note
+Maintainer -> Smoke: load direct adapter; bounded hello + DFIR prompts
+Smoke -> Artifacts: generate with model-defined stop-ID list
+note right of Smoke
+  Current test_lora.py points at v5 and runs only hello.
+  It prints rather than enforces failure, and its
+  stop-ID report still requires correction.
+end note
+alt termination and behavior gates pass
+  Smoke --> Maintainer: eligible for promotion
+  Maintainer -> GGUF: promote/serve generated artifact
+  Maintainer -> Evaluation: run calibrated benchmark
+else loops, template leakage, or token cap
+  Smoke --> Maintainer: reject artifact and preserve for diagnosis
+end
+
+@enduml

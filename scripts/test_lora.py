@@ -3,7 +3,7 @@ import time
 import torch
 from unsloth import FastLanguageModel
 
-ADAPTER_PATH = "data/finetune/glm47_flash_subset1/lora_adapter"
+ADAPTER_PATH = "data/finetune/glm47_v5/lora_adapter"
 MAX_SEQ_LENGTH = 4096
 MAX_NEW_TOKENS = 256
 
@@ -44,7 +44,7 @@ with torch.inference_mode():
         inputs,
         max_new_tokens=MAX_NEW_TOKENS,
         do_sample=False,
-        eos_token_id=tokenizer.eos_token_id,
+        eos_token_id=model.generation_config.eos_token_id,
         pad_token_id=tokenizer.pad_token_id,
         use_cache=True,
     )
@@ -56,6 +56,15 @@ generated_token_ids = generated_tokens.tolist()
 print(tokenizer.decode(generated_tokens, skip_special_tokens=False))
 print()
 print("Generated tokens:", len(generated_tokens))
+
+generated_stop_ids = set(generated_token_ids)
+
+print("Stop token generated:", bool(generated_stop_ids))
+print(
+    "Stop tokens:",
+    [tokenizer.decode([token_id]) for token_id in generated_stop_ids],
+)
+
 print("EOS generated:", tokenizer.eos_token_id in generated_token_ids)
 print(f"Generation time: {generation_seconds:.1f}s")
 if generation_seconds > 0:

@@ -31,8 +31,8 @@ python -m scripts.collect_all
 # Run a single collector
 python -m scripts.collect_all --source mitre_attack
 
-# Validate collected data
-python -m scripts.collect_all --dry-run
+# List configured collector names
+python -m scripts.collect_all --list
 ```
 
 

@@ -15,14 +15,16 @@ formats.
 3. Subclass `collectors.base.BaseCollector`.
 4. Emit valid `RawDocument` rows with stable `doc_id` values.
 5. Preserve source-specific structured fields in `metadata`.
-6. Add the collector to `scripts.collect_all.collector_map`.
-7. Run the collector alone.
-8. Validate the raw corpus.
-9. Add a source profile to `configs/source_profiles.yaml`.
-10. Add or reuse a source-type prompt template.
-11. Add content-type profiles only for behavior that differs materially.
-12. Decide whether a prompt-time compactor is needed.
-13. Update durable project-state docs if scope, decisions, or TODOs changed.
+6. Define cache freshness and source-revision provenance behavior.
+7. Add parser fixtures for normal and malformed upstream records.
+8. Add the collector to `scripts.collect_all.collector_map`.
+9. Run the collector alone and inspect its manifest errors and warnings.
+10. Run all collectors and validate the complete raw corpus.
+11. Add a source profile to `configs/source_profiles.yaml`.
+12. Add or reuse a source-type prompt template.
+13. Add content-type profiles only for behavior that differs materially.
+14. Decide whether a prompt-time compactor is needed.
+15. Update durable project-state docs if scope, decisions, or TODOs changed.
 
 Validation commands:
 
@@ -110,7 +112,7 @@ If adding another format:
 1. keep split grouping by `source_doc_id`;
 2. preserve quality/source/prompt metadata;
 3. write split counts and overlap to `PackagingManifest`;
-4. update `configs/packaging.yaml`;
+4. add or update the relevant model-specific packaging config;
 5. update this guides site and durable state docs.
 
 # Update Documentation

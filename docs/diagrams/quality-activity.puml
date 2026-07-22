@@ -5,7 +5,10 @@ skinparam shadowing false
 
 start
 :Load quality and task configs;
-:Prepare output files;
+:Prepare output files
+(clear row JSONL unless --append);
+:Output preparation happens before
+raw/input readiness is known;
 :Load raw documents by doc_id;
 :Build references from taxonomy config,
 ATT&CK cache, ATLAS cache, and tool allowlist;
@@ -20,6 +23,11 @@ repeat
       :Score factual accuracy, reasoning,
       operational relevance, specificity,
       and completeness;
+      note right
+        Scores are coarse lexical heuristics.
+        They rank duplicate/balance decisions;
+        they do not prove semantic correctness.
+      end note
       if (reject issue?) then (yes)
         :mark rejected;
       elseif (review issue?) then (yes)
@@ -35,12 +43,21 @@ repeat
   endif
 repeat while (more rows?)
 
-:Apply near-duplicate gate;
-:Apply source-balance gate;
-:Audit category, difficulty, and taxonomy coverage;
-:Write filtered.jsonl, review_queue.jsonl, rejected.jsonl;
-:Write manual_spot_check_sample.jsonl;
-:Write quality_manifest.json;
+:Apply near-duplicate gate (changes status;
+skip comparison below 8 distinctive tokens);
+:Apply one-pass source-balance gate (changes status);
+:Audit category, difficulty, and taxonomy
+(reporting only);
+:Write or append filtered/review/rejected JSONL;
+:Replace manual_spot_check_sample.jsonl;
+:Replace current-batch quality_manifest.json;
+
+note right
+  --append does not include older rows in gates,
+  sample selection, or manifest counts.
+  Manifest omits config/cache fingerprints
+  and loaded reference counts.
+end note
 stop
 
 @enduml

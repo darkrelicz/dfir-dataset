@@ -3,7 +3,7 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-<h1 class="no-index">Handover Guide</h1>
+<h1 class="no-index">Developer Handover Guide</h1>
 
 # Purpose
 
@@ -29,7 +29,7 @@ Before handing over the project, make sure the successor can find:
 - Quality outputs and the relevant `quality_manifest.json`.
 - Packaging outputs and the relevant `packaging_manifest.json`, if packaging exists.
 - Evaluation manifests, predictions, and LLM-judge scorecards under `data/evaluation/`.
-- The rejected v1 `train-20260714T025314Z` outputs for failure analysis, the v2 package manifest under `data/packaged/glm47_dfir_v2/`, and any completed v2 training manifest under `data/finetune/glm47_flash_lora_dfir_v2/`.
+- The rejected v1 outputs, regressed v2 evaluation, active v3 package manifest, completed v3/v4/v5 training manifests and exports, and the staged-but-unrun v6 configuration.
 
 # Successor Orientation
 
@@ -37,105 +37,29 @@ Explain these points during handover:
 
 - Phase 3 `accepted.jsonl` is candidate synthesis output, not final training data.
 - Phase 4 `filtered.jsonl` is the first dataset eligible for packaging.
-- `review_queue.jsonl` is included in the current Phase 5 package by explicit time-boxed risk acceptance and transformed into direct-answer examples. Rejected rows remain excluded.
+- `review_queue.jsonl` and `rejected.jsonl` are excluded from the active Phase 5 package. Only rows in `filtered.jsonl` with `quality_status: filtered` are eligible.
 - Splits must be by `source_doc_id` to avoid leakage.
 - Canonical responses use `<reasoning>`, not `<think>`.
-- Model-specific exporters may transform formatting only at packaging time. The GLM v2 view removes `[GENERAL KNOWLEDGE]` and maps `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
-- A completed training loop is not a release gate. The direct adapter must emit EOS on bounded smoke prompts before GGUF promotion or evaluation.
+- Model-specific exporters may transform formatting only at packaging time. The GLM v3 view derives a seeded 75% reasoning / 25% direct mix, removes `[GENERAL KNOWLEDGE]`, and maps retained `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
+- A completed training loop is not a release gate. The direct adapter must terminate on one of GLM's model-defined stop IDs during bounded smoke prompts before GGUF promotion or evaluation. Preserve the complete stop list rather than replacing it with scalar `tokenizer.eos_token_id`.
+- The current smoke script is advisory: it is hard-coded to v5, runs only `hello`, does not fail its process, and still has an incorrect stop-report calculation.
 - Import Unsloth before datasets/TRL/Transformers in the training process so the fused-loss trainer patch is installed.
 - Full-corpus generation should be treated as a separate budget decision.
 - Phase 6 has one evaluator: the separately served local LLM judge. There is no statistical or combined evaluator mode.
 - Evaluation is sequential and checkpoints every artifact after each successful verdict. An `in_progress` checkpoint is recoverable evidence, not a comparable final scorecard.
 - A matching judge fingerprint prevents accidental configuration drift, but final claims also require a genuinely calibrated, non-placeholder `calibration_id` and human review.
 
-# Reproduction Commands
+# Reproduce The Pipeline
 
-## Environment
+Use the [User Guide](../user/index.md) for installation and the canonical
+execution commands. [Running The Pipeline](../user/command-overview.md)
+documents each stage's inputs, outputs, resumption behavior, and operational
+warnings. [Training And Release](training-and-release.md) covers the
+fine-tuning, evaluation, comparison, and promotion workflow.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-```
-
-## Collect Raw Sources
-
-```bash
-python -m scripts.collect_all
-```
-
-## Validate Raw Corpus
-
-```bash
-.venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw
-```
-
-## Render Prompts
-
-```bash
-.venv/bin/python -m scripts.synthesize render-prompts --mode <pilot|subset|full> --output-dir data/synthesized/<run>
-```
-
-## Run Synthesis
-
-```bash
-.venv/bin/python -m scripts.synthesize run --mode <pilot|subset|full> --output-dir data/synthesized/<run>
-```
-
-## Run Phase 4 Quality Filter
-
-```bash
-.venv/bin/python -m scripts.quality_filter \
-  --input data/synthesized/<run>/accepted.jsonl \
-  --raw-dir data/raw \
-  --output-dir data/quality/<run> \
-  --log-level INFO
-```
-
-## Package Phase 5 Dataset
-
-```bash
-.venv/bin/python -m scripts.package_dataset \
-  --config configs/packaging.yaml \
-  --quality-dir data/quality/<run> \
-  --output-dir data/packaged/<run>
-```
-
-For the current GLM v2 view:
-
-```bash
-.venv/bin/python -m scripts.package_dataset \
-  --config configs/packaging_glm47_v2.yaml \
-  --quality-dir data/quality/gemini_subset_1 \
-  --output-dir data/packaged/glm47_dfir_v2
-```
-
-## Run Phase 6 Evaluation
-
-Use `configs/evaluation.yaml` for the target and judge endpoints:
-
-```bash
-.venv/bin/python -m scripts.run_evaluation \
-  --config configs/evaluation.yaml \
-  --cases evaluation/benchmark \
-  --mode openai_compatible \
-  --run-id <evaluation_run> \
-  --model-label <model_label>
-```
-
-For prediction replay, add `--mode prediction_file --predictions <path>`.
-
-## Train And Compare
-
-```bash
-.venv/bin/python -m scripts.finetune \
-  --config configs/finetune_glm47flash_v2.yaml
-
-.venv/bin/python -m scripts.compare_evaluations \
-  --baseline-dir data/evaluation/<baseline_run> \
-  --tuned-dir data/evaluation/<tuned_run> \
-  --output-dir data/evaluation/comparisons/<comparison_name>
-```
+During handover, run those instructions with the successor instead of copying a
+second command sequence into this guide. Record the exact configuration and
+output directories used in the handover packet.
 
 # Critical Gates
 
@@ -163,6 +87,10 @@ Before Shepherd integration:
 
 - [ ] Direct LoRA adapter passes bounded EOS/termination smoke tests.
 - [ ] Fine-tuned model passes the calibrated local-judge comparison gate.
+- [ ] Release automation parsed `comparison.json`; command exit status is always
+      zero after a completed comparison, including a failed regression gate.
+- [ ] Baseline and tuned target prompts, generation settings, endpoints, and
+      effective served-model identities were frozen and recorded separately.
 - [ ] No critical DFIR task or safety behavior has an unacceptable regression.
 - [ ] No severe regressions on critical DFIR behavior.
 - [ ] Reasoning format remains usable for Shepherd.

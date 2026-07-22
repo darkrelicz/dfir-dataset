@@ -14,7 +14,6 @@ def compare_evaluations(args: argparse.Namespace) -> int:
     baseline_dir = Path(args.baseline_dir)
     tuned_dir = Path(args.tuned_dir)
     output_dir = Path(args.output_dir)
-    evaluator = "llm_judge"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     baseline_scores = load_scorecard(baseline_dir)
@@ -22,12 +21,12 @@ def compare_evaluations(args: argparse.Namespace) -> int:
     comparison = build_comparison(
         baseline_scores,
         tuned_scores,
-        minimum_overall_delta=float(getattr(args, "minimum_overall_delta", 0.0)),
-        max_task_regression=float(getattr(args, "max_task_regression", 0.05)),
+        minimum_overall_delta=float(args.minimum_overall_delta),
+        max_task_regression=float(args.max_task_regression),
     )
 
-    write_json(output_dir / f"comparison_{evaluator}.json", comparison)
-    (output_dir / f"comparison_{evaluator}.md").write_text(
+    write_json(output_dir / "comparison.json", comparison)
+    (output_dir / "comparison.md").write_text(
         render_markdown(comparison),
         encoding="utf-8",
     )
@@ -35,11 +34,10 @@ def compare_evaluations(args: argparse.Namespace) -> int:
         logger,
         "completed evaluation comparison",
         started,
-        f"path={output_dir} evaluator={evaluator}",
+        f"path={output_dir}",
     )
     print(
         "Comparison complete: "
-        f"evaluator={evaluator}, "
         f"baseline={comparison['baseline_overall']:.4f}, "
         f"tuned={comparison['tuned_overall']:.4f}, "
         f"delta={comparison['overall_delta']:.4f}, "
@@ -49,10 +47,10 @@ def compare_evaluations(args: argparse.Namespace) -> int:
 
 
 def load_scorecard(run_dir: Path) -> dict[str, Any]:
-    path = run_dir / "scorecards" / "llm_judge" / "scores.json"
+    path = run_dir / "scorecard" / "scores.json"
     scores = load_json(path, logger)
     if not scores:
-        raise FileNotFoundError(f"Missing LLM-judge scorecard: {path}")
+        raise FileNotFoundError(f"Missing scorecard: {path}")
     return scores
 
 
@@ -66,15 +64,13 @@ def build_comparison(
     validate_compatible_scorecards(baseline_scores, tuned_scores)
     baseline_overall = float(baseline_scores["overall_normalized_score"])
     tuned_overall = float(tuned_scores["overall_normalized_score"])
-    baseline_tasks = baseline_scores.get("task_scores", {})
-    tuned_tasks = tuned_scores.get("task_scores", {})
+    baseline_tasks = baseline_scores["task_scores"]
+    tuned_tasks = tuned_scores["task_scores"]
     task_deltas = {}
     severe_regressions = []
-    for task_type in sorted(set(baseline_tasks) | set(tuned_tasks)):
-        baseline = float(
-            baseline_tasks.get(task_type, {}).get("mean_normalized_score", 0.0)
-        )
-        tuned = float(tuned_tasks.get(task_type, {}).get("mean_normalized_score", 0.0))
+    for task_type in sorted(baseline_tasks):
+        baseline = float(baseline_tasks[task_type]["mean_normalized_score"])
+        tuned = float(tuned_tasks[task_type]["mean_normalized_score"])
         delta = tuned - baseline
         regressed_beyond_gate = delta < -max_task_regression
         if regressed_beyond_gate:
@@ -88,7 +84,6 @@ def build_comparison(
     overall_delta = tuned_overall - baseline_overall
     passes = overall_delta > minimum_overall_delta and not severe_regressions
     return {
-        "evaluator": "llm_judge",
         "benchmark_fingerprint": baseline_scores["benchmark_fingerprint"],
         "case_count": len(baseline_scores["case_ids"]),
         "baseline_overall": round(baseline_overall, 4),
@@ -107,16 +102,13 @@ def validate_compatible_scorecards(
     tuned_scores: dict[str, Any],
 ) -> None:
     for label, scores in (("baseline", baseline_scores), ("tuned", tuned_scores)):
-        if scores.get("evaluator") != "llm_judge":
-            raise ValueError(
-                f"{label} scorecard evaluator is {scores.get('evaluator')!r}, "
-                "expected 'llm_judge'"
-            )
         if not scores.get("benchmark_fingerprint"):
             raise ValueError(f"{label} scorecard lacks a benchmark fingerprint")
         if not isinstance(scores.get("case_ids"), list):
             raise ValueError(f"{label} scorecard lacks case IDs")
-        if scores.get("run_status", "complete") != "complete":
+        if not isinstance(scores.get("task_scores"), dict):
+            raise ValueError(f"{label} scorecard lacks task scores")
+        if scores.get("run_status") != "complete":
             raise ValueError(f"{label} scorecard is not from a completed run")
     if (
         baseline_scores["benchmark_fingerprint"]
@@ -125,6 +117,8 @@ def validate_compatible_scorecards(
         raise ValueError("Cannot compare scorecards from different benchmark content")
     if baseline_scores["case_ids"] != tuned_scores["case_ids"]:
         raise ValueError("Cannot compare scorecards with different case IDs")
+    if baseline_scores["task_scores"].keys() != tuned_scores["task_scores"].keys():
+        raise ValueError("Cannot compare scorecards with different task types")
     for field in (
         "judge_protocol_version",
         "judge_config_fingerprint",
@@ -139,8 +133,6 @@ def validate_compatible_scorecards(
 def render_markdown(comparison: dict[str, Any]) -> str:
     lines = [
         "# Phase 6 Evaluation Comparison",
-        "",
-        f"Evaluator: `{comparison['evaluator']}`",
         "",
         "| Metric | Baseline | Fine-tuned | Delta |",
         "|---|---:|---:|---:|",

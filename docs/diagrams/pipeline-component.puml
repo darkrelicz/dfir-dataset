@@ -14,9 +14,9 @@ package "Configuration" {
   [task_categories.yaml] as TaskConfig
   [synthesis.yaml] as SynthesisConfig
   [quality.yaml] as QualityConfig
-  [packaging.yaml] as PackagingConfig
+  [packaging_glm47_v3.yaml] as PackagingConfig
   [evaluation.yaml] as EvaluationConfig
-  [finetune_glm47flash.yaml] as FinetuneConfig
+  [finetune_glm47flash_v3.yaml] as FinetuneConfig
 }
 
 package "Phase 2 Collection" {
@@ -92,7 +92,8 @@ CollectionConfig --> CollectCLI
 CollectCLI --> Collectors
 Collectors -up-|> BaseCollector
 Collectors --> RawJsonl
-Collectors --> CollectionManifest
+Collectors --> CollectCLI : return manifest entries
+CollectCLI --> CollectionManifest : replace with invocation results
 
 SourceProfiles --> Planner
 TaskConfig --> Planner

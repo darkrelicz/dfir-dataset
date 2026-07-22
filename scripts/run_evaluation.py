@@ -13,7 +13,7 @@ def main() -> None:
     parser.add_argument("--run-id")
     parser.add_argument(
         "--mode",
-        choices=["openai_compatible", "prediction_file", "predictions", "replay"],
+        choices=["openai_compatible", "prediction_file"],
     )
     parser.add_argument("--predictions")
     parser.add_argument("--model")
