@@ -52,7 +52,7 @@ Explain these points during handover:
 # Reproduce The Pipeline
 
 Use the [User Guide](../user/index.md) for installation and the canonical
-execution commands. [Running The Pipeline](../user/running-the-pipeline.md)
+execution commands. [Running The Pipeline](../user/command-overview.md)
 documents each stage's inputs, outputs, resumption behavior, and operational
 warnings. [Training And Release](training-and-release.md) covers the
 fine-tuning, evaluation, comparison, and promotion workflow.

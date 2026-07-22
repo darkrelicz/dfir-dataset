@@ -56,7 +56,7 @@ The installed console scripts and their equivalent modules are:
 | Compare | `dfir-compare-evals` | `python -m scripts.compare_evaluations` |
 
 The end-to-end operational commands are in the
-[User Guide](../user/running-the-pipeline.md). Code-change instructions are in
+[User Guide](../user/command-overview.md). Code-change instructions are in
 the [Phase Maintenance Guide](../developer/phase-maintenance.md).
 
 # Phase 1: Taxonomy And Task Design

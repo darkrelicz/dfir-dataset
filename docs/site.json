@@ -24,8 +24,8 @@
       "title": "Current Project State"
     },
     {
-      "src": "user/running-the-pipeline.md",
-      "title": "Running The Pipeline"
+      "src": "user/command-overview.md",
+      "title": "Command Overview"
     },
     {
       "src": "user/source-overview.md",

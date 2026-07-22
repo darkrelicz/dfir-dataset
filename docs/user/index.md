@@ -20,7 +20,7 @@ To find out more on the implementation and maintenance details, please refer to 
 | Finetune the GLM model | `python -m scripts.finetune --config configs/<versioned_finetune_config>.yaml` |
 | Evaluate a model | `python -m scripts.run_evaluation` |
 | Compare a model | `python -m scripts.compare_evaluations` |
-| Read about the detailed configuration options for each command | [Running The Pipeline](running-the-pipeline.md) |
+| Read about the detailed configuration options for each command | [Command Overview](command-overview.md) |
 | View the current sources | [Source Overview](source-overview.md) |
 
 ## Program Flow

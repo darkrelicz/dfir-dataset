@@ -5,9 +5,7 @@
 
 <h1 class="no-index">Source Overview</h1>
 
-Use this page when choosing which DFIR sources to collect. For collector
-implementation details, schemas, and normalization behavior, see
-[Source Internals](../developer/source-guide.md).
+> This page documents the high level overview of the current configured sources. For implementation details, schemas, and normalization behavior, see [Source Internals](../developer/source-guide.md).
 
 # Available Sources
 
@@ -32,50 +30,15 @@ The configured collection scope contains 16 sources:
 | `ossem_data_dicts` | Security event dictionaries |
 | `cybersec_skills` | Practitioner workflows |
 
-# Select Sources
-
-List the configured collectors:
-
-```bash
-python -m scripts.collect_all --list
-```
-
-Collect every configured source:
-
-```bash
-python -m scripts.collect_all
-```
-
-Collect one source:
-
-```bash
-python -m scripts.collect_all --source mitre_attack
-```
-
-For complete execution details, output locations, and success checks, see
-[Running The Pipeline](running-the-pipeline.md#data-collection).
 
 # Cache And Freshness
 
-Git-backed sources are cached under `data/raw/.repos/`; ATT&CK STIX is cached
-under `data/raw/.cache/`. Collection reuses a non-empty local cache and does not
-automatically fetch newer upstream content. A normal rerun therefore reproduces
-the local cache, which may not be the latest upstream version.
+Git-backed sources are cached under `data/raw/.repos/`. ATT&CK STIX is cached under `data/raw/.cache/`. 
 
-When freshness matters, deliberately refresh the exact source cache and record
-the upstream revision used. The collection manifest records collection time,
-not a general upstream revision for every source.
+Collection reuses a non-empty local cache and does not automatically fetch newer upstream content. A normal rerun therefore reproduces the local cache, which may not be the latest upstream version.
 
-# Interpreting Collection Results
-
-Raw rows are written below `data/raw/<source>/`, and the combined result is
-summarized in `data/raw/collection_manifest.json`.
-
-A single-source collection replaces the combined manifest with a one-source
-manifest. Collection can also exit successfully while reporting source errors,
-so inspect manifest errors and warnings and run raw-corpus validation before
-synthesis:
-
-```bash
-python -m scripts.synthesize validate-raw --raw-dir data/raw
-```
+<box type="warning" seamless header="">
+<md>
+When freshness matters, deliberately refresh the exact source cache and record the upstream revision used. The collection manifest records collection time, not a general upstream revision for every source.
+</md>
+</box>

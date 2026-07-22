@@ -38,7 +38,7 @@
 * [Home]({{baseUrl}}/index.html)
 * [Current State]({{baseUrl}}/current-state/index.html)
 * [User Guide]({{baseUrl}}/user/index.html) :expanded:
-  * [Running The Pipeline]({{baseUrl}}/user/running-the-pipeline.html)
+  * [Command Overview]({{baseUrl}}/user/command-overview.html)
   * [Source Overview]({{baseUrl}}/user/source-overview.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
   * [Phase Maintenance]({{baseUrl}}/developer/phase-maintenance.html)
