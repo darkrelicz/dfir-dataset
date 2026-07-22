@@ -27,9 +27,12 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-Fix the dropout cast, then complete and smoke-test v3. After judge calibration,
-rerun base scoring, score only an artifact that passed the full promotion gate, and compare them
-with the Phase 6 commands. Record reviewed results in
+V5 training/export is complete, but its initial smoke observations overrode the
+model's multi-token stop list and are not valid termination evidence. Correct
+and enforce the smoke gate, retest the v5 final adapter and checkpoint 250, then
+decide whether v5 or staged v6 is the next candidate. After judge calibration,
+rerun base scoring, score only an artifact that passed the full promotion gate,
+and compare them with the Phase 6 commands. Record reviewed results in
 the [Training And Release](training-and-release.md) page and update
 `project_state/TODO.md`.
 

@@ -2,40 +2,44 @@
 
 ## Purpose
 
-Build a reproducible DFIR dataset factory for Shepherd, a local/on-premise AI investigation assistant. The pipeline collects public cybersecurity sources, normalizes them, synthesizes grounded instruction pairs, applies quality gates, and packages training data. The handoff must be auditable and reusable by a future maintainer, not merely produce a one-off dataset.
+Build a reproducible, auditable DFIR dataset factory for Shepherd, a local AI
+investigation assistant. The pipeline collects public sources, synthesizes
+grounded instruction data, applies quality gates, packages model-specific views,
+and supports training and evaluation.
 
 ## Scope
 
-- Collection covers the 16 planned Core, Tier 1, and Tier 2 sources. Tier 3 and less-structured sources are deferred.
-- The current target is LoRA SFT of GLM-4.7-Flash with Unsloth on DGX Spark.
-- CRAFT/RAFT remains deferred until Shepherd has a RAG layer.
-- Full-corpus synthesis is deferred; the current work uses a budget-aware, representative Gemini-generated subset.
+- Cover the 16 Core, Tier 1, and Tier 2 sources; defer broader sources.
+- Fine-tune GLM-4.7-Flash with Unsloth LoRA SFT on DGX Spark.
+- Use the representative Gemini subset; defer full-corpus synthesis.
+- Defer CRAFT/RAFT until Shepherd has a RAG layer.
 
 ## Current State
 
-- Taxonomy, collection, normalization, synthesis, quality filtering, packaging, training, and evaluation tooling are implemented.
-- Phase 3 produced 6,287 candidate pairs from 6,494 prompts under `data/synthesized/gemini_subset_1/`.
-- Phase 4 produced 4,152 filtered, 1,365 review, and 770 rejected rows under `data/quality/gemini_subset_1/`. Only `quality_status: filtered` is eligible for active packaging.
-- The active package is `data/packaged/glm47_v3/`: 4,152 records split into 3,322 train, 415 validation, and 415 test rows by `source_doc_id`. It assigns 75% reasoning and 25% direct responses and maps retained reasoning to GLM `<think>` blocks.
-- V1 is rejected because it loops and fails to emit EOS. V2 scored 0.6831 versus the base model's 0.7588 in exploratory evaluation and is not a release candidate. Both scores are uncalibrated and cannot support a final comparison.
-- The conservative v3 configuration is ready, but training is pending the `lora_dropout` type fix in `scripts/finetune.py`. The held-out benchmark has 68 cases.
+- Pipeline tooling is implemented from collection through evaluation.
+- Synthesis produced 6,287 candidates; quality retained 4,152 filtered rows.
+- `data/packaged/glm47_v3/` contains all filtered rows, split 3,322/415/415 by
+  `source_doc_id`, with a 75% reasoning and 25% direct response mix.
+- V1 failed termination and v2 regressed in exploratory evaluation. V3, v4, and
+  v5 completed training/export but none is promoted; v6 is staged and unrun.
+- V5's initial termination tests were invalid because they replaced GLM's
+  multi-token stop list with scalar `tokenizer.eos_token_id`. Corrected,
+  enforcing adapter tests remain pending.
+- The 68-case benchmark and existing scores are not yet calibrated release
+  evidence.
 
 ## Release Gate
 
-V3 must pass a bounded direct-adapter EOS smoke test before GGUF promotion. The judge must then be calibrated and frozen before complete base and v3 evaluations are compared. Shepherd integration requires an improved reviewed scorecard with no unacceptable task-level or critical-behavior regressions.
-
-## Project Memory
-
-- `TODO.md` tracks pending work.
-- `DECISIONS.md` records durable choices and constraints.
-- `DESIGN_SYSTEM.md` defines presentation rules.
-- `docs/` contains stable operational guidance.
-- Generated manifests are canonical for run IDs, counts, and artifact details.
+- Require bounded direct-adapter termination, repetition, and template-leakage
+  checks while preserving `model.generation_config.eos_token_id`.
+- Calibrate and freeze the judge, then compare complete base and tuned runs with
+  identical benchmark and inference inputs.
+- Promote only a candidate with a reviewed improvement and no unacceptable
+  task-level or critical-behavior regressions.
 
 ## Success Criteria
 
-- The pipeline can be rerun, extended, and audited without relying on chat history.
-- Training examples remain source-grounded, taxonomy-aligned, and traceable.
-- Invalid and unresolved-review examples stay outside active training packages.
-- Dataset splits prevent source-document leakage.
-- A tuned model is promoted only after termination and calibrated evaluation gates pass.
+- The pipeline is reproducible and auditable without chat history.
+- Training data is grounded, traceable, filtered-only, and leakage-resistant.
+- Run facts are preserved in generated manifests and stable guidance in `docs/`.
+- Model promotion requires passing termination and calibrated evaluation gates.

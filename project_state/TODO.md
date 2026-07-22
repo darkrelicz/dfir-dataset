@@ -1,40 +1,35 @@
 # TODO
 
-This file tracks pending work only. Completed-stage status and artifact details
-belong in `PROJECT_BRIEF.md` and generated manifests.
+Pending work only. Completed state belongs in `PROJECT_BRIEF.md`; run facts
+belong in generated manifests.
 
-## Next
+## Candidate Gate
 
-- Fix `scripts/finetune.py` to pass `lora_dropout` as `float`; its current
-  integer conversion changes v3's configured `0.05` to zero.
-- Train v3 with `configs/finetune_glm47flash_v3.yaml` and run a bounded
-  direct-adapter `hello` smoke test. Require `EOS generated: True` before GGUF
-  promotion or benchmark evaluation.
-- Record the selected checkpoint, GGUF path, package and runtime versions,
-  artifact hashes, and validation metrics.
-- Finish reviewing the 68 benchmark cases under `evaluation/benchmark/` and
-  record the review owner and date.
-- Build and adjudicate a stratified human-scored judge calibration set. Assign
-  a real calibration ID and freeze the judge configuration.
-- Make `evaluation.comparison` reject placeholder calibration IDs such as
-  `uncalibrated`, in addition to missing or mismatched IDs.
-- Run complete calibrated base and v3 evaluations with the same benchmark and
-  frozen judge, then compare them with `scripts/compare_evaluations.py`.
-- Integrate into Shepherd only if the reviewed scorecard improves without
-  unacceptable task-level or critical-behavior regressions.
+- Fix `scripts/test_lora.py`: intersect generated IDs with the configured stop
+  IDs, parameterize the adapter and prompts, and fail on termination,
+  repetition, or template-leakage violations.
+- Retest the v5 final adapter and checkpoint 250 with greeting and DFIR prompts.
+- Choose v5 or staged v6 as the next candidate and record its checkpoint,
+  artifacts, hashes, package/runtime versions, and validation metrics.
 
-## Reliability
+## Evaluation And Release
 
-- Add configurable retry or failure behavior for empty target-model content.
+- Finish manual review of the 68 benchmark cases and record owner/date.
+- Build a stratified human-scored judge calibration set, assign a real
+  calibration ID, and freeze the judge configuration.
+- Harden evaluation: reject placeholder calibration IDs, fingerprint target
+  inputs and served-model identity, make failed regression gates enforceable,
+  retry or fail empty target content, and prevent mixed checkpoint state.
+- Run complete calibrated base and tuned evaluations with identical inputs and
+  compare them with `scripts/compare_evaluations.py`.
+- Integrate into Shepherd only after reviewed improvement with no unacceptable
+  task-level or critical-behavior regressions.
 
 ## Deferred
 
 - Adjudicate the Phase 4 review queue and complete manual quality spot checks.
-- Revisit scoring signals and dedupe or source-balance thresholds after review.
-- Run full-corpus synthesis only in a future budget window, preceded by a
-  one-prompt smoke test and reviewed pilot; use `--skip-present` when resuming.
-- Run Claude or other teacher comparisons only as separate labeled jobs.
-- Expand benchmark coverage after the initial reviewed benchmark is stable.
-- Add tests for collectors and synthesis utilities.
-- Keep `docs/` and project-state documents synchronized when architecture,
-  commands, decisions, or artifact paths change.
+- Revisit scoring, deduplication, and source-balance thresholds after review.
+- Run full-corpus synthesis only in a future budget window after a smoke test
+  and reviewed pilot; use `--skip-present` when resuming.
+- Run alternate-teacher comparisons only as separate labelled jobs.
+- Expand benchmark coverage and add collector/synthesis tests.

@@ -202,10 +202,9 @@ validation. Canonical synthesis and quality data is not modified.
 Phase 6 has a working local training runner, a judge-only evaluator, and guarded
 base-versus-tuned comparison. The first LoRA run completed but failed the
 termination smoke gate and is rejected. V2 completed but regressed in
-exploratory evaluation. V3 and its isolated v4 rerun completed training and
-export, but the repository has no durable passing promotion-gate record. V5 is
-configured but has no training manifest or artifacts. Calibrated evaluation is
-still pending.
+exploratory evaluation. V3, its isolated v4 rerun, and v5 completed training and
+export, but the repository has no durable passing promotion-gate record. V6 is
+staged but unrun. Calibrated evaluation is still pending.
 
 First finalize a held-out benchmark:
 
@@ -317,13 +316,17 @@ are not resumed, and the manifest is written only after adapter and GGUF export;
 partial artifacts may therefore exist without current manifest metadata.
 
 After training, load the direct adapter and run bounded greeting and DFIR
-prompts. Every successful run already saves the adapter and GGUF; require EOS
-before promoting or serving that GGUF. Do not evaluate a model that reaches the
-token cap or emits role/template delimiters.
+prompts. Every successful run already saves the adapter and GGUF; require a
+model-defined stop token before promoting or serving that GGUF. Preserve
+`model.generation_config.eos_token_id`: GLM uses a list, including `<|user|>`
+and `<|observation|>` as generation boundaries. Do not reduce it to scalar
+`tokenizer.eos_token_id`.
 
-The current smoke script points at v4, runs only `hello`, and prints rather than
-enforces EOS success. A zero exit code is not a passing release gate; add the
-documented DFIR, repetition, and template-leakage checks and record their result.
+The current smoke script points at v5 and preserves the model stop list, but it
+runs only `hello`, prints rather than enforces success, and currently reports
+all generated IDs as though they were stop IDs. A zero exit code is not a
+passing release gate; correct that report, add the documented DFIR, repetition,
+and template-leakage checks, and record their result.
 
 Then rerun the same evaluator against the fine-tuned model and compare:
 

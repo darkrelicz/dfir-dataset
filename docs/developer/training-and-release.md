@@ -11,13 +11,14 @@ Document the exact training and evaluation procedure used for Shepherd fine-tuni
 
 # Current Training Summary
 
-- Status: v3 and v4 training/export completed; neither has a durable passing promotion-gate record
-- Completed configurations: `configs/finetune_glm47flash_v3.yaml` and `configs/finetune_glm47flash_v4.yaml`
-- Newest staged configuration: `configs/finetune_glm47flash_v5.yaml`; no manifest or artifacts yet
+- Status: v3, v4, and v5 training/export completed; none has a durable passing promotion-gate record
+- Completed configurations: `configs/finetune_glm47flash_v3.yaml` through `configs/finetune_glm47flash_v5.yaml`
+- Newest staged configuration: `configs/finetune_glm47flash_v6.yaml`; no manifest or artifacts yet
 - Dataset version: `package-20260717T040952Z`
 - Dataset path: `data/packaged/glm47_v3/`
 - V3 run: `train-20260717T042223Z` under `data/finetune/glm47_v3/`
 - V4 run: `train-20260720T062603Z` under `data/finetune/glm47_v4/`
+- V5 run: `train-20260721T072838Z` under `data/finetune/glm47_v5/`
 - V3/v4 hyperparameters: rank 16, alpha 32, dropout 0.05, attention-only targets, learning rate `2e-5`
 - V5 change: dropout 0 with attention and MLP projection targets
 
@@ -30,9 +31,9 @@ once, appends EOS explicitly, rejects examples over 4,096 tokens, and removes
 the earlier documented cast blocker has been fixed.
 
 The repository does not define a single active training config. The smoke script
-and evaluation config currently point at v4, while v5 is the newest experiment
-file. Treat that as repository state, not evidence that either version passed
-release gates.
+and evaluation config currently point at v5, while v6 is the newest staged
+experiment file. Treat that as repository state, not evidence that either
+version passed release gates.
 
 # Historical V1 Run Summary
 
@@ -155,8 +156,8 @@ judge protocol: the saved fingerprint begins `09b197857e44` and protocol is
 | Framework | Unsloth |
 | LoRA rank | 16 |
 | LoRA alpha | 32 |
-| LoRA dropout | 0.05 |
-| LoRA targets | `q_proj`, `k_proj`, `v_proj`, `o_proj` |
+| LoRA dropout | 0.0 for v5 |
+| LoRA targets | `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` for v5 |
 | Learning rate | 2e-5 |
 | Epochs | 1 |
 | Batch size | 1 per device |
@@ -207,16 +208,23 @@ logs, artifact hashes, and promotion decision alongside it.
 Fine-tuning YAML has no schema or range validation. Use real YAML booleans rather
 than quoted strings and review every numeric value before starting a GPU run.
 
-# Completed V3 And V4 Training Results
+# Completed V3 Through V5 Training Results
 
 | Run | Steps | Training loss | Step-250 eval loss | Runtime | Release state |
 |---|---:|---:|---:|---:|---|
 | `train-20260717T042223Z` (v3) | 416 | 1.23066088 | 1.15106297 | 17,271.22 s | Not proven promotable |
 | `train-20260720T062603Z` (v4) | 416 | 1.23110431 | 1.15160668 | 18,002.76 s | Not proven promotable |
+| `train-20260721T072838Z` (v5) | 416 | 1.11569183 | 1.04245424 | 21,905.23 s | Corrected termination retest pending |
 
-Both runs saved adapters and Q4_K_M GGUFs. Neither trainer selected a best
+All three runs saved adapters and Q4_K_M GGUFs. None selected a best
 checkpoint, and the single intermediate evaluation metric is stored in the
 checkpoint trainer state rather than the training manifest.
+
+On the current Unsloth stack, loading an adapter configured with nonzero LoRA
+dropout can fail with `lora.ParamWrapper does not work with lora_dropout != 0`.
+V5 avoids that loader incompatibility by using dropout 0. This is a framework
+compatibility constraint, not evidence that zero dropout is intrinsically
+better for model quality.
 
 # Historical V1 Training Results
 
@@ -230,16 +238,37 @@ checkpoint trainer state rather than the training manifest.
 
 # Post-Training Evaluation
 
-Before benchmark evaluation, load the intended direct adapter and run bounded greeting
-and DFIR prompts. Require a concise completion and an emitted EOS token. Do not
-export, serve, or evaluate a checkpoint that reaches the token cap or emits
-`<|user|>`/template delimiters. After this smoke gate, use the same benchmark as
-the baseline.
+Before benchmark evaluation, load the intended direct adapter and run bounded
+greeting and DFIR prompts. Require a concise completion that terminates on one
+of the model-defined stop tokens. GLM-4.7-Flash declares the following
+`eos_token_id` list in its official
+[model configuration](https://huggingface.co/zai-org/GLM-4.7-Flash/blob/main/config.json):
 
-`scripts/test_lora.py` is currently hard-coded to v4 and runs only `hello`. It
-prints `EOS generated` but does not exit nonzero when EOS is missing, and it does
-not detect repetition or template leakage. Treat it as one manual observation,
-not the promotion decision; record results from the complete prompt set.
+| ID | Token | Meaning during generation |
+|---:|---|---|
+| `154820` | `<\|endoftext\|>` | End of text |
+| `154827` | `<\|user\|>` | Next-user role boundary; configured to stop generation |
+| `154829` | `<\|observation\|>` | Observation/tool boundary; configured to stop generation |
+
+The token mappings are published in the official
+[tokenizer configuration](https://huggingface.co/zai-org/GLM-4.7-Flash/blob/main/tokenizer_config.json),
+and the Unsloth distribution used here publishes the same list in its
+[generation configuration](https://huggingface.co/unsloth/GLM-4.7-Flash/blob/main/generation_config.json).
+Do not replace this list with scalar `tokenizer.eos_token_id`; either omit the
+generation override or pass `model.generation_config.eos_token_id`.
+
+Initial v5 final-adapter and checkpoint-250 tests reached 256 tokens after
+emitting `<|user|>`, but they had made precisely that scalar override. They are
+therefore test-harness failures, not valid proof that v5 failed termination.
+Do not promote, serve, or evaluate v5 until the corrected gate is rerun.
+
+`scripts/test_lora.py` currently points at v5 and passes the model generation
+configuration's stop list. It still runs only `hello`, does not exit nonzero on
+failure, and does not detect repetition or template leakage. Its present
+`generated_stop_ids` calculation also uses all generated IDs instead of their
+intersection with the configured stop IDs, so the printed `Stop token generated`
+field is not reliable. Treat it as a manual diagnostic until those issues are
+fixed and results from the complete prompt set are recorded.
 
 ```bash
 python -m scripts.run_evaluation \

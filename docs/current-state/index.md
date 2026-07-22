@@ -6,7 +6,7 @@
 <h1 class="no-index">Current Project State</h1>
 
 This is the complete handover snapshot for the repository as inspected on
-2026-07-21. It records what exists, what is usable, what was rejected, and what
+2026-07-22. It records what exists, what is usable, what was rejected, and what
 must happen next. Generated manifests remain authoritative for the exact facts
 of an individual run.
 
@@ -21,7 +21,7 @@ of an individual run.
 | Training target | `unsloth/GLM-4.7-Flash`, 4-bit base, LoRA SFT |
 | Hosting | Local DGX storage; Hugging Face publishing deferred |
 | Current usable dataset | `data/packaged/glm47_v3/` |
-| Current usable model | None promoted; v3/v4 completed but lack a durable passing promotion-gate record, and v5 is unrun |
+| Current usable model | None promoted; v3/v4/v5 completed but lack a durable passing promotion-gate record |
 | Current evaluation evidence | Historical diagnostics only; uncalibrated and generated with an older benchmark fingerprint and judge protocol |
 | Release status | Blocked on an enforcing direct-adapter smoke gate and calibrated comparison |
 
@@ -38,7 +38,7 @@ pipeline.
 | 3. Synthesis | Complete for reduced subset | Phase 2 raw JSONL | `data/synthesized/gemini_subset_1/` |
 | 4. Quality | Complete for reduced subset | Phase 3 `accepted.jsonl` | `data/quality/gemini_subset_1/` |
 | 5. Packaging | Filtered-only GLM v3 view complete | Phase 4 `filtered.jsonl` | `data/packaged/glm47_v3/` |
-| 6. Training | V1 rejected; v2 regressed; v3/v4 completed but unpromoted; v5 staged | Phase 5 GLM package | `data/finetune/glm47_v3/`, `data/finetune/glm47_v4/`, `configs/finetune_glm47flash_v5.yaml` |
+| 6. Training | V1 rejected; v2 regressed; v3/v4/v5 completed but unpromoted; v6 staged | Phase 5 GLM package | `data/finetune/glm47_v3/` through `data/finetune/glm47_v5/`, `configs/finetune_glm47flash_v6.yaml` |
 | 6. Evaluation | Exploratory base and v2-tuned runs complete; v3 tuned run stopped at 9/68 | 68 held-out cases | `data/evaluation/glm47-flash-base/`, `data/evaluation/glm47-flash-finetuned_v2_1/`, `data/evaluation/glm47-flash-finetuned_v3/` |
 
 # Implemented Pipeline
@@ -208,11 +208,29 @@ package, rank 16 / alpha 32 attention-only LoRA, dropout 0.05, learning rate
 and completed as `train-20260720T062603Z`. Both exported adapters and GGUFs, but
 neither manifest records a passed termination/promotion gate.
 
-The dropout cast is now correctly implemented as `float`. V5 is the newest
-configuration and changes to dropout 0 plus attention and MLP projection targets;
-its output directory has no manifest or artifacts. The repository has no single
-active-config pointer. `scripts.test_lora` and `configs/evaluation.yaml` currently
-point at v4, but this does not establish release approval.
+The dropout cast is correctly implemented as `float`. On the current stack,
+Unsloth's `lora.ParamWrapper` rejects adapters configured with nonzero LoRA
+dropout during loading, which affects direct-adapter testing of v3/v4. V5 uses
+dropout 0 plus attention and MLP projection targets and completed as
+`train-20260721T072838Z`: 416 steps, training loss 1.11569183, step-250
+evaluation loss 1.04245424, and runtime 21,905.23 seconds. It exported an
+adapter and Q4_K_M GGUF but has not passed the promotion gate. V6 is a staged,
+more aggressive configuration with no training manifest.
+
+Initial v5 final-adapter and checkpoint-250 tests reached the 256-token cap and
+continued after generating `<|user|>`. Those tests supplied only scalar
+`tokenizer.eos_token_id`, overriding GLM-4.7-Flash's configured stop list. The
+official model configuration declares IDs `154820`, `154827`, and `154829` as
+EOS conditions, mapped respectively to `<|endoftext|>`, `<|user|>`, and
+`<|observation|>`. Consequently, the observations are invalid as evidence of a
+v5 termination failure: generation should have stopped at `<|user|>` if the
+complete list had been preserved.
+
+`scripts/test_lora.py` and `configs/evaluation.yaml` now point at v5. The smoke
+script passes `model.generation_config.eos_token_id`, but it remains advisory:
+it runs only `hello`, does not enforce failure, and its current stop-token report
+mistakenly treats every generated token as a stop token. A corrected retest has
+not yet been recorded.
 
 # Phase 6: Evaluation Snapshot
 
@@ -277,8 +295,8 @@ marked `in_progress`. It is preserved diagnostic output, not comparable evidence
 | Task mix and quality signals | `configs/task_categories.yaml` |
 | Taxonomy, scoring, dedupe, balance | `configs/quality.yaml` |
 | Active GLM packaging transform | `configs/packaging_glm47_v3.yaml` |
-| Completed LoRA runs | `configs/finetune_glm47flash_v3.yaml`, `configs/finetune_glm47flash_v4.yaml` |
-| Newest staged LoRA experiment | `configs/finetune_glm47flash_v5.yaml` |
+| Completed LoRA runs | `configs/finetune_glm47flash_v3.yaml`, `configs/finetune_glm47flash_v4.yaml`, `configs/finetune_glm47flash_v5.yaml` |
+| Newest staged LoRA experiment | `configs/finetune_glm47flash_v6.yaml` |
 | Benchmark, target, and judge | `configs/evaluation.yaml` |
 
 `GEMINI_API_KEY` is the only project API secret and is required only for Phase
@@ -289,13 +307,14 @@ Phase 6 target and judge endpoints are local OpenAI-compatible servers.
 
 In order:
 
-1. Replace or extend the advisory v4 smoke script with a parameterized,
-   enforcing gate covering bounded greeting and DFIR prompts, EOS, repetition,
-   and template leakage.
-2. Run that gate against the intended candidate and record the result before
-   promotion or evaluation.
-3. Decide whether v4 or the staged v5 experiment is the next candidate; always
-   pass its versioned config explicitly because the CLI default is historical v1.
+1. Fix the v5 smoke script's stop-ID reporting and turn it into a parameterized,
+   enforcing gate covering bounded greeting and DFIR prompts, termination,
+   repetition, and template leakage. Preserve the model's complete stop list.
+2. Rerun that gate against the v5 final adapter and checkpoint 250 and record the
+   result before promotion or evaluation.
+3. Decide whether v5 or the staged aggressive v6 experiment is the next
+   candidate; always pass its versioned config explicitly because the CLI
+   default is historical v1.
 4. Record candidate paths, versions, hashes, validation metrics, and selected
    checkpoint.
 5. Finish manual review of all 68 benchmark cases and record owner/date.
@@ -316,7 +335,7 @@ evaluation resume, and add configurable retry/failure for empty target responses
 Full-corpus synthesis, alternate-teacher comparison, full review-queue
 adjudication, manual spot-check completion, broader test coverage, Tier 3 and
 unstructured sources, CRAFT/RAFT, and Hugging Face publishing are deferred.
-Shepherd integration remains blocked until the v3 termination and calibrated
+Shepherd integration remains blocked until a candidate's termination and calibrated
 evaluation gates both pass.
 
 # Sources Of Truth

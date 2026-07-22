@@ -261,16 +261,19 @@ The first training run, `train-20260714T025314Z`, completed one epoch and 552
 steps but is rejected: direct-adapter and Web UI tests looped, emitted template
 tokens, and did not emit EOS. V2 training completed, but its exploratory tuned
 evaluation scored 0.6831 versus the base model's 0.7588. V3 completed as
-`train-20260717T042223Z`, and the equivalent isolated v4 rerun completed as
-`train-20260720T062603Z`; both produced adapters and GGUFs. The repository does
-not contain a durable passing smoke-gate record for either. The newer v5 config
-changes dropout and target modules, but `data/finetune/glm47_v5/` currently has
-no manifest or artifacts.
+`train-20260717T042223Z`, the equivalent isolated v4 rerun completed as
+`train-20260720T062603Z`, and v5 completed as `train-20260721T072838Z`; all
+produced adapters and GGUFs. The repository does not contain a durable passing
+smoke-gate record for any of them. V5 uses zero dropout plus attention and MLP
+projection targets. V6 is staged but unrun.
 
-`scripts/test_lora.py` currently points at the v4 adapter and prints the EOS
-result for one `hello` prompt. It does not exit nonzero when EOS is absent and
-does not test DFIR prompts, repetition, or template leakage, so it is a manual
-diagnostic rather than an enforcing release gate.
+Initial v5 final-adapter and checkpoint-250 observations used scalar
+`tokenizer.eos_token_id`, overriding GLM's configured multi-token stop list.
+Because the output emitted `<|user|>`—itself a GLM stop ID—those runs do not
+prove a termination defect. `scripts/test_lora.py` now points at v5 and passes
+`model.generation_config.eos_token_id`, but it still tests only `hello`, does not
+enforce failure, and reports stop IDs incorrectly, so it remains a manual
+diagnostic rather than a release gate.
 
 The exploratory base evaluation `data/evaluation/glm47-flash-base/` completed
 68/68 cases with overall normalized judge score `0.7588`. Its calibration ID is

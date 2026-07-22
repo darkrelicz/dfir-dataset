@@ -29,7 +29,7 @@ Before handing over the project, make sure the successor can find:
 - Quality outputs and the relevant `quality_manifest.json`.
 - Packaging outputs and the relevant `packaging_manifest.json`, if packaging exists.
 - Evaluation manifests, predictions, and LLM-judge scorecards under `data/evaluation/`.
-- The rejected v1 outputs, regressed v2 evaluation, active v3 package manifest, completed v3/v4 training manifests and exports, and the staged-but-unrun v5 configuration.
+- The rejected v1 outputs, regressed v2 evaluation, active v3 package manifest, completed v3/v4/v5 training manifests and exports, and the staged-but-unrun v6 configuration.
 
 # Successor Orientation
 
@@ -41,8 +41,8 @@ Explain these points during handover:
 - Splits must be by `source_doc_id` to avoid leakage.
 - Canonical responses use `<reasoning>`, not `<think>`.
 - Model-specific exporters may transform formatting only at packaging time. The GLM v3 view derives a seeded 75% reasoning / 25% direct mix, removes `[GENERAL KNOWLEDGE]`, and maps retained `<reasoning>` to `<think>` without mutating canonical synthesis/quality data.
-- A completed training loop is not a release gate. The direct adapter must emit EOS on bounded smoke prompts before GGUF promotion or evaluation.
-- The current smoke script is advisory: it is hard-coded to v4, runs only `hello`, and does not fail its process when EOS is absent.
+- A completed training loop is not a release gate. The direct adapter must terminate on one of GLM's model-defined stop IDs during bounded smoke prompts before GGUF promotion or evaluation. Preserve the complete stop list rather than replacing it with scalar `tokenizer.eos_token_id`.
+- The current smoke script is advisory: it is hard-coded to v5, runs only `hello`, does not fail its process, and still has an incorrect stop-report calculation.
 - Import Unsloth before datasets/TRL/Transformers in the training process so the fused-loss trainer patch is installed.
 - Full-corpus generation should be treated as a separate budget decision.
 - Phase 6 has one evaluator: the separately served local LLM judge. There is no statistical or combined evaluator mode.

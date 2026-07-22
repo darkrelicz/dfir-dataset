@@ -36,12 +36,13 @@ note right of Artifacts
   Partial artifacts can lack a current manifest.
 end note
 Maintainer -> Smoke: load direct adapter; bounded hello + DFIR prompts
-Smoke -> Artifacts: generate with EOS configured
+Smoke -> Artifacts: generate with model-defined stop-ID list
 note right of Smoke
-  Current test_lora.py runs only hello,
-  prints EOS, and does not enforce failure.
+  Current test_lora.py points at v5 and runs only hello.
+  It prints rather than enforces failure, and its
+  stop-ID report still requires correction.
 end note
-alt EOS and behavior gates pass
+alt termination and behavior gates pass
   Smoke --> Maintainer: eligible for promotion
   Maintainer -> GGUF: promote/serve generated artifact
   Maintainer -> Evaluation: run calibrated benchmark

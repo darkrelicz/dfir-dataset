@@ -412,17 +412,21 @@ python -m scripts.finetune --config configs/<new_finetune_config>.yaml
 
 1. Review train/evaluation loss and saved checkpoints.
 2. Load the **direct adapter**, not only GGUF, and run a bounded `hello` prompt.
-3. Require EOS before `max_new_tokens`; reject repeated content, role tokens,
-   or thinking/template delimiters.
+3. Preserve `model.generation_config.eos_token_id` and require termination on
+   one of those IDs before `max_new_tokens`; reject repeated content or leaked
+   thinking/template delimiters. For GLM, `<|user|>` and `<|observation|>` are
+   role tokens that are also configured stop conditions.
 4. Run several representative DFIR prompts and inspect grounding, termination,
    and formatting.
 5. Only then promote or serve the generated GGUF and proceed to evaluation.
 
-The current `scripts/test_lora.py` has a hard-coded v4 adapter path, exercises
-only a `hello` prompt, and prints rather than enforces its EOS result. Update or
-parameterize it for the artifact under review, inspect its output manually, and
-run the additional DFIR/repetition/template-leakage checks above. A zero process
-exit is not proof that the smoke gate passed.
+The current `scripts/test_lora.py` has a hard-coded v5 adapter path, exercises
+only a `hello` prompt, and prints rather than enforces its result. It now passes
+the complete model stop list, but its stop-report calculation incorrectly uses
+all generated token IDs rather than intersecting them with that list. Correct
+and parameterize it for the artifact under review, then run the additional
+DFIR/repetition/template-leakage checks above. A zero process exit is not proof
+that the smoke gate passed.
 
 ## UML
 
