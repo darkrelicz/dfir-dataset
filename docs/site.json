@@ -33,7 +33,7 @@
     },
     {
       "src": "developer/index.md",
-      "title": "Developer Guides"
+      "title": "Developer Guide"
     },
     {
       "src": "developer/phase-maintenance.md",
@@ -62,10 +62,6 @@
     {
       "src": "developer/packaging.md",
       "title": "Packaging"
-    },
-    {
-      "src": "developer/quality-and-packaging.md",
-      "title": "Quality And Packaging"
     },
     {
       "src": "developer/configuration.md",

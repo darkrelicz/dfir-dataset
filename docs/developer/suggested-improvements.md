@@ -33,8 +33,7 @@ and enforce the smoke gate, retest the v5 final adapter and checkpoint 250, then
 decide whether v5 or staged v6 is the next candidate. After judge calibration,
 rerun base scoring, score only an artifact that passed the full promotion gate,
 and compare them with the Phase 6 commands. Record reviewed results in
-the [Training And Release](training-and-release.md) page and update
-`project_state/TODO.md`.
+[Current State](../current-state/index.md) and update `project_state/TODO.md`.
 
 ## Calibrate And Freeze The Local Judge
 

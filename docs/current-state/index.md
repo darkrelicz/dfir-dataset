@@ -188,10 +188,11 @@ The preserved v1 run is `train-20260714T025314Z`.
 |---|---|
 | Base model | `unsloth/GLM-4.7-Flash` |
 | Method | Unsloth LoRA SFT; 4-bit-loaded base |
-| Train records | 4,414 |
+| Dataset | `package-20260708T071253Z` (`4,414` train / `552` validation / `551` test) |
 | Epochs / steps | 1 / 552 |
 | Final training loss | 0.95973044 |
 | Runtime | 38,018.77 seconds |
+| Environment | DGX Sparks; exact host and code commit were not recorded |
 | Adapter | `data/finetune/glm47_flash_subset1/lora_adapter` |
 | GGUF | `data/finetune/glm47_flash_subset1/gguf_q4_k_m_gguf/finetuned-GLM-4.7-Flash.Q4_K_M.gguf` |
 
@@ -201,21 +202,29 @@ tokens. It must not be evaluated, promoted, or integrated.
 
 V2 subsequently completed, but its exploratory uncalibrated evaluation scored
 0.6831 versus the base model's 0.7588. It regressed most on IOC extraction and
-TTP identification and is not a release candidate. V3 uses the filtered-only
-package, rank 16 / alpha 32 attention-only LoRA, dropout 0.05, learning rate
-2e-5, and a 4,096-token maximum. It completed as
-`train-20260717T042223Z`. V4 repeated that configuration in isolated output paths
-and completed as `train-20260720T062603Z`. Both exported adapters and GGUFs, but
-neither manifest records a passed termination/promotion gate.
+TTP identification and is not a release candidate.
+
+V3 uses the filtered-only package, rank 16 / alpha 32 attention-only LoRA,
+dropout 0.05, learning rate 2e-5, and a 4,096-token maximum. V4 repeats that
+configuration in isolated output paths. V5 changes to dropout 0 and adds MLP
+projection targets.
+
+| Run | Steps | Training loss | Step-250 eval loss | Runtime | Release state |
+|---|---:|---:|---:|---:|---|
+| `train-20260717T042223Z` (v3) | 416 | 1.23066088 | 1.15106297 | 17,271.22 s | No passing promotion record |
+| `train-20260720T062603Z` (v4) | 416 | 1.23110431 | 1.15160668 | 18,002.76 s | No passing promotion record |
+| `train-20260721T072838Z` (v5) | 416 | 1.11569183 | 1.04245424 | 21,905.23 s | Corrected termination retest pending |
+
+All three runs exported adapters and Q4_K_M GGUFs. None selected a best
+checkpoint; the intermediate evaluation metric is stored in checkpoint trainer
+state rather than the training manifest.
 
 The dropout cast is correctly implemented as `float`. On the current stack,
 Unsloth's `lora.ParamWrapper` rejects adapters configured with nonzero LoRA
-dropout during loading, which affects direct-adapter testing of v3/v4. V5 uses
-dropout 0 plus attention and MLP projection targets and completed as
-`train-20260721T072838Z`: 416 steps, training loss 1.11569183, step-250
-evaluation loss 1.04245424, and runtime 21,905.23 seconds. It exported an
-adapter and Q4_K_M GGUF but has not passed the promotion gate. V6 is a staged,
-more aggressive configuration with no training manifest.
+dropout during loading, which affects direct-adapter testing of v3/v4. This is a
+framework compatibility constraint, not evidence that zero dropout is
+intrinsically better. V6 is a staged, more aggressive configuration with no
+training manifest.
 
 Initial v5 final-adapter and checkpoint-250 tests reached the 256-token cap and
 continued after generating `<|user|>`. Those tests supplied only scalar
@@ -254,6 +263,10 @@ This is diagnostic evidence only. The scorecard uses
 `judge_calibration_id: uncalibrated`, and all cases remain flagged for manual
 review. `complete` means every case was checkpointed; it does not mean the judge
 is calibrated or the model is releasable.
+
+The preserved baseline records judge protocol
+`phase6-judge-v2-acceptable-variants` and configuration fingerprint
+`52b3f0be829335ea19c43d8558f01c335c2a077ba8591a3b4db7d3a1238fa4d0`.
 
 The evaluator runs target generation and judging sequentially and individually
 atomically replaces predictions, case results, aggregate scores, and the manifest

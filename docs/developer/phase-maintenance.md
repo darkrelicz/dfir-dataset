@@ -529,7 +529,7 @@ python -m scripts.compare_evaluations \
 <puml src="../diagrams/phase6-evaluation-sequence.puml" alt="Phase 6 sequential evaluation and checkpointing" width="1000" />
 
 See [Benchmark Design](benchmark-design.md) and
-[Architecture](architecture.md#phase-6-evaluation-and-training).
+[Architecture](architecture.md#pipeline-boundaries).
 
 # Documentation And UML Maintenance
 
