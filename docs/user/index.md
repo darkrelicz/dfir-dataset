@@ -35,7 +35,7 @@ collect_all -> synthesize -> quality_filter -> package_dataset
 Do not feed `accepted.jsonl` from the `synthesize` stage directly to packaging or training. It is candidate data. The active package is built only from filtered rows in `quality_filter` stage; review and rejected rows remain excluded.
 
 
-## Credentials And Compute
+## Credentials and Compute
 
 * Collection generally needs internet access
 * Gemini synthesis additionally needs `GEMINI_API_KEY` in `.env` or the environment. Do not commit this.
