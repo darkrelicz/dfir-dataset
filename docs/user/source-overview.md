@@ -53,7 +53,7 @@ python -m scripts.collect_all --source mitre_attack
 ```
 
 For complete execution details, output locations, and success checks, see
-[Running The Pipeline](running-the-pipeline.md#1-collect-sources).
+[Running The Pipeline](running-the-pipeline.md#data-collection).
 
 # Cache And Freshness
 

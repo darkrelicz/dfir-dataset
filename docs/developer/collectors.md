@@ -37,7 +37,7 @@ interrupted write can leave partial output.
 
 1. loads `configs/collection.yaml`;
 2. maps each source key to a collector class;
-3. supports `--list`, `--source`, and `--dry-run`;
+3. supports `--list` and `--source`;
 4. runs collectors sequentially;
 5. writes `data/raw/collection_manifest.json`;
 6. prints a Rich summary table.
@@ -48,10 +48,10 @@ with one entry. The CLI also currently exits successfully after unknown-source
 selection, collector-reported errors, or caught fatal exceptions. Treat the
 manifest error fields and raw-corpus validation as required success checks.
 
-`--dry-run` checks that the configured source selection can be constructed from
-the loaded YAML. There is no collection configuration schema, and dry-run does
-not instantiate collectors, inspect caches, contact upstreams, or validate
-collector-specific values.
+`--list` reports available source keys, but it does not instantiate collectors, inspect
+caches, contact upstreams, or validate collector-specific values. Use a
+single-source collection in an isolated output/cache setup when a real preflight
+is required.
 
 # Collector Details
 

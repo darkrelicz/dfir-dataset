@@ -5,55 +5,47 @@
 
 <h1 class="no-index">Running The Pipeline</h1>
 
-This page documents the existing command path. It does not introduce new
-workflow policy beyond the current codebase and state docs.
+> This page documents the available commands. Read to find out about the different configurations available.
 
-# 1. Collect Sources
+## Data Collection
 
-Run every configured collector:
-
-```bash
-python -m scripts.collect_all
-```
-
-Run one collector:
+Run every configured data collector:
 
 ```bash
-python -m scripts.collect_all --source mitre_attack
+python3 -m scripts.collect_all
 ```
 
 List available collectors:
 
 ```bash
-python -m scripts.collect_all --list
+python3 -m scripts.collect_all --list
 ```
 
-Dry-run config selection without collecting:
+Run one collector:
 
 ```bash
-python -m scripts.collect_all --dry-run
+python3 -m scripts.collect_all --source mitre_attack
 ```
 
-Collector output is written to `data/raw/<source>/<source>.jsonl`. The combined
-collection manifest is `data/raw/collection_manifest.json`.
+<box type="tip" seamless header="">
+<md>Use `--list` to identify the available collectors</md>
+</box>
 
-The manifest contains results from the current invocation only. In particular,
-running one collector with `--source` replaces the existing manifest with a
-one-entry manifest; it does not preserve or merge entries for the other raw
-files. If complete-corpus manifest coverage matters, run all collectors before
-the downstream validation step.
+#### Details
 
-Collection exit status is not currently a reliable success signal: unknown
-sources, collector-reported errors, and exceptions caught by the orchestrator do
-not force a non-zero exit. Always inspect every manifest entry's `errors` and
-`warnings`, confirm that the expected sources are present, and run raw-corpus
-validation before synthesis.
+##### Output directories
 
-Dry-run validates selection from the loaded YAML only. It does not apply a
-configuration schema, instantiate collectors, inspect local caches, or test
-upstream access.
+* Collector output is formatted and written to `data/raw/<source>/<source>.jsonl`. 
+* The cloned data and repositories are stored under `data/raw/.cache` and `data/raw/.repos` respectively. 
+* The combined collection manifest is `data/raw/collection_manifest.json`.
 
-# 2. Validate Raw Corpus
+##### Metadata specifics
+
+The manifest contains results from the latest invocation only. In particular, running one collector with `--source` replaces the existing manifest with a one-entry manifest; it does not preserve or merge entries for the other raw files. If complete-corpus manifest coverage matters, run all collectors before the downstream validation step.
+
+Always inspect every manifest entry's `errors` and `warnings`, confirm that the expected sources are present, and run raw-corpus validation before moving to synthesis.
+
+## Validate Raw Corpus
 
 ```bash
 python -m scripts.synthesize validate-raw --raw-dir data/raw
