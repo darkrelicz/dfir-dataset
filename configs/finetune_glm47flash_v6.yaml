@@ -9,7 +9,7 @@ dataset:
 
 model:
   base_model: "unsloth/GLM-4.7-Flash"
-  max_seq_length: 8192
+  max_seq_length: 4096
 
 lora:
   rank: 32
