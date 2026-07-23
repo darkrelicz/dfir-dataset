@@ -256,7 +256,7 @@ model. A failed regression gate is reported in JSON but the command still exits
 | Task mix and quality signals | `configs/task_categories.yaml` |
 | Taxonomy, scoring, dedupe, balance | `configs/quality.yaml` |
 | Active GLM packaging transform | `configs/packaging_glm47_v3.yaml` |
-| Active LoRA configuration | `configs/finetune_glm47flash_v5.yaml` |
+| Active LoRA configuration | `configs/finetune_glm47flash_v6.yaml` |
 | Benchmark, target, and judge | `configs/evaluation.yaml` |
 
 LLMs and API Keys involved:
