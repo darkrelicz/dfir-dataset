@@ -140,13 +140,16 @@ the targets. It has no training manifest.
 
 # Evaluation Revisions
 
-All results in this section are historical diagnostics. They are uncalibrated
-and do not match the current benchmark fingerprint and judge protocol.
+All results in this section are uncalibrated diagnostics, not release evidence.
+The original base, v2, and partial v3 runs used historical benchmark or judge
+protocol fingerprints. The later base, v5, and v6 runs use the same current
+benchmark and judge protocol fingerprints, but the base rerun is incomplete
+and the judge still has the placeholder calibration ID `uncalibrated`.
 
-## Exploratory Base Run
+## Base Model Evaluations
 
-The `glm47-flash-base` run completed all 68 cases using a local
-`gemma-4-31B-it-Q4_K_M.gguf` judge.
+The historical `glm47-flash-base` run completed all 68 cases using a local
+`gemma-4-31B-it-Q4_K_M.gguf` judge:
 
 | Task | Cases | Exploratory mean |
 |---|---:|---:|
@@ -164,6 +167,24 @@ The scorecard used `judge_calibration_id: uncalibrated`. It recorded judge
 protocol `phase6-judge-v2-acceptable-variants` and configuration fingerprint
 `52b3f0be829335ea19c43d8558f01c335c2a077ba8591a3b4db7d3a1238fa4d0`.
 
+The later `glm47-flash-base_2` run evaluates `unsloth/GLM-4.7-Flash` with the
+same benchmark and judge inputs as the completed v5 and v6 runs. At the latest
+checked-in checkpoint it is still `in_progress`, with 7 of 68 cases scored and
+a partial mean of 0.6286. Its partial aggregate covers only the first seven
+AI/LLM ATLAS incident cases and must not be compared with any complete overall
+score.
+
+| Run | Target model | Protocol | Completed | Score |
+|---|---|---|---:|---:|
+| `glm47-flash-base` | `GLM-4.7-Flash-Q4_K_M.gguf` | `phase6-judge-v2-acceptable-variants` | 68 / 68 | 0.7588 |
+| `glm47-flash-base_2` | `unsloth/GLM-4.7-Flash` | `phase6-judge-v3-target-output` | 7 / 68 | 0.6286 partial |
+
+The current-protocol rerun records benchmark fingerprint
+`b1fc02a447e4ab9c2262224f9eff233898f7dda3763b8cfeb62c1dd79216877b`
+and judge configuration fingerprint
+`44674da755ab3ad538e3c62e5feb2a20d11d98377d6e4696c330fedcc877cd3c`.
+Its final score may be higher or lower as the remaining cases are evaluated.
+
 ## Exploratory Tuned Runs
 
 `data/evaluation/glm47-flash-finetuned_v2_1/` completed 68 of 68 cases with the
@@ -180,6 +201,12 @@ The checked-in historical scorecards use benchmark fingerprint
 `phase6-judge-v2-acceptable-variants`. The later benchmark fingerprint is
 `b1fc02a447e4...`, with judge protocol `phase6-judge-v3-target-output`. No
 historical scorecard is a complete compatible result under that protocol.
+
+The later v5 and v6 evaluations completed all 68 cases under the same benchmark
+and judge fingerprints as `glm47-flash-base_2`. V5 scored 0.7346 and v6 scored
+0.6978. Neither score is a valid base-model comparison until the compatible
+base rerun completes, and none of these results is release evidence until the
+judge is calibrated.
 
 # Maintenance Rule
 

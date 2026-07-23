@@ -10,7 +10,7 @@ prompt:
 
 generation:
   mode: openai_compatible
-  model: "finetuned-GLM-4.7-Flash-Q4_K_M-v6.gguf"
+  model: "unsloth/GLM-4.7-Flash"
   base_url: "http://127.0.0.1:8080/v1"
   temperature: 0.0
   top_p: 1.0
