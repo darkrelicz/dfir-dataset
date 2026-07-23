@@ -5,32 +5,28 @@
 
 <h1 class="no-index">Revisions</h1>
 
-This page preserves superseded project snapshots, dataset/package variants,
-training attempts, and evaluation evidence. It is historical context, not an
-active configuration selector or release record. For the live snapshot, use
-[Current Project State](index.md). Generated manifests remain authoritative for
-the exact facts of an individual run.
+> This page tracks the superseded project snapshots, dataset/package variants, training attempts, and evaluation evidence. 
+>
+> For the live snapshot, head over to [Current Project State](index.md).
 
-# State Snapshot Revisions
+---
 
-The source revisions below are every checked-in revision of the Current Project
-State page through its separation from this history page. Several revisions
-changed structure or links without changing project status; those are retained
-so the sequence is complete.
+## State Snapshot Revisions
 
 | Source revision | Snapshot date | Revision recorded at the time |
 |---|---|---|
-| `e8fcc9c` | 2026-07-07 | The first Current State page recorded collection, reduced synthesis, time-boxed quality, and local packaging as complete. Phase 6 was not implemented in the repository. |
-| `d5d9571` | 2026-07-14 | The evaluator and initial fine-tuning configuration existed; baseline review, real training, tuned scoring, and integration remained next actions. |
-| `5fa4bde` | 2026-07-16 | The first LoRA run and exploratory 68-case base evaluation were recorded. Manifest reproducibility defects and judge calibration blocked release use. |
-| `4beb421` | 2026-07-16 | The first run was marked rejected, the GLM v2 view became current, and v2 retraining was prepared. |
-| `8a287f2` | 2026-07-16 | Stable reference material moved from `project_state/` into the documentation site; project status was materially unchanged. |
-| `5002d11` | 2026-07-16 | The handover snapshot expanded to include the implemented pipeline, active configuration, release gates, deferred work, and sources of truth. Project status was materially unchanged. |
-| `03eb2e2` | 2026-07-17 | Packaging moved to filtered-only `data/packaged/glm47_v3/`. The v2 tuned evaluation showed a regression, and the v3 training configuration was pending a runner fix. |
-| `15ed5c1` | 2026-07-21 | V3 and v4 training/export had completed without a durable passing promotion record. V5 was staged, and the v3 tuned evaluation had stopped after 9 of 68 cases. |
-| `6debe4c` | 2026-07-22 | V5 training/export completed and v6 became the newest staged experiment. Initial v5 termination observations were later found invalid because the model stop list had been replaced with one scalar EOS ID. |
-| `72fe975` | 2026-07-22 | User-guide links and operating guidance were revised; the Current State facts were materially unchanged. |
+| `f2e0afb` | 2026-07-23 | The live Current State page was separated from this dedicated revision history; project status was materially unchanged. |
 | `fe2f653` | 2026-07-23 | The developer guide was consolidated around canonical phase-maintenance and training/release procedures. The active release blocker remained an enforcing adapter gate followed by calibrated comparison. |
+| `72fe975` | 2026-07-22 | User-guide links and operating guidance were revised; the Current State facts were materially unchanged. |
+| `6debe4c` | 2026-07-22 | V5 training/export completed and v6 became the newest staged experiment. Initial v5 termination observations were later found invalid because the model stop list had been replaced with one scalar EOS ID. |
+| `15ed5c1` | 2026-07-21 | V3 and v4 training/export had completed without a durable passing promotion record. V5 was staged, and the v3 tuned evaluation had stopped after 9 of 68 cases. |
+| `03eb2e2` | 2026-07-17 | Packaging moved to filtered-only `data/packaged/glm47_v3/`. The v2 tuned evaluation showed a regression, and the v3 training configuration was pending a runner fix. |
+| `5002d11` | 2026-07-16 | The handover snapshot expanded to include the implemented pipeline, active configuration, release gates, deferred work, and sources of truth. Project status was materially unchanged. |
+| `8a287f2` | 2026-07-16 | Stable reference material moved from `project_state/` into the documentation site; project status was materially unchanged. |
+| `4beb421` | 2026-07-16 | The first run was marked rejected, the GLM v2 view became current, and v2 retraining was prepared. |
+| `5fa4bde` | 2026-07-16 | The first LoRA run and exploratory 68-case base evaluation were recorded. Manifest reproducibility defects and judge calibration blocked release use. |
+| `d5d9571` | 2026-07-14 | The evaluator and initial fine-tuning configuration existed; baseline review, real training, tuned scoring, and integration remained next actions. |
+| `e8fcc9c` | 2026-07-07 | The first Current State page recorded collection, reduced synthesis, time-boxed quality, and local packaging as complete. Phase 6 was not implemented in the repository. |
 
 # Quality Revisions
 
