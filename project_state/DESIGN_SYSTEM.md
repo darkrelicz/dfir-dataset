@@ -11,6 +11,7 @@ The project currently presents information through:
 ## Documentation Style
 
 - Keep operational state concise and keep stable explanatory guidance in `docs/`.
+- Keep superseded project snapshots and run histories in `docs/current-state/revisions.md`, linked beneath Current State.
 - Prefer short sections with stable headings.
 - Avoid large code dumps.
 - Use exact file and config names when documenting architecture or tasks.

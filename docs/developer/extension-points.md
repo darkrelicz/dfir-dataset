@@ -10,31 +10,10 @@ formats.
 
 # Add A New Source
 
-1. Add source settings to `configs/collection.yaml`.
-2. Create `collectors/<source_key>.py`.
-3. Subclass `collectors.base.BaseCollector`.
-4. Emit valid `RawDocument` rows with stable `doc_id` values.
-5. Preserve source-specific structured fields in `metadata`.
-6. Define cache freshness and source-revision provenance behavior.
-7. Add parser fixtures for normal and malformed upstream records.
-8. Add the collector to `scripts.collect_all.collector_map`.
-9. Run the collector alone and inspect its manifest errors and warnings.
-10. Run all collectors and validate the complete raw corpus.
-11. Add a source profile to `configs/source_profiles.yaml`.
-12. Add or reuse a source-type prompt template.
-13. Add content-type profiles only for behavior that differs materially.
-14. Decide whether a prompt-time compactor is needed.
-15. Update durable project-state docs if scope, decisions, or TODOs changed.
-
-Validation commands:
-
-```bash
-python -m scripts.collect_all --source <source_key>
-python -m scripts.synthesize validate-raw --raw-dir data/raw
-python -m scripts.synthesize render-prompts \
-  --mode pilot \
-  --output-dir data/synthesized/dry_run
-```
+Use [Adding Sources](adding-sources.md). It is the canonical intake,
+implementation, synthesis-profile, validation, and review checklist. Collector
+internals and cache behavior are documented in [Collectors](collectors.md) and
+[Source Internals](source-guide.md).
 
 # Add A Prompt Template
 

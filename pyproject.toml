@@ -35,15 +35,6 @@ training-cuda130 = [
     "fsspec[http]>=2023.1.0,<=2025.9.0",
 ]
 
-[project.scripts]
-dfir-collect = "scripts.collect_all:main"
-dfir-synthesize = "scripts.synthesize:main"
-dfir-quality = "scripts.quality_filter:main"
-dfir-package = "scripts.package_dataset:main"
-dfir-evaluate = "scripts.run_evaluation:main"
-dfir-compare-evals = "scripts.compare_evaluations:main"
-dfir-train-lora = "scripts.finetune:main"
-
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"

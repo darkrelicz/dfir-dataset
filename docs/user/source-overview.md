@@ -7,7 +7,9 @@
 
 > This page documents the high level overview of the current configured sources. For implementation details, schemas, and normalization behavior, see [Source Internals](../developer/source-guide.md).
 
-# Available Sources
+---
+
+## Available Sources
 
 The configured collection scope contains 16 sources:
 
@@ -30,8 +32,9 @@ The configured collection scope contains 16 sources:
 | `ossem_data_dicts` | Security event dictionaries |
 | `cybersec_skills` | Practitioner workflows |
 
+---
 
-# Cache And Freshness
+## Cache and Freshness
 
 Git-backed sources are cached under `data/raw/.repos/`. ATT&CK STIX is cached under `data/raw/.cache/`. 
 

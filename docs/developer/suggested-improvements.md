@@ -12,10 +12,10 @@ implementation facts.
 
 ## Finalize Phase 6 Benchmark
 
-The evaluator is implemented, v1 is rejected by the termination smoke gate, v2
-regressed in exploratory evaluation, and an uncalibrated 68-case base run is
-complete. Finish manual benchmark review and record the review owner/date before
-using it for a calibrated model comparison.
+The evaluator is implemented, but no existing result is compatible calibrated
+release evidence. Finish manual benchmark review and record the review
+owner/date before using it for a calibrated model comparison. Superseded result
+details are in [Revisions](../current-state/revisions.md#evaluation-revisions).
 
 Suggested coverage:
 
@@ -27,14 +27,11 @@ Suggested coverage:
 * reasoning quality;
 * AI/LLM ATLAS cases.
 
-V5 training/export is complete, but its initial smoke observations overrode the
-model's multi-token stop list and are not valid termination evidence. Correct
-and enforce the smoke gate, retest the v5 final adapter and checkpoint 250, then
-decide whether v5 or staged v6 is the next candidate. After judge calibration,
+Correct and enforce the smoke gate, test the selected candidate's final adapter
+and relevant checkpoint, then record the candidate decision. After judge calibration,
 rerun base scoring, score only an artifact that passed the full promotion gate,
 and compare them with the Phase 6 commands. Record reviewed results in
-the [Training And Release](training-and-release.md) page and update
-`project_state/TODO.md`.
+[Current State](../current-state/index.md) and update `project_state/TODO.md`.
 
 ## Calibrate And Freeze The Local Judge
 
@@ -68,8 +65,6 @@ still record:
 * the actual GGUF output path produced by Unsloth;
 * capture the code commit, package versions, CUDA/runtime details, artifact
   hashes, validation metrics, and selected checkpoint.
-
-The v1 artifacts are diagnostic only because they failed EOS termination.
 
 ## Enforce Evaluation Release Preconditions
 

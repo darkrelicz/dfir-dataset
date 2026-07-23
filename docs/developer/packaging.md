@@ -77,9 +77,8 @@ the remaining 25 percent to create direct-answer examples.
   `<think>` blocks.
 
 These transforms do not mutate synthesis or quality outputs. The generated
-`package-20260717T040952Z` contains 4,152 records: 3,322 train, 415 validation,
-and 415 test, with no source-document overlap. Its response mix is 3,114
-reasoning and 1,038 direct examples.
+package and response mix are reported in [Current
+State](../current-state/index.md#phase-5-packaging-snapshot).
 
 # Splitting
 
@@ -106,4 +105,4 @@ This prevents a source document from appearing in multiple splits.
 * split paths/counts/source-doc counts;
 * source-doc overlap by split pair.
 
-The current manifest reports empty overlap for all split comparisons.
+Treat non-empty overlap in any split comparison as a packaging failure.

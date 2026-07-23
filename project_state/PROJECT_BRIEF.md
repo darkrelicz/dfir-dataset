@@ -20,11 +20,8 @@ and supports training and evaluation.
 - Synthesis produced 6,287 candidates; quality retained 4,152 filtered rows.
 - `data/packaged/glm47_v3/` contains all filtered rows, split 3,322/415/415 by
   `source_doc_id`, with a 75% reasoning and 25% direct response mix.
-- V1 failed termination and v2 regressed in exploratory evaluation. V3, v4, and
-  v5 completed training/export but none is promoted; v6 is staged and unrun.
-- V5's initial termination tests were invalid because they replaced GLM's
-  multi-token stop list with scalar `tokenizer.eos_token_id`. Corrected,
-  enforcing adapter tests remain pending.
+- No model is promoted. V5 or staged v6 must be selected as the next candidate,
+  and corrected enforcing adapter tests remain pending.
 - The 68-case benchmark and existing scores are not yet calibrated release
   evidence.
 

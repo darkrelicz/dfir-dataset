@@ -9,6 +9,8 @@ This section details how to use this project, from collecting raw data sources t
 
 To find out more on the implementation and maintenance details, please refer to [**Developer Guide**](../developer/index.md).
 
+---
+
 ## Quick Start
 
 | I want to... | Run or Read |
@@ -23,6 +25,8 @@ To find out more on the implementation and maintenance details, please refer to 
 | Read about the detailed configuration options for each command | [Command Overview](command-overview.md) |
 | View the current sources | [Source Overview](source-overview.md) |
 
+---
+
 ## Program Flow
 
 ```text
@@ -34,6 +38,7 @@ collect_all -> synthesize -> quality_filter -> package_dataset
 
 Do not feed `accepted.jsonl` from the `synthesize` stage directly to packaging or training. It is candidate data. The active package is built only from filtered rows in `quality_filter` stage; review and rejected rows remain excluded.
 
+---
 
 ## Credentials and Compute
 

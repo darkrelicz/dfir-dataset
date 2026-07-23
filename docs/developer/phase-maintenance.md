@@ -400,7 +400,7 @@ checks from Phase 5 independently before spending GPU time.
    reproducible; add versions, hashes, metrics, and checkpoint selection to the
    handover record.
 
-Always pass `--config`: the CLI default is the historical v1 file. Use a fresh
+Always pass `--config`: the CLI default is not an active candidate. Use a fresh
 output directory. Checkpoints do not imply resume support, and a failure before
 the final manifest write can leave partial outputs without current run metadata.
 
@@ -529,7 +529,7 @@ python -m scripts.compare_evaluations \
 <puml src="../diagrams/phase6-evaluation-sequence.puml" alt="Phase 6 sequential evaluation and checkpointing" width="1000" />
 
 See [Benchmark Design](benchmark-design.md) and
-[Architecture](architecture.md#phase-6-evaluation-and-training).
+[Architecture](architecture.md#pipeline-boundaries).
 
 # Documentation And UML Maintenance
 

@@ -45,27 +45,16 @@ self-consistent packaging input.
 
 # Deterministic Validators
 
-These checks should run before heuristic scoring.
+Automated checks cover schema, provenance, labels, taxonomy and mapping IDs,
+tools, reasoning structure, grounding tags, and concrete indicators before
+dataset-level deduplication and balance checks. [Validation and
+Quality](validation-quality.md) is the authoritative description of check
+order, reference-cache behavior, severity, scoring limitations, dataset gates,
+and output lifecycle.
 
-| Validator | Reject | Review | Notes |
-|---|---|---|---|
-| Schema validity | Invalid row shape or missing required fields |  | Validate against canonical schemas |
-| Source provenance | Missing or unknown `source_doc_id`/`source` |  | Pair must map to a raw source document |
-| Category/difficulty | Invalid label |  | Must match configured labels |
-| Taxonomy refs | Unknown taxonomy IDs |  | Use `configs/quality.yaml` |
-| ATT&CK IDs | Malformed or absent from local ATT&CK STIX cache |  | `?` suffix is normalized for cache membership, but response/metadata consistency compares raw values |
-| ATLAS IDs | Malformed or absent from local ATLAS YAML cache |  | Validate separately from ATT&CK; missing cache makes every non-empty ATLAS mapping unknown |
-| Tool names |  | Tool absent from source text and allowlist | Static allowlist from `configs/quality.yaml`; source-text acceptance uses substring matching |
-| Reasoning links | Broken evidence/analysis/conclusion/caveat references | Reasoning step count above configured maximum | Use shared reasoning parser with stricter Phase 4 options |
-| Grounding/tag consistency | `source_only` contains `[GENERAL KNOWLEDGE]`, or `source_plus_general` lacks the tag | Untagged unsupported claims need semantic review | Use shared grounding helper with Phase 4 reject policy |
-| Invented concrete indicators | Concrete path/hash/IP/user/host/event not present in source |  | Strict for source-only outputs |
-
-There is no standalone empty-evidence validator or general final-answer
-consistency validator. The reasoning parser detects missing/invalid structural
-elements, and indicator validation detects supported concrete artifacts, but a
-generic evidence sentence or a semantically unsupported non-indicator claim can
-still pass deterministic validation. Those cases belong in manual or
-AI-assisted review.
+Deterministic checks do not prove that every non-indicator claim is supported.
+Generic evidence and fuzzy semantic claims remain manual or AI-assisted review
+work.
 
 # Heuristic Scoring
 
@@ -85,22 +74,11 @@ Quality scores are descriptive metadata. They are useful for sorting and manual 
 - `review`: at least one review issue and no reject issue
 - `rejected`: at least one reject issue
 
-The implemented scores are coarse lexical heuristics, not an automated
-adjudication of the full rubric above. In particular:
-
-* factual accuracy starts at 5 and is reduced only by reject-severity
-  `invented_indicator` or `grounding_mismatch` issues;
-* reasoning quality starts at 5 and is reduced only by a reject-severity
-  `reasoning_links_invalid` issue;
-* review-severity invented indicators and overlong reasoning do not reduce
-  those two dimensions;
-* specificity uses source-token overlap and concrete-indicator counts, so an
-  ungrounded indicator can increase specificity while a separate issue routes
-  the row to review or rejection.
-
-Scores influence which rows survive near-duplicate selection and which rows are
-moved during source balancing. Do not interpret a score of 5 as proof of factual
-correctness or semantic source grounding.
+The implemented scorer is a lexical ranking aid, not an automated version of
+the human rubric. Scores influence duplicate retention and source balancing;
+they do not prove factual correctness. The precise implemented signals and
+known mismatches are documented once in [Heuristic
+Scores](validation-quality.md#heuristic-scores).
 
 # Manual Review Guidance
 

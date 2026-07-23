@@ -31,22 +31,12 @@ Use a short source key that stays stable across runs.
 
 # RawDocument Contract
 
-Each collector must emit records matching `collectors.schemas.RawDocument`:
-
-```json
-{
-  "doc_id": "stable-source-specific-id",
-  "source": "source_key",
-  "source_url": "https://example.org/source",
-  "title": "Human-readable title",
-  "date_collected": "YYYY-MM-DD",
-  "date_published": null,
-  "content_type": "specific_content_label",
-  "content_markdown": "Normalized source content",
-  "metadata": {},
-  "word_count": 0
-}
-```
+Each collector emits `collectors.schemas.RawDocument`. See [Data
+Contracts](data-contracts.md#rawdocument) for the authoritative field list and
+[Collectors](collectors.md#basecollector) for construction and writing
+behavior. Source onboarding adds two requirements: `doc_id` must remain stable
+across runs, and `metadata` must preserve useful upstream structure without
+becoming a competing copy of `content_markdown`.
 
 # Collector Implementation Steps
 

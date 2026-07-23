@@ -120,10 +120,9 @@ Packaging configs define:
 * response-style policy.
 
 The packager writes local JSONL splits and a packaging manifest. It has no
-hosting or publishing behavior. `configs/packaging.yaml` retains the historical
-scalar response-style shape and is not compatible with the current runner; do
-not use it without migrating `response_style.filtered` to reasoning/direct
-fractions.
+hosting or publishing behavior. `configs/packaging.yaml` has a scalar
+response-style shape and is not compatible with the current runner; do not use
+it without migrating `response_style.filtered` to reasoning/direct fractions.
 
 `configs/packaging_glm47_v3.yaml` is the active model-specific view. Its
 `response_style.filtered` mapping requires reasoning/direct fractions that sum
@@ -175,13 +174,12 @@ sampling values, and retry counts before running.
 
 # Fine-Tuning Configurations
 
-`configs/finetune_glm47flash.yaml` and
-`configs/finetune_glm47flash_v2.yaml` preserve historical runs. V3, v4, and v5
-have completed manifests and exports; v4 differs from v3 only in its isolated
-output paths. V5 uses zero dropout plus attention and MLP targets. V6 is the
-newest staged experiment definition and has no completed training manifest. The
-repository does not provide an active-config pointer, and the CLI default still selects the
-historical unversioned v1 config. Always pass the intended version explicitly.
+The repository contains several versioned fine-tuning configs but does not
+provide an active-config pointer. The CLI default is not an active candidate,
+so always pass the intended version explicitly. Candidate status and the
+differences among superseded experiments belong in
+[Current State](../current-state/index.md#phase-6-training-snapshot) and
+[Revisions](../current-state/revisions.md#training-revisions).
 
 Every fine-tuning config defines:
 
@@ -191,13 +189,8 @@ Every fine-tuning config defines:
 * `finetune` trainer arguments and checkpoint policy;
 * the adapter and GGUF destinations plus GGUF quantization settings.
 
-V3/v4 use `data/packaged/glm47_v3/`, rank 16, alpha 32, dropout 0.05,
-attention-only targets, learning rate `2e-5`, and one epoch. V5 retains that
-package, rank, alpha, and learning rate but uses dropout 0 and adds `gate_proj`,
-`up_proj`, and `down_proj`. V6 raises rank/alpha to 32/64, maximum sequence
-length to 8,192, and learning rate to `2e-4`, and also targets `out_proj`; it is
-staged only. The runner is intentionally specific to 4-bit LoRA SFT: it always
-uses response-only loss masking and saves both the adapter and GGUF artifact.
+The runner is intentionally specific to 4-bit LoRA SFT: it always uses
+response-only loss masking and saves both the adapter and GGUF artifact.
 GGUF generation cannot be disabled; every configuration must provide
 `gguf_dir` and `gguf_quantization`. The raw config mappings are copied into the
 training manifest, but forced runtime choices such as `load_in_4bit=True` and
