@@ -29,7 +29,9 @@ Before handing over the project, make sure the successor can find:
 - Quality outputs and the relevant `quality_manifest.json`.
 - Packaging outputs and the relevant `packaging_manifest.json`, if packaging exists.
 - Evaluation manifests, predictions, and LLM-judge scorecards under `data/evaluation/`.
-- The rejected v1 outputs, regressed v2 evaluation, active v3 package manifest, completed v3/v4/v5 training manifests and exports, and the staged-but-unrun v6 configuration.
+- Superseded dataset, training, and evaluation context in
+  [Revisions](../current-state/revisions.md), with the referenced generated
+  manifests and artifacts retained.
 
 # Successor Orientation
 

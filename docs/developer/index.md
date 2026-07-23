@@ -64,7 +64,7 @@ pipeline phase.
 | `quality/` | Apply row gates, scoring, deduplication, balance checks, and audits. |
 | `dataset_packaging/` | Build model-specific training views and leakage-safe splits. |
 | `evaluation/` | Run held-out cases, judge predictions, and compare scorecards. |
-| `scripts/` | Expose thin command-line entry points for these packages. |
+| `scripts/` | Expose thin repository-local Python module CLIs for these packages. |
 
 Core rules:
 
@@ -144,6 +144,7 @@ npm run build
 | Stable implementation guidance | `docs/developer/` |
 | User-facing commands and source summaries | `docs/user/` |
 | Current run status and results | [Current State](../current-state/index.md) |
+| Superseded snapshots and run history | [Revisions](../current-state/revisions.md) |
 | Durable project intent and decisions | `project_state/PROJECT_BRIEF.md` and `project_state/DECISIONS.md` |
 | Active work | `project_state/TODO.md` |
 | Future enhancements | [Suggested Improvements](suggested-improvements.md) |
@@ -165,5 +166,6 @@ These pages are references, not a second reading sequence.
 | Quality issue codes and manual review | [Quality Rubric](quality-rubric.md) |
 | Artifact category definitions | [DFIR Artifact Taxonomy](../reference/taxonomy.md) |
 | Operational documentation rules | [Project State Memory](project-state-memory.md) |
+| Superseded project and run context | [Revisions](../current-state/revisions.md) |
 | Every UML view | [Diagrams](diagrams.md) |
 | Prioritized future work | [Suggested Improvements](suggested-improvements.md) |

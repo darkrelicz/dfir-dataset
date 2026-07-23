@@ -22,7 +22,6 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-
 ### Collection Instructions
 ```bash
 # Run all collectors

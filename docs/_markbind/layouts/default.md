@@ -36,7 +36,8 @@
     <div class="nav-component slim-scroll">
       <site-nav>
 * [Home]({{baseUrl}}/index.html)
-* [Current State]({{baseUrl}}/current-state/index.html)
+* [Current State]({{baseUrl}}/current-state/index.html) :expanded:
+  * [Revisions]({{baseUrl}}/current-state/revisions.html)
 * [User Guide]({{baseUrl}}/user/index.html) :expanded:
   * [Command Overview]({{baseUrl}}/user/command-overview.html)
   * [Source Overview]({{baseUrl}}/user/source-overview.html)

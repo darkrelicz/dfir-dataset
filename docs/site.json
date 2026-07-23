@@ -24,6 +24,10 @@
       "title": "Current Project State"
     },
     {
+      "src": "current-state/revisions.md",
+      "title": "Revisions"
+    },
+    {
       "src": "user/command-overview.md",
       "title": "Command Overview"
     },

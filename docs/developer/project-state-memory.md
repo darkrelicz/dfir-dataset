@@ -41,6 +41,7 @@ templates. Important migrated pages include:
 * [Benchmark Design](benchmark-design.md)
 * [Training And Release](training-and-release.md)
 * [Developer Handover Guide](handover.md)
+* [Revisions](../current-state/revisions.md)
 * [DFIR Artifact Taxonomy](../reference/taxonomy.md)
 
 The rendered MarkBind site is the GitHub Pages presentation of these source
@@ -53,6 +54,8 @@ The documentation should:
 * link to operational state or manifests where live status belongs;
 * include architecture and UML diagrams as PlantUML source;
 * keep suggested improvements separate from current behavior;
+* keep superseded snapshots and run histories in
+  [Revisions](../current-state/revisions.md);
 * be updated when architecture, commands, contracts, or handoff workflows change.
 
 # Documentation Update Rule

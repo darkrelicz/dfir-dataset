@@ -6,8 +6,10 @@
 <h1 class="no-index">Training and Release</h1>
 
 This page defines the reproducible fine-tuning, evaluation, and promotion
-procedure. Active candidates, completed runs, scores, blockers, and next actions
-belong in [Current State](../current-state/index.md#phase-6-training-snapshot).
+procedure. Active candidates, blockers, and next actions belong in [Current
+State](../current-state/index.md#phase-6-training-snapshot); completed and
+superseded runs belong in
+[Revisions](../current-state/revisions.md#training-revisions).
 
 # Release Flow
 
@@ -91,7 +93,7 @@ python -m scripts.finetune \
   --config configs/<versioned_finetune_config>.yaml
 ```
 
-The CLI default is historical and must not select a real run. Use a fresh output
+The CLI default is not an active candidate and must not select a real run. Use a fresh output
 directory for each attempt. Fine-tuning YAML has no typed schema or range
 validation, so review booleans, numeric values, paths, LoRA targets, and model
 settings before starting.
@@ -172,5 +174,6 @@ Keep one decision record with:
 
 Promotion requires a passing direct-adapter gate, calibrated compatible
 evaluation, no unacceptable DFIR regression, successful integration testing,
-and a documented rollback path. Update [Current
-State](../current-state/index.md) after every completed or rejected candidate.
+and a documented rollback path. Update [Current State](../current-state/index.md)
+for the live candidate and move completed or rejected candidate history to
+[Revisions](../current-state/revisions.md).

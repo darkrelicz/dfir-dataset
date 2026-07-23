@@ -15,7 +15,7 @@ subsystem guides.
 |---|---|
 | Language | Python 3.11+ |
 | Packaging | `pyproject.toml` with setuptools |
-| Interfaces | CLI entry points; no product frontend, API server, or serving runtime |
+| Interfaces | Repository-local Python module CLIs |
 | Core libraries | Pydantic, PyYAML, JSON Lines, Google GenAI, Requests, GitPython, Rich, tqdm, Unsloth, Transformers, and TRL |
 
 # Component View
@@ -31,7 +31,7 @@ subsystem guides.
 | `quality/` | Row decisions, scoring, references, dataset gates, and output writing. |
 | `dataset_packaging/` | Model-specific views, grouped splits, and package manifests. |
 | `evaluation/` | Target generation, judging, scorecards, and comparison gates. |
-| `scripts/` | Thin CLI adapters for package runners. |
+| `scripts/` | Thin Python module CLIs for package runners. |
 | `utils/` | IO, text, Markdown, and Git helpers. |
 | `configs/` | Versioned pipeline policy. |
 | `project_state/` | Product intent, decisions, and active work. |
