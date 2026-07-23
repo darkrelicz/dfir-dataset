@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Synthesis - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "RawDocument" as Raw
+[Plan Prompts] as Plan
+[Generate] as Generate
+[Validate Candidates] as Validate
+artifact "Accepted / Rejected" as Output
+
+Raw --> Plan
+Plan --> Generate
+Generate --> Validate
+Validate --> Output
+
+@enduml

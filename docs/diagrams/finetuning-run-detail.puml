@@ -1,0 +1,24 @@
+@startuml
+title Training Run - Detail
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant "scripts.finetune" as CLI
+database "Package" as Package
+participant Tokenizer
+participant "Unsloth + TRL" as Trainer
+database "Training artifacts" as Artifacts
+
+Maintainer -> CLI : explicit versioned config
+CLI -> Package : preflight paths + external row checks
+CLI -> Tokenizer : render chat once + append EOS
+Tokenizer --> CLI : bounded training text
+CLI -> Trainer : response-only LoRA SFT
+Trainer -> Package : train + validation
+Trainer -> Artifacts : checkpoints + adapter
+Trainer -> Artifacts : GGUF export
+CLI -> Artifacts : manifest after export succeeds
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+!pragma layout smetana
+title Evaluation - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "Held-out Cases" as Cases
+[Target Generation] as Target
+[Calibrated Judge] as Judge
+[Complete Scorecard] as Scorecard
+[Base vs Tuned Comparison] as Compare
+artifact "Promotion Evidence" as Evidence
+
+Cases --> Target
+Target --> Judge
+Judge --> Scorecard
+Scorecard --> Compare
+Compare --> Evidence
+
+@enduml

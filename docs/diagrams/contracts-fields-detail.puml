@@ -1,0 +1,45 @@
+@startuml
+!pragma layout smetana
+title Provenance Fields - Detail
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class RawDocument {
+  doc_id
+  source
+  source_url
+  content_type
+  content_markdown
+  metadata
+}
+
+class PromptRecord {
+  prompt_id
+  source_doc_id
+  category
+  difficulty
+  taxonomy_refs
+}
+
+class InstructionPair {
+  instruction
+  response
+  source_doc_id
+  grounding
+  mappings + tools
+}
+
+class PackagedMetadata {
+  source_doc_id
+  quality_run_id
+  prompt_id + pair_index
+  reasoning_style
+  model_transforms
+}
+
+RawDocument::doc_id --> PromptRecord::source_doc_id
+PromptRecord::source_doc_id --> InstructionPair::source_doc_id
+InstructionPair::source_doc_id --> PackagedMetadata::source_doc_id
+
+@enduml

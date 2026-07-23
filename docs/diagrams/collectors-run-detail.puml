@@ -1,0 +1,27 @@
+@startuml
+title Collection Run - Detail
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant "scripts.collect_all" as CLI
+database "Local cache / clone" as Cache
+participant "Concrete collector" as Collector
+database "data/raw/<source>" as Raw
+database "collection_manifest.json" as Manifest
+
+Maintainer -> CLI : select one or all sources
+CLI -> Collector : construct from collection config
+Collector -> Cache : reuse or populate source cache
+Collector -> Collector : parse and normalize logical items
+Collector -> Raw : replace source JSONL
+Collector --> CLI : manifest entry
+CLI -> Manifest : replace with invocation entries
+
+note right of Cache
+Reuse is not synchronization.
+Record revision separately.
+end note
+
+@enduml

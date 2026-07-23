@@ -3,11 +3,29 @@
   pageNavTitle: "On This Page"
 </frontmatter>
 
-<h1 class="no-index">Validation And Quality</h1>
+<h1 class="no-index">Quality Filtering</h1>
 
-Validation is split into pure primitives and stage-specific policy wrappers.
+Phase 4 decides which synthesized candidates are eligible for packaging. This
+page owns shared validation boundaries, row decisions, scoring, dataset gates,
+manual review, coverage audits, outputs, and quality-policy changes.
 
-<puml src="../diagrams/quality-activity.puml" alt="Phase 4 quality activity diagram" width="900" />
+# Visual Overview
+
+## Macro View
+
+<puml src="../diagrams/quality-macro.puml" alt="Macro view of quality filtering" width="900" />
+
+## Row Decision Detail
+
+<puml src="../diagrams/quality-row-detail.puml" alt="Detailed row-level quality decision flow" width="450" />
+
+## Dataset Gates Detail
+
+<puml src="../diagrams/quality-dataset-detail.puml" alt="Detailed dataset gates and reporting audits" width="350" />
+
+## Output Lifecycle Detail
+
+<puml src="../diagrams/quality-output-detail.puml" alt="Detailed quality output lifecycle" width="900" />
 
 # Shared Primitives
 
@@ -208,3 +226,116 @@ The runner returns zero after a completed pass regardless of rejection rate,
 empty input, all-rejected input, category/difficulty tolerance failures, or
 taxonomy gaps. Operational acceptance requires inspecting counts and audits in
 the manifest.
+
+# Running Phase 4
+
+```bash
+.venv/bin/python -m scripts.quality_filter \
+  --input data/synthesized/<run>/accepted.jsonl \
+  --raw-dir data/raw \
+  --output-dir data/quality/<run>
+```
+
+Use a fresh output directory. The CLI logs at INFO and has no `--log-level`
+option. Preserve the log because loaded ATT&CK/ATLAS reference counts are not
+stored in the manifest.
+
+# Decision Rubric
+
+| State | Meaning |
+|---|---|
+| `filtered` | No row-level issue; eligible for dataset gates and packaging |
+| `review` | At least one review-severity issue and no reject issue |
+| `rejected` | At least one reject-severity issue |
+
+The five heuristic dimensions are factual accuracy, reasoning quality,
+operational relevance, specificity, and completeness. The configured weights
+are 25%, 25%, 20%, 15%, and 15%. Manual reviewers use this interpretation:
+
+| Dimension | Low | Mid | High |
+|---|---|---|---|
+| Factual accuracy | Unsupported or contradicted | Mostly supported, minor ambiguity | Fully grounded |
+| Reasoning quality | Broken or circular | Mostly coherent | Clear evidence-to-conclusion chain |
+| Operational relevance | Academic or vague | Some useful next steps | Directly useful to an analyst |
+| Specificity | Generic | Some source detail | Specific without invention |
+| Completeness | Missing key fields/caveats | Adequate | Complete and calibrated |
+
+The implemented scorer is lexical and does not automate this human rubric.
+Scores rank rows for duplicate retention and source balancing; they do not prove
+correctness.
+
+Manual reviewers should ask:
+
+1. Is every concrete claim supported by source evidence?
+2. Would the answer help an incident responder decide or act?
+3. Does it avoid declaring compromise or attribution without corroboration?
+4. Are caveats specific rather than boilerplate?
+5. Is the evidence-to-conclusion chain auditable?
+6. Is the pair redundant with another example?
+
+Common stable issue codes include `schema_invalid`, `source_missing`,
+`source_mismatch`, `category_invalid`, `taxonomy_invalid`,
+`attack_id_invalid`, `atlas_id_invalid`, `mapping_inconsistency`,
+`reasoning_links_invalid`, `reasoning_too_long`, `tool_name_unknown`,
+`grounding_mismatch`, `invented_indicator`, `duplicate_or_near_duplicate`, and
+`source_overrepresented`. Add a stable code whenever a new decision must be
+audited over time.
+
+# Coverage Review
+
+Training coverage is evaluated from collection through packaging; it is not the
+same as benchmark coverage.
+
+| Input | Coverage signal |
+|---|---|
+| Collection manifest | Which collectors ran and raw volume |
+| Synthesis accepted/rejected rows | Generation and rejection pressure by source/task |
+| Quality manifest and review queue | Filtered distributions, taxonomy gaps, and review pressure |
+| Packaging manifest | Rows that reached isolated splits and response-style mix |
+| `configs/task_categories.yaml` | Intended task and difficulty distributions |
+| `configs/quality.yaml` | Valid taxonomy and balance policy |
+
+Use `strong`, `moderate`, `thin`, and `absent` consistently. Review source
+families, task categories, difficulty, taxonomy IDs, ATT&CK/ATLAS mapping health,
+review pressure, and rejection pressure. Do not infer model behavior from
+training coverage, or training coverage from a judge score.
+
+Common weak areas include cloud control-plane and identity investigations,
+SaaS/file-storage forensics, realistic event-log corpora, malware-analysis
+workflows, and real AI/LLM incident reports. Record run-specific findings in a
+run report or [Current State](../current-state/index.md), not in this guide.
+
+# Changing Quality Policy
+
+`configs/quality.yaml` owns taxonomy coverage groups, scoring weights, generic
+penalties, operational verbs, reasoning bounds, deduplication, source balance,
+distribution tolerances, spot-check sampling, and the tool allowlist.
+`configs/task_categories.yaml` owns category quality signals and target
+distributions.
+
+The YAML is loaded as an untyped mapping. Validate that weights are
+non-negative, thresholds and shares are within their intended 0–1 range,
+reasoning bounds are coherent, and sample sizes are non-negative. Numeric but
+invalid values can silently weaken a gate.
+
+Extension rules:
+
+- reusable parsing/checking belongs in `validation/`;
+- Phase 3 generation acceptance belongs in `synthesizers/validators.py`;
+- Phase 4 row policy belongs in `quality/validators.py`;
+- dataset-wide gates belong in `quality/dataset.py`;
+- decision codes and severity must remain stable and documented;
+- every changed rule needs accepted, review, and rejected fixtures where
+  applicable.
+
+Validation ladder:
+
+1. run focused shared-primitive and row-validator tests;
+2. validate a fixture containing every affected severity path;
+3. run Phase 4 into a fresh directory on a representative candidate set;
+4. inspect every decision and score;
+5. inspect reference counts, duplicates, final source shares, distributions,
+   taxonomy coverage, and the spot-check sample;
+6. run the full input only after sample behavior is accepted.
+
+Only `filtered.jsonl` is a valid input to [Packaging](packaging.md).

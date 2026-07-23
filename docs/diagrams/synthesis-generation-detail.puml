@@ -1,0 +1,28 @@
+@startuml
+title Candidate Generation - Detail
+
+skinparam shadowing false
+autonumber
+
+participant Runner
+participant Gemini
+participant "Phase 3 Validator" as Validator
+database "Synthesis outputs" as Output
+
+loop each non-skipped prompt
+  Runner -> Gemini : structured generation
+  Gemini --> Runner : raw model response
+  Runner -> Output : append raw_outputs
+  Runner -> Validator : parse + validate
+  alt valid
+    Validator --> Runner : InstructionPair list
+    Runner -> Output : append accepted
+  else invalid and retry remains
+    Validator --> Runner : issue feedback
+    Runner -> Gemini : regenerate with feedback
+  else terminal failure
+    Runner -> Output : append rejected
+  end
+end
+
+@enduml

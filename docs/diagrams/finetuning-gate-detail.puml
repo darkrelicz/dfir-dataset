@@ -1,0 +1,21 @@
+@startuml
+title Direct-Adapter Gate - Detail
+
+skinparam shadowing false
+
+start
+:Load direct adapter;
+:Run bounded greeting
+and representative DFIR prompts;
+:Inspect stop ID, repetition,
+template leakage, and usability;
+if (All checks pass?) then (yes)
+  :Preserve enforcing evidence;
+  :Eligible for evaluation;
+else (no)
+  :Reject candidate;
+  :Preserve diagnostic artifacts;
+endif
+stop
+
+@enduml

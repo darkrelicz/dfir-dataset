@@ -1,0 +1,26 @@
+@startuml
+!pragma layout smetana
+title Dataset Factory - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+top to bottom direction
+
+actor Maintainer
+[Collect] as Collect
+[Synthesize] as Synthesize
+[Quality Filter] as Quality
+[Package] as Package
+[Fine-tune] as Train
+[Evaluate] as Evaluate
+[Promotion Decision] as Promote
+
+Maintainer --> Collect
+Collect --> Synthesize : raw evidence
+Synthesize --> Quality : candidates
+Quality --> Package : filtered rows
+Package --> Train : isolated splits
+Train --> Evaluate : gated candidate
+Evaluate --> Promote : comparison evidence
+
+@enduml

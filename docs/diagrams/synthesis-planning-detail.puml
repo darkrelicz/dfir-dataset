@@ -1,0 +1,22 @@
+@startuml
+title Prompt Planning - Detail
+
+skinparam shadowing false
+autonumber
+
+participant "Planner" as Planner
+database "Raw corpus" as Raw
+participant "Category + difficulty policy" as Policy
+participant "PromptBuilder" as Builder
+participant "Source compactor" as Compactor
+database "prompts.jsonl" as Prompts
+
+Planner -> Raw : select pilot, subset, or full documents
+Planner -> Policy : assign category and difficulty
+Planner -> Builder : document + assignments
+Builder -> Compactor : derive prompt-only evidence view
+Compactor --> Builder : compacted source
+Builder -> Builder : combine base, task, source, content templates
+Builder --> Prompts : write complete prompt plan
+
+@enduml

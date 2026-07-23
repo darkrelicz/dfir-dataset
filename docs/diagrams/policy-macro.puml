@@ -1,0 +1,23 @@
+@startuml
+!pragma layout smetana
+title Taxonomy And Policy - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "DFIR Taxonomy" as Taxonomy
+artifact "Task Policy" as Tasks
+artifact "Source Policy" as Sources
+[Planning] as Planning
+[Validation] as Validation
+[Coverage Review] as Coverage
+
+Taxonomy --> Planning
+Tasks --> Planning
+Sources --> Planning
+Taxonomy --> Validation
+Tasks --> Coverage
+Validation --> Coverage
+
+@enduml

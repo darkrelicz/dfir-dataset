@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Quality Filtering - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "Synthesis Candidates" as Candidates
+[Row Validation] as Rows
+[Dataset Gates] as Gates
+[Coverage Audits] as Audits
+artifact "Filtered / Review / Rejected" as Output
+
+Candidates --> Rows
+Rows --> Gates
+Gates --> Audits
+Audits --> Output
+
+@enduml

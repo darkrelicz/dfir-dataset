@@ -5,32 +5,24 @@
 
 <h1 class="no-index">Developer Guide</h1>
 
-This guide explains where the DFIR Dataset pipeline is designed, implemented,
-and maintained. It is the starting point; focused pages own the implementation
-details. Commands for operating an unchanged pipeline belong in the
-[User Guide](../user/index.md).
+The developer guide follows the dataset lifecycle. Each stage page owns its
+implementation, configuration, contracts, extension workflow, validation
+ladder, and operational caveats. Commands for running an unchanged pipeline
+belong in the [User Guide](../user/index.md).
 
-<box type="info" seamless header="How to use this guide">
+<box type="info" seamless header="Recommended reading order">
 
-Read **Setting up**, **Design**, and **Implementation** when joining the project.
-For a specific change, use [Common development
-workflows](#common-development-workflows) to find the canonical guide.
+Start with [Pipeline Foundations](pipeline-foundations.md), then read only the
+stage you plan to change. Read [Fine-tuning](finetuning.md) and
+[Evaluation](evaluation.md) together when making a promotion decision.
 
 </box>
 
----
+# Local Setup
 
-## **Setting up and getting started**
-
-### Prerequisites
-
-- Python 3.11 or later
-- Git
-- Java and Graphviz for documentation diagrams
-- A Gemini API key only for model-backed synthesis
-- A CUDA-capable environment only for local fine-tuning
-
-### Local setup
+Prerequisites are Python 3.11 or later, Git, Java and Graphviz for diagrams, a
+Gemini API key for model-backed synthesis, and a CUDA environment for local
+fine-tuning.
 
 ```bash
 git clone https://github.com/darkrelicz/dfir-dataset.git
@@ -42,130 +34,68 @@ ruff check .
 python -m scripts.collect_all --list
 ```
 
-Preview the documentation with `cd docs && npm install && npm run serve`.
-Training-specific dependencies and checks are documented in [Training and
-Release](training-and-release.md#environment-record).
-
----
-
-## **Design**
-
-The repository is a re-runnable dataset factory, not a serving application.
-Versioned YAML and Markdown own durable policy; Python packages implement each
-pipeline phase.
-
-<puml src="../diagrams/pipeline-component.puml" alt="Components of the DFIR dataset pipeline" width="1000" />
-
-| Component | Responsibility |
-|---|---|
-| `collectors/` | Normalize public DFIR sources into `RawDocument` rows. |
-| `synthesizers/` | Plan prompts, call the teacher model, and validate candidates. |
-| `validation/` | Provide reusable grounding, taxonomy, indicator, mapping, and reasoning checks. |
-| `quality/` | Apply row gates, scoring, deduplication, balance checks, and audits. |
-| `dataset_packaging/` | Build model-specific training views and leakage-safe splits. |
-| `evaluation/` | Run held-out cases, judge predictions, and compare scorecards. |
-| `scripts/` | Expose thin repository-local Python module CLIs for these packages. |
-
-Core rules:
-
-1. Preserve full source evidence during collection; compact only prompt views.
-2. Carry stable provenance through every downstream record.
-3. Separate reusable validation logic from phase policy.
-4. Split packages by `source_doc_id` to avoid source leakage.
-5. Use fresh output directories after prompt, policy, schema, or model changes.
-6. Preserve manifests, configuration, and logs together for reproducibility.
-
-See [Architecture](architecture.md) for component boundaries and architectural
-decisions, [Data Contracts](data-contracts.md) for record fields, and
-[Diagrams](diagrams.md) for all UML views.
-
----
-
-## **Implementation**
-
-The phases are ordered by dependency. Earlier changes can invalidate assumptions
-in every later phase.
-
-| Phase | Primary implementation | Canonical guide |
-|---|---|---|
-| 1. Taxonomy and task design | `docs/reference/`, task and quality config | [Taxonomy](../reference/taxonomy.md) · [Coverage Map](coverage-map.md) |
-| 2. Collection | `collectors/`, `configs/collection.yaml` | [Collectors](collectors.md) |
-| 3. Synthesis | `synthesizers/`, synthesis and source-profile config | [Synthesis](synthesis.md) · [Prompt Guide](prompt-guide.md) |
-| 4. Quality | `quality/`, `validation/`, quality config | [Validation and Quality](validation-quality.md) · [Quality Rubric](quality-rubric.md) |
-| 5. Packaging | `dataset_packaging/`, packaging config | [Packaging](packaging.md) |
-| 6. Evaluation and training | `evaluation/`, training scripts and config | [Benchmark Design](benchmark-design.md) · [Training and Release](training-and-release.md) |
-
-Use the [Phase Maintenance Guide](phase-maintenance.md) when changing a phase.
-It owns the file maps, update order, validation ladders, and phase-specific
-failure modes. Use [Configuration](configuration.md) to identify which policy
-file owns a setting before adding a hard-coded branch.
-
----
-
-## **Common development workflows**
-
-| Change | Start here | Supporting reference |
-|---|---|---|
-| Add or modify a source | [Adding Sources](adding-sources.md) | [Collectors](collectors.md) · [Source Internals](source-guide.md) |
-| Change prompt behavior | [Prompt Guide](prompt-guide.md) | [Synthesis](synthesis.md) |
-| Add a compactor, validator, scoring rule, or export format | [Extension Points](extension-points.md) | The affected phase guide |
-| Change a schema | [Data Contracts](data-contracts.md) | [Phase Maintenance](phase-maintenance.md) |
-| Change quality policy or review practice | [Quality Rubric](quality-rubric.md) | [Validation and Quality](validation-quality.md) |
-| Add or revise benchmark cases | [Benchmark Design](benchmark-design.md) | [Training and Release](training-and-release.md) |
-| Transfer unfinished work | [Developer Handover](handover.md) | [Project State Memory](project-state-memory.md) |
-
-Each workflow has one canonical procedure. Other pages link to that procedure
-instead of restating its steps.
-
----
-
-## **Documentation, testing, configuration, and operations**
-
-### Validation principle
-
-Start with the cheapest deterministic check, then progress through artifact
-validation, dry runs, smoke runs, and pilots. Inspect warnings, rejected rows,
-distributions, and manifests as well as process exit status. Some runners return
-success even when rows are rejected or a reporting gate fails.
-
-The exact checks belong to the affected section of the [Phase Maintenance
-Guide](phase-maintenance.md). Rebuild this site after changing a command,
-contract, configuration field, phase boundary, or output:
+Preview the documentation with:
 
 ```bash
 cd docs
-npm run build
+npm install
+npm run serve
 ```
 
-### Documentation ownership
+# Lifecycle Map
 
-| Information | Canonical location |
+| Stage | Responsibility | Guide |
+|---|---|---|
+| Foundations | Architecture, shared contracts, configuration ownership, change discipline, and project memory | [Pipeline Foundations](pipeline-foundations.md) |
+| Collection | Normalize and preserve public DFIR source material | [Collectors](collectors.md) |
+| Synthesis | Plan prompts and generate grounded candidate pairs | [Synthesis](synthesis.md) |
+| Quality filtering | Validate, score, deduplicate, audit, and select package-eligible rows | [Quality Filtering](quality-filtering.md) |
+| Packaging | Build model-specific views and leakage-safe splits | [Packaging](packaging.md) |
+| Fine-tuning | Train, export, and test a candidate adapter | [Fine-tuning](finetuning.md) |
+| Evaluation | Design held-out cases, calibrate the judge, compare models, and decide promotion | [Evaluation](evaluation.md) |
+
+The [DFIR Artifact Taxonomy](../reference/taxonomy.md) remains a standalone
+domain reference because every data stage depends on it.
+
+# Core Rules
+
+1. Preserve complete source evidence during collection; compact only prompt
+   views.
+2. Carry stable provenance through every downstream record.
+3. Treat synthesis output as candidates; package only rows marked `filtered`.
+4. Split packages by `source_doc_id` to prevent source leakage.
+5. Use a fresh output directory after changing inputs, prompts, policy, schema,
+   or model settings unless the owning stage explicitly documents safe resume
+   behavior.
+6. Preserve manifests, exact configuration, logs, code revision, and environment
+   information together for reproducibility.
+7. Do not promote a model without an enforcing direct-adapter behavior gate and
+   complete, calibrated, compatible evaluation evidence.
+
+# Choosing Where To Make A Change
+
+| Change | Canonical location |
 |---|---|
-| Stable implementation guidance | `docs/developer/` |
+| Add or modify a source | [Collectors](collectors.md#adding-or-changing-a-source) |
+| Change prompt behavior or add a compactor | [Synthesis](synthesis.md#changing-synthesis) |
+| Add a validator or change quality policy | [Quality Filtering](quality-filtering.md#changing-quality-policy) |
+| Add an export format or response style | [Packaging](packaging.md#changing-packaging) |
+| Change LoRA, trainer, or export settings | [Fine-tuning](finetuning.md#changing-the-training-recipe) |
+| Add benchmark cases or change comparison policy | [Evaluation](evaluation.md#changing-evaluation) |
+| Change a shared schema or phase boundary | [Pipeline Foundations](pipeline-foundations.md#changing-a-contract-or-boundary) |
+
+# Documentation Ownership
+
+| Information | Owner |
+|---|---|
+| Stable implementation and maintenance guidance | `docs/developer/` |
 | User-facing commands and source summaries | `docs/user/` |
-| Current run status and results | [Current State](../current-state/index.md) |
-| Superseded snapshots and run history | [Revisions](../current-state/revisions.md) |
-| Durable project intent and decisions | `project_state/PROJECT_BRIEF.md` and `project_state/DECISIONS.md` |
-| Active work | `project_state/TODO.md` |
-| Future enhancements | [Suggested Improvements](suggested-improvements.md) |
+| Stable domain definitions | `docs/reference/` |
+| Current results and candidate status | [Current State](../current-state/index.md) |
+| Superseded run history | [Revisions](../current-state/revisions.md) |
+| Product intent and durable decisions | `project_state/PROJECT_BRIEF.md` and `project_state/DECISIONS.md` |
+| Pending and deferred work | `project_state/TODO.md` |
+| Run-specific facts | Generated manifests under `data/` |
 
-Do not copy current run counts into implementation pages. Link to Current State
-so status has one owner.
-
----
-
-## **Appendix: Reference map**
-
-These pages are references, not a second reading sequence.
-
-| Need | Reference |
-|---|---|
-| Exact record and manifest fields | [Data Contracts](data-contracts.md) |
-| Source behavior and caching | [Source Internals](source-guide.md) |
-| Configuration fields and limitations | [Configuration](configuration.md) |
-| Quality issue codes and manual review | [Quality Rubric](quality-rubric.md) |
-| Artifact category definitions | [DFIR Artifact Taxonomy](../reference/taxonomy.md) |
-| Operational documentation rules | [Project State Memory](project-state-memory.md) |
-| Superseded project and run context | [Revisions](../current-state/revisions.md) |
-| Every UML view | [Diagrams](diagrams.md) |
-| Prioritized future work | [Suggested Improvements](suggested-improvements.md) |
+Do not copy live row counts, candidate status, or future-work lists into a stage
+guide. Link to their owner instead.

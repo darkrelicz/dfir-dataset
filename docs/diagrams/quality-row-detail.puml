@@ -1,0 +1,23 @@
+@startuml
+title Row Decision - Detail
+
+skinparam shadowing false
+
+start
+:Parse candidate;
+:Resolve raw source;
+:Validate labels, taxonomy,
+mappings, tools, reasoning,
+grounding, and indicators;
+:Compute heuristic score;
+
+if (Reject issue?) then (yes)
+  :rejected;
+elseif (Review issue?) then (yes)
+  :review;
+else (no issues)
+  :filtered;
+endif
+stop
+
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+!pragma layout smetana
+title Pipeline Artifacts - Detail
+
+skinparam shadowing false
+top to bottom direction
+
+artifact "RawDocument JSONL" as Raw
+artifact "accepted.jsonl" as Candidates
+artifact "filtered.jsonl" as Filtered
+artifact "train / validation / test" as Splits
+artifact "adapter + GGUF" as Model
+artifact "scorecards + comparison" as Scores
+
+Raw --> Candidates : synthesis
+Candidates --> Filtered : quality policy
+Filtered --> Splits : transforms + grouped split
+Splits --> Model : LoRA SFT
+Model --> Scores : held-out evaluation
+
+note bottom
+Every stage also writes a stage-scoped manifest.
+Canonical records remain model-neutral until packaging.
+end note
+
+@enduml

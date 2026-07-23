@@ -1,0 +1,24 @@
+@startuml
+title Source-Isolated Split - Detail
+
+skinparam shadowing false
+autonumber
+
+participant Packager
+collections "Records grouped by source_doc_id" as Groups
+database "train.jsonl" as Train
+database "validation.jsonl" as Validation
+database "test.jsonl" as Test
+database "packaging_manifest.json" as Manifest
+
+Packager -> Groups : group records
+Packager -> Groups : seeded shuffle + size ordering
+loop each source-document group
+  Packager -> Groups : choose split with highest remaining ratio
+  Groups --> Train : whole group
+  Groups --> Validation : whole group
+  Groups --> Test : whole group
+end
+Packager -> Manifest : counts, styles, source-doc overlap
+
+@enduml

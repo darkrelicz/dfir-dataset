@@ -1,0 +1,21 @@
+@startuml
+title Model View Transformation - Detail
+
+skinparam shadowing false
+
+start
+:Read filtered canonical response;
+:Assign seeded response style;
+if (Reasoning style?) then (yes)
+  :retain reasoning content;
+  :map reasoning tags to model tags;
+else (direct)
+  :extract final answer only;
+endif
+:remove grounding annotations;
+:validate non-empty output
+and balanced tags;
+:record applied transforms;
+stop
+
+@enduml

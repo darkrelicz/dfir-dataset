@@ -5,7 +5,9 @@
 
 <h1 class="no-index">Source Overview</h1>
 
-> This page documents the high level overview of the current configured sources. For implementation details, schemas, and normalization behavior, see [Source Internals](../developer/source-guide.md).
+> This page documents the high-level overview of the configured sources. For
+> implementation details, contracts, cache behavior, and source onboarding, see
+> [Collectors](../developer/collectors.md).
 
 ---
 

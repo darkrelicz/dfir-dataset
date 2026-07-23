@@ -40,16 +40,8 @@
       "title": "Developer Guide"
     },
     {
-      "src": "developer/phase-maintenance.md",
-      "title": "Phase Maintenance"
-    },
-    {
-      "src": "developer/architecture.md",
-      "title": "Architecture"
-    },
-    {
-      "src": "developer/data-contracts.md",
-      "title": "Data Contracts"
+      "src": "developer/pipeline-foundations.md",
+      "title": "Pipeline Foundations"
     },
     {
       "src": "developer/collectors.md",
@@ -60,68 +52,24 @@
       "title": "Synthesis"
     },
     {
-      "src": "developer/validation-quality.md",
-      "title": "Validation And Quality"
+      "src": "developer/quality-filtering.md",
+      "title": "Quality Filtering"
     },
     {
       "src": "developer/packaging.md",
       "title": "Packaging"
     },
     {
-      "src": "developer/configuration.md",
-      "title": "Configuration"
+      "src": "developer/finetuning.md",
+      "title": "Fine-tuning"
     },
     {
-      "src": "developer/extension-points.md",
-      "title": "Extension Points"
-    },
-    {
-      "src": "developer/adding-sources.md",
-      "title": "Adding Sources"
-    },
-    {
-      "src": "developer/source-guide.md",
-      "title": "Source Internals"
-    },
-    {
-      "src": "developer/prompt-guide.md",
-      "title": "Prompt Guide"
-    },
-    {
-      "src": "developer/quality-rubric.md",
-      "title": "Quality Rubric"
-    },
-    {
-      "src": "developer/coverage-map.md",
-      "title": "Coverage Map"
-    },
-    {
-      "src": "developer/benchmark-design.md",
-      "title": "Benchmark Design"
-    },
-    {
-      "src": "developer/training-and-release.md",
-      "title": "Training And Release"
+      "src": "developer/evaluation.md",
+      "title": "Evaluation"
     },
     {
       "src": "reference/taxonomy.md",
       "title": "DFIR Artifact Taxonomy"
-    },
-    {
-      "src": "developer/diagrams.md",
-      "title": "Diagrams"
-    },
-    {
-      "src": "developer/project-state-memory.md",
-      "title": "Project State Memory"
-    },
-    {
-      "src": "developer/handover.md",
-      "title": "Developer Handover"
-    },
-    {
-      "src": "developer/suggested-improvements.md",
-      "title": "Suggested Improvements"
     }
   ],
   "pagesExclude": [
