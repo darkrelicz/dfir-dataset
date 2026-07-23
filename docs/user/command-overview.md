@@ -7,6 +7,8 @@
 
 > This page documents the available commands. Read to find out about the different configurations available.
 
+--- 
+
 ## Data Collection
 
 Run every configured data collector:
@@ -34,6 +36,8 @@ The manifest contains results from the latest invocation only. In particular, ru
 
 Always inspect every manifest entry's `errors` and `warnings`, confirm that the expected sources are present, and run raw-corpus validation before moving to synthesis.
 
+---
+
 ## Raw Corpus Validation
 
 Validate the complete raw corpus without rendering prompts or calling a model:
@@ -50,6 +54,8 @@ python3 -m scripts.synthesize validate-raw \
 #### Details
 
 The command validates every JSONL row against `collectors.schemas.RawDocument`, detects duplicate `doc_id` values, and reports file, document, issue, and per-source counts. It exits with status 1 when validation fails.
+
+---
 
 ## Prompt Rendering
 
@@ -85,6 +91,8 @@ arguments.
 | `prompts.jsonl` | Structured prompt records, including stable prompt IDs and hashes. |
 | `generation_manifest.json` | API-free render metadata with model set to `none`. |
 | `prompts/*.md` | Optional human-readable prompt files. |
+
+---
 
 ## Gemini Synthesis
 
@@ -134,6 +142,8 @@ Accepted, rejected, and raw-output streams are append-oriented, while the prompt
 
 Use a fresh output directory when the policies, models, or raw data field changes. For an unchanged plan, `--skip-present` can continue a directory, but rejected API calls also count as terminal. Use a new output directory when those prompts must be retried.
 
+---
+
 ## Quality Filtering
 
 Run quality checks against the accepted synthesis candidates:
@@ -178,6 +188,8 @@ Inspect the manifest counts, issue codes, source shares, and audit flags before 
 </md>
 </box>
 
+---
+
 ## Dataset Packaging
 
 Package only the rows that passed the quality filtering stage:
@@ -208,6 +220,8 @@ test.jsonl
 packaging_manifest.json
 ```
 
+---
+
 ## Fine-Tuning
 
 Fine-tune with an explicit versioned configuration in the DGX Sparks Unsloth environment:
@@ -237,6 +251,7 @@ python -m scripts.test_lora
 
 The script has no command-line options. Its adapter path and token limits are constants in `scripts/test_lora.py`; review them before running it. It is a diagnostic generation script, not an enforced promotion gate.
 
+---
 
 ## Evaluation
 
@@ -299,6 +314,7 @@ evaluation_manifest.json
 
 Checkpointing preserves completed work but does not implement resume; rerunning the same output directory starts replacement from the first new checkpoint.
 
+---
 
 ## Evaluation Comparison
 
@@ -324,6 +340,7 @@ python -m scripts.compare_evaluations \
 
 Comparison requires matching benchmark and judge reproducibility metadata and complete scorecards. It writes `comparison.json` and `comparison.md`.
 
+---
 
 ## Recommended Command Order
 
