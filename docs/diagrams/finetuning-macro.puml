@@ -1,0 +1,22 @@
+@startuml
+!pragma layout smetana
+title Fine-tuning - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "Validated Package" as Package
+[Dataset Preflight] as Preflight
+[LoRA SFT] as Train
+[Export Adapter + GGUF] as Export
+[Direct-Adapter Gate] as Gate
+artifact "Evaluation Candidate" as Candidate
+
+Package --> Preflight
+Preflight --> Train
+Train --> Export
+Export --> Gate
+Gate --> Candidate : pass only
+
+@enduml

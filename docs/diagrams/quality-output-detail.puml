@@ -1,0 +1,26 @@
+@startuml
+!pragma layout smetana
+title Quality Output Lifecycle - Detail
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+[Quality invocation] as Run
+artifact "filtered.jsonl" as Filtered
+artifact "review_queue.jsonl" as Review
+artifact "rejected.jsonl" as Rejected
+artifact "spot-check sample\nreplaced" as Sample
+artifact "quality manifest\nreplaced" as Manifest
+
+Run --> Filtered
+Run --> Review
+Run --> Rejected
+Run --> Sample
+Run --> Manifest
+
+note bottom
+Without --append, row files are rebuilt.
+With --append, gates and manifest cover only the current batch.
+end note
+
+@enduml

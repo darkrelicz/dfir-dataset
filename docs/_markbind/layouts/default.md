@@ -42,30 +42,13 @@
   * [Command Overview]({{baseUrl}}/user/command-overview.html)
   * [Source Overview]({{baseUrl}}/user/source-overview.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
-  * Core Design
-    * [Phase Maintenance]({{baseUrl}}/developer/phase-maintenance.html)
-    * [Architecture]({{baseUrl}}/developer/architecture.html)
-    * [Data Contracts]({{baseUrl}}/developer/data-contracts.html)
-    * [Configuration]({{baseUrl}}/developer/configuration.html)
-    * [Diagrams]({{baseUrl}}/developer/diagrams.html)
-  * Pipeline Internals
-    * [Collectors]({{baseUrl}}/developer/collectors.html)
-    * [Synthesis]({{baseUrl}}/developer/synthesis.html)
-    * [Validation And Quality]({{baseUrl}}/developer/validation-quality.html)
-    * [Quality Rubric]({{baseUrl}}/developer/quality-rubric.html)
-    * [Packaging]({{baseUrl}}/developer/packaging.html)
-    * [Benchmark Design]({{baseUrl}}/developer/benchmark-design.html)
-    * [Training And Release]({{baseUrl}}/developer/training-and-release.html)
-  * Extending The Pipeline
-    * [Extension Points]({{baseUrl}}/developer/extension-points.html)
-    * [Adding Sources]({{baseUrl}}/developer/adding-sources.html)
-    * [Source Internals]({{baseUrl}}/developer/source-guide.html)
-    * [Prompt Guide]({{baseUrl}}/developer/prompt-guide.html)
-    * [Coverage Map]({{baseUrl}}/developer/coverage-map.html)
-  * Project Maintenance
-    * [Project State Memory]({{baseUrl}}/developer/project-state-memory.html)
-    * [Developer Handover]({{baseUrl}}/developer/handover.html)
-    * [Suggested Improvements]({{baseUrl}}/developer/suggested-improvements.html)
+  * [Pipeline Foundations]({{baseUrl}}/developer/pipeline-foundations.html)
+  * [Collectors]({{baseUrl}}/developer/collectors.html)
+  * [Synthesis]({{baseUrl}}/developer/synthesis.html)
+  * [Quality Filtering]({{baseUrl}}/developer/quality-filtering.html)
+  * [Packaging]({{baseUrl}}/developer/packaging.html)
+  * [Fine-tuning]({{baseUrl}}/developer/finetuning.html)
+  * [Evaluation]({{baseUrl}}/developer/evaluation.html)
 * Reference :expanded:
   * [DFIR Artifact Taxonomy]({{baseUrl}}/reference/taxonomy.html)
       </site-nav>

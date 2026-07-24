@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Packaging - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "Filtered Rows" as Filtered
+[Build Chat Records] as Build
+[Apply Model View] as Transform
+[Group And Split] as Split
+artifact "Train / Validation / Test" as Output
+
+Filtered --> Build
+Build --> Transform
+Transform --> Split
+Split --> Output
+
+@enduml

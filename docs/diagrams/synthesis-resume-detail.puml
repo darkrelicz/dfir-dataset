@@ -1,0 +1,28 @@
+@startuml
+!pragma layout smetana
+title Synthesis Output Lifecycle - Detail
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+[Current prompt plan] as Plan
+[Each model call] as Call
+[Valid result] as Valid
+[Terminal failure] as Failure
+[Completed invocation] as Complete
+artifact "prompts.jsonl\nreplaced" as Prompts
+artifact "raw_outputs.jsonl\nappended" as Raw
+artifact "accepted.jsonl\nappended" as Accepted
+artifact "rejected.jsonl\nappended" as Rejected
+artifact "generation_manifest.json\nreplaced" as Manifest
+
+Plan --> Prompts
+Call --> Raw
+Valid --> Accepted
+Failure --> Rejected
+Complete --> Manifest
+
+Accepted .. Manifest : may contain older run IDs
+Rejected .. Manifest : skip-present treats as complete
+
+@enduml

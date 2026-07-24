@@ -4,9 +4,9 @@
   "private": true,
   "description": "MarkBind successor guides for the Shepherd DFIR dataset factory.",
   "scripts": {
-    "build": "markbind build",
-    "serve": "markbind serve",
-    "deploy": "markbind deploy"
+    "build": "JAVA_TOOL_OPTIONS=-Djava.awt.headless=true markbind build",
+    "serve": "JAVA_TOOL_OPTIONS=-Djava.awt.headless=true markbind serve",
+    "deploy": "JAVA_TOOL_OPTIONS=-Djava.awt.headless=true markbind deploy"
   },
   "devDependencies": {
     "markbind-cli": "7.1.1"

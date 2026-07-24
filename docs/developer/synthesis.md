@@ -5,10 +5,27 @@
 
 <h1 class="no-index">Synthesis</h1>
 
-Phase 3 converts validated raw documents into candidate instruction-response
-pairs.
+Phase 3 converts validated raw documents into grounded candidate
+instruction-response pairs. This page owns planning, prompts, compaction,
+generation, candidate validation, resume behavior, and prompt-change review.
 
-<puml src="../diagrams/synthesis-sequence.puml" alt="Phase 3 synthesis sequence" width="1000" />
+# Visual Overview
+
+## Macro View
+
+<puml src="../diagrams/synthesis-macro.puml" alt="Macro view of candidate synthesis" width="900" />
+
+## Prompt Planning Detail
+
+<puml src="../diagrams/synthesis-planning-detail.puml" alt="Detailed prompt planning sequence" width="1000" />
+
+## Candidate Generation Detail
+
+<puml src="../diagrams/synthesis-generation-detail.puml" alt="Detailed candidate generation and validation sequence" width="700" />
+
+## Output Lifecycle Detail
+
+<puml src="../diagrams/synthesis-resume-detail.puml" alt="Detailed synthesis output replacement and append behavior" width="900" />
 
 # CLI
 
@@ -79,6 +96,29 @@ Prompt rendering combines:
 * content-type `max_pairs`.
 
 The current config requests one pair per document for every source.
+
+## Canonical Response And Grounding
+
+Every synthesized response uses a model-neutral reasoning contract:
+
+```text
+<reasoning>
+E1: Source-grounded evidence.
+A1 [uses E1]: Analysis of the evidence.
+C1 [uses E1,A1] Confidence: medium. Conclusion.
+CV1 [applies_to C1]: Caveat or corroboration need.
+</reasoning>
+
+Final practitioner-ready answer.
+```
+
+Use `grounding: source_only` only when every substantive claim is visible in
+the prompt source. It must not contain `[GENERAL KNOWLEDGE]`. Use
+`source_plus_general` when any claim relies on outside knowledge, and mark every
+such claim with `[GENERAL KNOWLEDGE]`.
+
+Do not change canonical data to model-native tags such as `<think>`. That
+conversion belongs in [Packaging](packaging.md).
 
 # Deterministic Taxonomy Refs
 
@@ -240,3 +280,94 @@ profiles, prompt templates, compactors, or effective model settings. It also has
 no structured completion status or structured attempted/accepted/rejected/
 skipped counters. Preserve the invoked configuration and code revision
 separately when exact run reproduction is required.
+
+# Changing Synthesis
+
+Prompt policy is layered:
+
+1. `synthesizers/prompts/base.md` defines global behavior and output shape.
+2. `synthesizers/prompts/categories/*.md` defines task behavior.
+3. `synthesizers/prompts/source_types/*.md` defines broad source behavior.
+4. `synthesizers/prompts/content_types/*.md` handles exceptional content types.
+5. `synthesizers/prompts/compactors/` derives a smaller evidence view.
+
+Add a more specific template only when the broader layer cannot express the
+behavior. `configs/source_profiles.yaml` owns template selection, allowed
+categories, thin-source flags, content-type caps, and pilot/subset targets.
+`configs/task_categories.yaml` owns task definitions and distribution targets.
+`configs/synthesis.yaml` owns the Gemini model, generation controls, retries,
+validation retry count, pair counts, prompt-size limit, and circuit breaker.
+
+To add a compactor, create
+`synthesizers/prompts/compactors/<source>_compactor.py` and expose:
+
+```python
+def compact_for_prompt(doc: RawDocument, content: str) -> str:
+    ...
+```
+
+Compactors remove repeated or low-priority blocks without mutating raw data.
+Set `compact_for_prompt.skip_source_truncation = True` only when shared
+head/tail truncation would destroy the main signal. Velociraptor uses this
+because VQL bodies and structured parameter defaults are essential evidence.
+
+Reusable parsing and grounding checks belong in `validation/`; Phase 3
+acceptance policy belongs in `synthesizers/validators.py`.
+
+## Prompt Review
+
+Before an API run, confirm that:
+
+- the requested pair count fits the visible evidence;
+- the category and difficulty fit the document;
+- compacted content retains evidence needed for the task;
+- taxonomy references are a JSON list of valid IDs;
+- thin sources are capped;
+- the prompt bans invented indicators, paths, users, hosts, and event records;
+- the rendered prompt contains no unresolved `$placeholder`;
+- the expected schema still matches `InstructionPair`.
+
+## Validation Ladder
+
+1. Validate the complete raw corpus.
+2. Render prompts without using API budget.
+3. Inspect representative rich, thin, and heavily compacted sources.
+4. Run one representative model-backed prompt into a fresh smoke directory.
+5. Inspect `accepted.jsonl`, `rejected.jsonl`, `raw_outputs.jsonl`, and the
+   manifest.
+6. Run the complete pilot and review every accepted and rejected output.
+7. Record rejection and manual-quality patterns.
+8. Run a subset or full corpus only after the pilot meets the chosen gate.
+
+Use a new output directory after changing a prompt, compactor, profile, task
+policy, raw input, or model. Keep alternate teacher comparisons in separately
+labelled directories. `--skip-present` treats API and validation errors as
+terminal; use a separate retry directory when transient failures should be
+attempted again.
+
+## Frequent Failure Patterns
+
+| Symptom | Likely owner |
+|---|---|
+| Invented paths, hashes, or IOCs | Pair cap, thin-source policy, or grounding prompt |
+| Generic answers | Compactor, `max_source_chars`, or sparse evidence |
+| Rephrased duplicates | Source/content-type pair cap |
+| Broken reasoning links | Format example or validator feedback |
+| Unsupported ATT&CK/ATLAS IDs | Mapping instructions and candidate-ID policy |
+| Grounding field/tag mismatch | Base prompt and regeneration feedback |
+| JSON wrapped in fences or wrong schema | Structured-output setup and local validation |
+| Repeated Gemini `503` responses | Retry policy and a safe `--skip-present` continuation |
+
+# Synthesis Outputs
+
+| File | Meaning |
+|---|---|
+| `prompts.jsonl` | Current complete prompt plan; replaced each invocation |
+| `raw_outputs.jsonl` | Append-only teacher responses |
+| `accepted.jsonl` | Candidates that passed Phase 3 checks; not training data |
+| `rejected.jsonl` | Terminal API or validation failures |
+| `generation_manifest.json` | Latest completed invocation summary |
+
+Preserve all five outputs with the exact configs, prompt assets, compactor code,
+raw input identity, teacher model settings, and logs when reproducibility
+matters.

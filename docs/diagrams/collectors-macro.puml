@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Collection - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+cloud "Public Sources" as Upstream
+[collect_all] as CLI
+[Source Collectors] as Collectors
+artifact "RawDocument JSONL" as Raw
+artifact "Collection Manifest" as Manifest
+
+Upstream --> Collectors
+CLI --> Collectors
+Collectors --> Raw
+Collectors --> Manifest
+
+@enduml

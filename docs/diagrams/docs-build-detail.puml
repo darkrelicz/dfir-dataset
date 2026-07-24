@@ -1,0 +1,23 @@
+@startuml
+title Documentation Build - Detail
+
+skinparam shadowing false
+autonumber
+
+actor Maintainer
+participant GitHub
+participant "GitHub Actions" as Actions
+participant "Node + MarkBind" as MarkBind
+participant "Java + PlantUML" as PlantUML
+database "docs/_site" as Site
+participant "GitHub Pages" as Pages
+
+Maintainer -> GitHub : push docs change
+GitHub -> Actions : trigger workflow
+Actions -> MarkBind : npm ci + npm run build
+MarkBind -> PlantUML : render each referenced .puml
+PlantUML --> MarkBind : non-empty PNG
+MarkBind -> Site : write pages and assets
+Actions -> Pages : upload site artifact
+
+@enduml

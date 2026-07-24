@@ -1,0 +1,20 @@
+@startuml
+title Base And Tuned Comparison - Detail
+
+skinparam shadowing false
+
+start
+:Load base scorecard;
+:Load tuned scorecard;
+:Require complete compatible runs;
+:Compare overall and task deltas;
+:Inspect severe case regressions;
+if (Regression gate and human review pass?) then (yes)
+  :Record promotion candidate;
+else (no)
+  :Reject or revise candidate;
+endif
+:Write comparison decision evidence;
+stop
+
+@enduml

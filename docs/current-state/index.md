@@ -96,7 +96,8 @@ The current raw corpus contains 20,347 documents across 16 collectors.
 
 <box type="info" seamless header="">
 <md>
-Refer to [Source Internals](../developer/source-guide.md) and [Collectors](../developer/collectors.md) for collector specifics.
+Refer to [Collectors](../developer/collectors.md) for collector contracts,
+source behavior, caches, and extension guidance.
 </md>
 </box>
 
@@ -162,7 +163,8 @@ Only filtered rows are eligible to be packaged. Review and rejected rows remain 
 
 <box type="info" seamless header="">
 <md>
-Refer to [Validation and Quality](../developer/validation-quality.md) and [Quality Rubrics](../developer/quality-rubric.md) for quality gate specifics.
+Refer to [Quality Filtering](../developer/quality-filtering.md) for validators,
+decision policy, scoring, review, and coverage audits.
 </md>
 </box>
 
@@ -216,6 +218,9 @@ every generated token as a stop token. It must be parameterized and made to
 enforce bounded termination, repetition, and template-leakage checks across
 greeting and DFIR prompts before any candidate is promoted or evaluated.
 
+Refer to [Fine-tuning](../developer/finetuning.md) for dataset preflight,
+training artifacts, configuration, and the direct-adapter gate.
+
 ---
 
 ## Phase 7: Evaluation Snapshot
@@ -238,6 +243,9 @@ calibration metadata, but does not yet reject the literal placeholder
 The current benchmark fingerprint is `b1fc02a447e4...` and current judge
 protocol is `phase6-judge-v3-target-output`. Existing scorecards do not provide
 a complete compatible result under those inputs.
+
+Refer to [Evaluation](../developer/evaluation.md) for benchmark design, judge
+calibration, checkpoint recovery, comparison, and promotion evidence.
 
 Comparison compatibility covers benchmark and judge identity but not target
 prompt/generation settings, endpoint, prediction-file identity, or actual served

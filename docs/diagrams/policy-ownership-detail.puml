@@ -1,0 +1,26 @@
+@startuml
+!pragma layout smetana
+title Policy Ownership - Detail
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+artifact "docs/reference/taxonomy.md" as Taxonomy
+artifact "configs/source_profiles.yaml" as Profiles
+artifact "configs/task_categories.yaml" as Tasks
+artifact "configs/quality.yaml" as Quality
+artifact "synthesizers/prompts/categories/" as Prompts
+
+[Prompt Planner] as Planner
+[Phase 3 + 4 Validators] as Validators
+[Distribution + Coverage Audits] as Audits
+
+Profiles --> Planner : eligibility + pair caps
+Tasks --> Planner : category + difficulty targets
+Prompts --> Planner : task behavior
+Quality --> Validators : IDs + bounds + gates
+Tasks --> Audits : target distributions
+Quality --> Audits : coverage groups
+Taxonomy .. Quality : human and machine views agree
+
+@enduml

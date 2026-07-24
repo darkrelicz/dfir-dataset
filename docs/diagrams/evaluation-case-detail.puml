@@ -1,0 +1,35 @@
+@startuml
+!pragma layout smetana
+title Benchmark Case Contract - Detail
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class BenchmarkCase {
+  case_id
+  task_type + difficulty
+  prompt + context
+  target_output.format
+}
+
+class ExpectedAnswer {
+  required_concepts
+  forbidden_concepts
+  acceptable_variants
+  gold_labels
+}
+
+class Scoring {
+  max_points
+  rubric
+}
+
+BenchmarkCase *-- ExpectedAnswer : judge-only
+BenchmarkCase *-- Scoring
+
+note bottom of BenchmarkCase
+Only prompt, context, and requested
+output shape reach the target model.
+end note
+
+@enduml

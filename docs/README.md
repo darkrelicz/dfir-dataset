@@ -33,4 +33,5 @@ The current `site.json` uses:
 Change this if the GitHub repository name or hosting shape changes.
 
 PlantUML rendering requires Java. Non-sequence UML diagrams also need Graphviz;
-the workflow installs both.
+the workflow installs both. The npm scripts force Java headless mode so a stale
+or unavailable graphical `DISPLAY` cannot produce empty diagram files.

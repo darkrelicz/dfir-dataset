@@ -1,0 +1,22 @@
+@startuml
+!pragma layout smetana
+title Dataset Gates And Audits - Detail
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+top to bottom direction
+
+artifact "Row decisions" as Rows
+[Near-duplicate gate] as Dedupe
+[Source-balance gate] as Balance
+[Category + difficulty audit] as Distribution
+[Taxonomy coverage audit] as Taxonomy
+artifact "Final decisions" as Final
+
+Rows --> Dedupe : can change status
+Dedupe --> Balance : can change status
+Balance --> Distribution : report only
+Distribution --> Taxonomy : report only
+Taxonomy --> Final
+
+@enduml

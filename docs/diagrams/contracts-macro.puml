@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Data Contracts - Macro View
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+
+class RawDocument
+class PromptRecord
+class InstructionPair
+class QualityDecision
+class PackagedRecord
+
+RawDocument "1" --> "many" PromptRecord
+PromptRecord "1" --> "1..n" InstructionPair
+InstructionPair "1" --> "1" QualityDecision
+QualityDecision "filtered" --> "1" PackagedRecord
+
+@enduml

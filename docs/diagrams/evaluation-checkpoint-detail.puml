@@ -1,0 +1,26 @@
+@startuml
+title Case Scoring And Checkpoint - Detail
+
+skinparam shadowing false
+autonumber
+
+participant Runner
+participant "Target model" as Target
+participant "Local judge" as Judge
+database "Evaluation run" as Output
+
+Runner -> Target : case prompt + context
+Target --> Runner : prediction
+Runner -> Judge : prediction + answer key + rubric
+Judge --> Runner : validated CaseScore
+Runner -> Output : replace predictions
+Runner -> Output : replace case results
+Runner -> Output : replace aggregate scores
+Runner -> Output : replace manifest last
+
+note right of Output
+Four atomic replacements,
+not one transaction.
+end note
+
+@enduml

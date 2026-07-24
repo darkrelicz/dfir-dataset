@@ -1,0 +1,40 @@
+@startuml
+!pragma layout smetana
+title Collector Families - Detail
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+abstract class BaseCollector {
+  collect()
+  manifest()
+  clone cache
+  write JSONL
+}
+
+class "Knowledge + Advisories" as Knowledge
+class "Rules + Tests" as Rules
+class "Artifacts + Tools" as Artifacts
+class "Abuse + Workflows" as Workflows
+
+BaseCollector <|-- Knowledge
+BaseCollector <|-- Rules
+BaseCollector <|-- Artifacts
+BaseCollector <|-- Workflows
+
+note bottom of Knowledge
+ATT&CK, ATLAS, CISA CSAF, KEV
+end note
+note bottom of Rules
+Sigma, Hayabusa, Atomic Red Team
+end note
+note bottom of Artifacts
+Volatility, KAPE, ForensicArtifacts,
+Velociraptor, OSSEM
+end note
+note bottom of Workflows
+LOLBAS/GTFOBins, HijackLibs,
+LOLDrivers, CybersecSkills
+end note
+
+@enduml

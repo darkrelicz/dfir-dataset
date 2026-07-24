@@ -1,0 +1,18 @@
+@startuml
+!pragma layout smetana
+title Documentation Delivery - Macro View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+artifact "Markdown + PlantUML" as Sources
+[MarkBind Build] as Build
+artifact "Static Site" as Site
+cloud "GitHub Pages" as Pages
+
+Sources --> Build
+Build --> Site
+Site --> Pages
+
+@enduml

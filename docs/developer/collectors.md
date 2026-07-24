@@ -5,10 +5,47 @@
 
 <h1 class="no-index">Collectors</h1>
 
-Collectors normalize upstream DFIR/security sources into the shared
-`RawDocument` schema.
+Phase 2 collectors normalize upstream DFIR/security sources into complete,
+traceable `RawDocument` rows. This page owns collector architecture, source
+behavior, cache policy, onboarding, and validation.
 
-<puml src="../diagrams/collector-inheritance.puml" alt="Collector inheritance diagram" width="900" />
+# Visual Overview
+
+## Macro View
+
+<puml src="../diagrams/collectors-macro.puml" alt="Macro view of source collection" width="650" />
+
+## Collector Families
+
+<puml src="../diagrams/collectors-families-detail.puml" alt="Detailed collector families and BaseCollector inheritance" width="1000" />
+
+## Run And Cache Detail
+
+<puml src="../diagrams/collectors-run-detail.puml" alt="Detailed collection run and cache sequence" width="1000" />
+
+# Contract And Configuration
+
+`collectors.schemas.RawDocument` contains:
+
+| Field | Purpose |
+|---|---|
+| `doc_id` | Stable source-specific ID independent of run order |
+| `source` | Stable source key used by downstream profiles |
+| `source_url` | Public upstream or documentation URL |
+| `title` | Human-readable title |
+| `date_collected` / `date_published` | Collection and optional publication dates |
+| `content_type` | Precise downstream policy label |
+| `content_markdown` | Complete normalized source evidence |
+| `metadata` | Useful source-specific structured fields |
+| `word_count` | Count produced by `utils.text.count_words` |
+
+Do not truncate source evidence at collection time. Avoid duplicating the entire
+Markdown body in `metadata`, but preserve structure that prompts, validation, or
+audits may need.
+
+`configs/collection.yaml` owns upstream URLs, clone/cache paths, output
+locations, and collector-specific filters. `configs/source_profiles.yaml` owns
+the later mapping from source/content type to synthesis behavior.
 
 # BaseCollector
 
@@ -266,14 +303,91 @@ Output:
   license, body size, workflow steps, scenarios, tools referenced, and source
   path.
 
-# Adding A Collector
+# Cache And Revision Policy
 
-Use [Extension Points](extension-points.md) for the full change checklist.
-At minimum, add:
+Git-backed collectors use `data/raw/.repos/`; ATT&CK STIX uses
+`data/raw/.cache/enterprise-attack.json`. These caches are generated and ignored
+by Git.
 
-1. source settings in `configs/collection.yaml`;
-2. a collector module under `collectors/`;
-3. a `collector_map` entry in `scripts/collect_all.py`;
-4. source and content-type synthesis profiles;
-5. prompt templates or compactors only when the source behavior needs them;
-6. project-state doc updates when the source changes scope or decisions.
+An existing non-empty clone is reused as-is. The shared helper does not fetch,
+pull, verify the repository, or generally record the collected commit. A normal
+rerun therefore reproduces the local cache, not necessarily current upstream
+content. Refresh the exact source cache deliberately when freshness is required,
+and preserve its commit/feed version with the run. `collected_at` is not an
+upstream revision.
+
+`volatility3_docs` and `mitre_atlas` pin source URLs to the collected commit when
+possible. Most other Git-backed collectors retain configured default-branch
+URLs.
+
+# Adding Or Changing A Source
+
+Before implementation, confirm legal use and attribution, stable access,
+relevant task coverage, expected volume, and whether the source is rich enough
+for the intended prompt count. Sparse sources must be marked or capped rather
+than padded with inferred detail.
+
+Use this naming pattern:
+
+| Item | Pattern |
+|---|---|
+| Module | `collectors/<source_key>.py` |
+| Raw output | `data/raw/<source_key>/<source_key>.jsonl` |
+| Collection config | `configs/collection.yaml` → `<source_key>` |
+| Source profile | `configs/source_profiles.yaml` → `source_profiles.<source_key>` |
+
+Implementation sequence:
+
+1. Add source settings to `configs/collection.yaml`.
+2. Implement `collectors/<source_key>.py` using `BaseCollector`.
+3. Normalize each logical item into one complete `RawDocument`.
+4. Keep `doc_id` stable and unique across the complete corpus.
+5. Preserve useful upstream structure and source revision metadata.
+6. Register the class in `scripts/collect_all.py`.
+7. Add its source/content-type policy to `configs/source_profiles.yaml`.
+8. Add a prompt override or compactor only when existing source-type behavior is
+   insufficient.
+9. Add representative, malformed, and upstream-shape regression fixtures.
+10. Run the source alone, validate the corpus, and render representative prompts.
+
+Recommended content types include `technique_definition`, `atomic_test`,
+`sigma_rule`, `hayabusa_rule`, `artifact_definition`, `event_dictionary`,
+`tool_plugin`, `tool_module`, `vulnerability_catalog`, `case_study`,
+`practitioner_workflow`, and `abuse_database`. Prefer the most precise stable
+label that changes downstream policy.
+
+# Validation Ladder
+
+```bash
+.venv/bin/python -m scripts.collect_all --source <source_key>
+.venv/bin/python -m scripts.synthesize validate-raw --raw-dir data/raw
+.venv/bin/python -m scripts.synthesize render-prompts \
+  --mode pilot \
+  --output-dir data/synthesized/<source_key>_dry_run
+```
+
+Then:
+
+1. inspect the source JSONL for complete Markdown, stable IDs, readable titles,
+   correct types, and useful metadata;
+2. inspect `collection_manifest.json` errors and warnings;
+3. compare expected and actual source volume;
+4. test cache reuse and deliberate refresh behavior;
+5. run the complete collector set when a complete-corpus manifest is required.
+
+A single-source invocation replaces the combined manifest with only that source.
+The command can also return success despite reported collector errors, so exit
+status alone is not acceptance.
+
+# Maintenance Checklist
+
+When changing a parser or upstream contract:
+
+- update the source-specific details above only when stable behavior changed;
+- retain full evidence and backward-stable document IDs;
+- test malformed and changed upstream shapes;
+- validate cross-source ID uniqueness;
+- review downstream prompt compactors and pair caps;
+- record scope or durable policy changes in `project_state/`;
+- keep run-specific counts in manifests and [Current
+  State](../current-state/index.md), not on this page.
