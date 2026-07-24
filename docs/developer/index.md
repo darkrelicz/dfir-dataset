@@ -5,30 +5,30 @@
 
 <h1 class="no-index">Developer Guide</h1>
 
-The developer guide follows the dataset lifecycle. Each stage page owns its
-implementation, configuration, contracts, extension workflow, validation
-ladder, and operational caveats. Commands for running an unchanged pipeline
-belong in the [User Guide](../user/index.md).
+This section details the implementation specifics of each stage. It includes the configuration, contracts, extension workflow, and operational caveats.
+
+To find out more about the different commands available, head down to [User Guide](../user/index.md).
 
 <box type="info" seamless header="Recommended reading order">
 
-Start with [Pipeline Foundations](pipeline-foundations.md), then read only the
-stage you plan to change. Read [Fine-tuning](finetuning.md) and
-[Evaluation](evaluation.md) together when making a promotion decision.
+Start with [Pipeline Foundations](pipeline-foundations.md), then read only the stage you plan to change.
+
+Read [Fine-tuning](finetuning.md) and [Evaluation](evaluation.md) together when making a promotion decision.
 
 </box>
 
-# Local Setup
+---
 
-Prerequisites are Python 3.11 or later, Git, Java and Graphviz for diagrams, a
-Gemini API key for model-backed synthesis, and a CUDA environment for local
-fine-tuning.
+## Local Setup
+
+Prerequisites are `Python 3.11` or later, `Git`, `Java` and `Graphviz` for diagrams, a `Gemini API key` for model-backed synthesis, and a `CUDA` environment for local fine-tuning.
 
 ```bash
 git clone https://github.com/darkrelicz/dfir-dataset.git
 cd dfir-dataset
 python -m venv .venv
 source .venv/bin/activate
+pip install torch==2.10.0+cu130 --index-url https://download.pytorch.org/whl/cu130
 pip install -e ".[dev]"
 ruff check .
 python -m scripts.collect_all --list
@@ -42,11 +42,13 @@ npm install
 npm run serve
 ```
 
-# Lifecycle Map
+---
+
+## Lifecycle Map
 
 | Stage | Responsibility | Guide |
 |---|---|---|
-| Foundations | Architecture, shared contracts, configuration ownership, change discipline, and project memory | [Pipeline Foundations](pipeline-foundations.md) |
+| Foundations | Architecture, shared contracts, manifests, configuration ownership, and contract changes | [Pipeline Foundations](pipeline-foundations.md) |
 | Collection | Normalize and preserve public DFIR source material | [Collectors](collectors.md) |
 | Synthesis | Plan prompts and generate grounded candidate pairs | [Synthesis](synthesis.md) |
 | Quality filtering | Validate, score, deduplicate, audit, and select package-eligible rows | [Quality Filtering](quality-filtering.md) |
@@ -54,27 +56,25 @@ npm run serve
 | Fine-tuning | Train, export, and test a candidate adapter | [Fine-tuning](finetuning.md) |
 | Evaluation | Design held-out cases, calibrate the judge, compare models, and decide promotion | [Evaluation](evaluation.md) |
 
-The [DFIR Artifact Taxonomy](../reference/taxonomy.md) remains a standalone
-domain reference because every data stage depends on it.
+The [DFIR Artifact Taxonomy](../reference/taxonomy.md) is a standalone domain reference.
 
-# Core Rules
+---
 
-1. Preserve complete source evidence during collection; compact only prompt
-   views.
+## Core Rules
+
+1. Preserve complete source evidence during collection; compact only prompt views.
 2. Carry stable provenance through every downstream record.
 3. Treat synthesis output as candidates; package only rows marked `filtered`.
 4. Split packages by `source_doc_id` to prevent source leakage.
-5. Use a fresh output directory after changing inputs, prompts, policy, schema,
-   or model settings unless the owning stage explicitly documents safe resume
-   behavior.
-6. Preserve manifests, exact configuration, logs, code revision, and environment
-   information together for reproducibility.
-7. Do not promote a model without an enforcing direct-adapter behavior gate and
-   complete, calibrated, compatible evaluation evidence.
+5. Use a fresh output directory after changing inputs, prompts, policy, schema, or model settings unless the owning stage explicitly documents safe resume behavior.
+6. Preserve manifests, exact configuration, logs, code revision, and environment information together for reproducibility.
+7. Do not promote a model without an enforcing direct-adapter behavior gate and complete, calibrated, compatible evaluation evidence.
 
-# Choosing Where To Make A Change
+---
 
-| Change | Canonical location |
+## Choosing Where To Make A Change
+
+| Change | Location |
 |---|---|
 | Add or modify a source | [Collectors](collectors.md#adding-or-changing-a-source) |
 | Change prompt behavior or add a compactor | [Synthesis](synthesis.md#changing-synthesis) |
@@ -84,7 +84,9 @@ domain reference because every data stage depends on it.
 | Add benchmark cases or change comparison policy | [Evaluation](evaluation.md#changing-evaluation) |
 | Change a shared schema or phase boundary | [Pipeline Foundations](pipeline-foundations.md#changing-a-contract-or-boundary) |
 
-# Documentation Ownership
+---
+
+## Documentation Ownership
 
 | Information | Owner |
 |---|---|
@@ -96,6 +98,3 @@ domain reference because every data stage depends on it.
 | Product intent and durable decisions | `project_state/PROJECT_BRIEF.md` and `project_state/DECISIONS.md` |
 | Pending and deferred work | `project_state/TODO.md` |
 | Run-specific facts | Generated manifests under `data/` |
-
-Do not copy live row counts, candidate status, or future-work lists into a stage
-guide. Link to their owner instead.

@@ -5,18 +5,16 @@
 
 <h1 class="no-index">Pipeline Foundations</h1>
 
-This page owns the architecture and the rules shared by more than one lifecycle
-stage. Stage-specific behavior belongs in the linked stage guide.
+> This page owns the architecture and rules shared by more than one lifecycle stage.
 
-# Architecture
+---
 
-The repository is a re-runnable dataset factory, not a serving application.
-Versioned YAML and Markdown own durable policy; Python packages implement
-mechanics and validation.
+## Architecture
 
-## Macro View
+<puml src="../diagrams/pipeline-macro.puml" alt="High-level architecture of the DFIR dataset factory" width="900" />
 
-<puml src="../diagrams/pipeline-macro.puml" alt="Macro view of the dataset factory lifecycle" width="350" />
+The repository is a re-runnable dataset pipeline. Versioned YAML files own
+durable policy, and Python packages implement mechanics and validation.
 
 ## Artifact Flow Detail
 
@@ -33,15 +31,6 @@ mechanics and validation.
 | `scripts/` | Thin repository-local module CLIs |
 | `configs/` | Versioned pipeline policy |
 | `project_state/` | Product intent, durable decisions, and pending work |
-
-| Stage | Consumes | Produces |
-|---|---|---|
-| Collection | Public sources and collection policy | Raw JSONL and collection manifest |
-| Synthesis | Raw documents, task policy, profiles, and prompts | Prompt records, candidate pairs, rejections, and generation manifest |
-| Quality filtering | Candidates, raw evidence, references, and quality policy | Filtered, review, and rejected rows plus audits |
-| Packaging | Filtered rows and export policy | Train, validation, and test views plus package manifest |
-| Fine-tuning | Packaged data and a versioned training recipe | Adapter, checkpoints, GGUF, logs, and training manifest |
-| Evaluation | Held-out cases or saved predictions | Predictions, verdicts, scorecards, and comparison report |
 
 # Taxonomy And Policy
 
@@ -124,12 +113,11 @@ change.
 
 # Cross-Cutting Constraints
 
+The [Developer Guide](index.md#core-rules) summarizes the core pipeline
+invariants. Additional cross-stage constraints are:
+
 - Shared checks belong in `validation/`; stage wrappers decide severity and
   policy.
-- Raw documents remain complete. Prompt compaction is a derived view.
-- Candidate generation is not a quality decision.
-- Review and rejected rows are never package inputs.
-- Package splits are grouped by `source_doc_id`.
 - Benchmark cases remain separate from collection, synthesis, and training.
 - Teacher-model changes use separately labelled jobs; do not silently fall back
   within the canonical run.
@@ -138,25 +126,7 @@ change.
 - Evaluation compatibility does not fingerprint every serving parameter.
   Preserve full target and judge configuration plus server identity separately.
 
-# Change Discipline
-
-For any stage change:
-
-1. Read its guide and identify the code, configuration, contract, and output
-   lifecycle involved.
-2. Make the smallest policy or implementation change.
-3. Start with deterministic unit or schema checks.
-4. Validate existing artifacts before generating new ones.
-5. Use a dry run, then a representative smoke run, then a reviewed pilot before
-   an expensive full run.
-6. Inspect rejected rows, warnings, distributions, and manifests—not only exit
-   status.
-7. Use a fresh output directory when the stage guide does not explicitly
-   guarantee safe reuse.
-8. Update stable documentation and durable project state only when their owned
-   facts changed.
-
-## Changing A Contract Or Boundary
+# Changing A Contract Or Boundary
 
 When a field or phase boundary changes:
 
@@ -168,32 +138,12 @@ When a field or phase boundary changes:
 6. Rebuild the documentation and run at least one end-to-end fixture through
    the affected boundary.
 
-# Project Memory And Handover
+# Reproducible Handover
 
-The project must not rely on chat history. Use:
-
-| File | Content |
-|---|---|
-| `project_state/PROJECT_BRIEF.md` | Product intent, current state, release gate, and success criteria |
-| `project_state/DECISIONS.md` | Durable choices and accepted constraints |
-| `project_state/TODO.md` | Pending and deferred work |
-| `project_state/DESIGN_SYSTEM.md` | Documentation and CLI presentation rules |
-| [Current State](../current-state/index.md) | Current run and candidate facts |
-| [Revisions](../current-state/revisions.md) | Superseded run history |
-
-A handover packet should identify the exact raw, synthesis, quality, package,
-training, and evaluation manifests; the configs used; code and environment
-versions; artifact hashes; unresolved risks; and the next action. It must also
-state these invariants:
-
-- `accepted.jsonl` is candidate data; `filtered.jsonl` is the first
-  package-eligible data.
-- canonical responses use `<reasoning>`; model-specific conversion happens at
-  packaging.
-- package splits must remain source-document isolated.
-- a completed training loop is not a release decision.
-- direct-adapter termination and behavior checks must enforce failure.
-- only complete, calibrated, compatible scorecards can support promotion.
+Use the ownership map in the [Developer Guide](index.md#documentation-ownership)
+instead of duplicating live state in a handover. Preserve the exact raw,
+synthesis, quality, package, training, and evaluation manifests; configs; code
+and environment versions; artifact hashes; unresolved risks; and next action.
 
 Do not commit secrets. Keep `GEMINI_API_KEY`, DGX access, and other credentials
 in the environment or an approved secret store.

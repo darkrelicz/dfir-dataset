@@ -1,26 +1,29 @@
 @startuml
 !pragma layout smetana
-title Dataset Factory - Macro View
+title High-Level Architecture
 
 skinparam componentStyle rectangle
 skinparam shadowing false
-top to bottom direction
+left to right direction
 
 actor Maintainer
-[Collect] as Collect
-[Synthesize] as Synthesize
-[Quality Filter] as Quality
-[Package] as Package
-[Fine-tune] as Train
-[Evaluate] as Evaluate
-[Promotion Decision] as Promote
 
-Maintainer --> Collect
-Collect --> Synthesize : raw evidence
-Synthesize --> Quality : candidates
-Quality --> Package : filtered rows
-Package --> Train : isolated splits
-Train --> Evaluate : gated candidate
-Evaluate --> Promote : comparison evidence
+package "DFIR Dataset Repository" {
+  [CLI\nscripts/] as CLI
+  [Policy\nconfigs/ + taxonomy/] as Control
+  [Pipeline core\ncollect · synthesize · validate\nfilter · package · train · evaluate] as Services
+  database "Artifacts\ndata/" as Artifacts
+  [Docs and state\ndocs/ + project_state/] as Knowledge
+}
+
+cloud "External systems\nDFIR sources · Gemini · local runtimes" as External
+
+Maintainer --> CLI
+Maintainer --> Control
+Maintainer --> Knowledge
+CLI --> Services
+Control --> Services
+Services <--> Artifacts
+Services <--> External
 
 @enduml
