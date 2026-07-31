@@ -45,3 +45,7 @@ python -m scripts.collect_all --list
 - `docs/`: Canonical MarkBind documentation, including the taxonomy reference
 - `configs/`: Pipeline configuration including taxonomy IDs
 - `data/`: Output directory for generated artifacts (ignored by git)
+
+## User and Developer Guides
+
+For project documentations, please refer to [User Guide](http://tzxiang.devdfir-dataset/user/index.html) and [Developer Guide](http://tzxiang.dev/dfir-dataset/developer/index.html)
