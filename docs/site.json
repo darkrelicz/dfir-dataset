@@ -40,10 +40,6 @@
       "title": "Developer Guide"
     },
     {
-      "src": "developer/pipeline-foundations.md",
-      "title": "Pipeline Foundations"
-    },
-    {
       "src": "developer/collectors.md",
       "title": "Collectors"
     },

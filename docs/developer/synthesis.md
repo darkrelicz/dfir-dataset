@@ -5,29 +5,91 @@
 
 <h1 class="no-index">Synthesis</h1>
 
-Phase 3 converts validated raw documents into grounded candidate
-instruction-response pairs. This page owns planning, prompts, compaction,
-generation, candidate validation, resume behavior, and prompt-change review.
+Synthesis converts validated `RawDocument` rows into grounded candidate
+`InstructionPair` rows. It is a two-part pipeline: deterministic prompt planning
+followed by model-backed generation and local acceptance. This page describes
+the architecture, planning and prompt implementation, model client, generation
+loop, validation, state, resume behavior, and extension workflow.
 
-# Visual Overview
-
-## Macro View
+## Architecture
 
 <puml src="../diagrams/synthesis-macro.puml" alt="Macro view of candidate synthesis" width="900" />
 
-## Prompt Planning Detail
+Synthesis preserves a strict boundary between deterministic inputs and
+probabilistic output:
+
+- the planner owns document selection, category, difficulty, pair count,
+  taxonomy suggestions, prompt content, and prompt identity;
+- the teacher model proposes instructions, responses, confidence, technique
+  IDs, tools, and grounding declarations;
+- local validation restores deterministic provenance and either accepts the
+  complete requested list or rejects the prompt.
+
+Accepted synthesis rows are still candidates. Only quality rows marked
+`filtered` may become training data.
+
+### Planning Flow
 
 <puml src="../diagrams/synthesis-planning-detail.puml" alt="Detailed prompt planning sequence" width="1000" />
 
-## Candidate Generation Detail
+Planning is deterministic for the same raw corpus, configuration, profile file,
+prompt assets, compactor code, and repository version:
+
+1. validate and load `data/raw/*/*.jsonl`;
+2. select pilot, subset, or full documents;
+3. assign one allowed task category and a difficulty to each document;
+4. determine the requested pair count;
+5. derive a prompt-only compacted evidence view;
+6. combine base, category, source-type, and optional content-type templates;
+7. attach deterministic taxonomy references;
+8. construct one `PromptRecord` and prompt hash per selected document.
+
+### Generation Flow
 
 <puml src="../diagrams/synthesis-generation-detail.puml" alt="Detailed candidate generation and validation sequence" width="700" />
 
-## Output Lifecycle Detail
+Generation processes prompt records sequentially. For each non-skipped prompt,
+the runner calls the model with API retries, appends the raw response, validates
+the complete JSON array, optionally asks the model to regenerate with validator
+feedback, then appends accepted pairs or one terminal rejection. A subset/full
+rejection-rate circuit breaker can stop the loop early.
 
-<puml src="../diagrams/synthesis-resume-detail.puml" alt="Detailed synthesis output replacement and append behavior" width="900" />
+There is no concurrent request scheduler, provider plugin discovery, database,
+or transactional job queue. `synthesizers.runner` owns orchestration and writes
+JSONL incrementally.
 
-# CLI
+### Component Ownership
+
+| Component | Responsibility |
+|---|---|
+| `scripts/synthesize.py` | Thin CLI and exit-code handoff |
+| `synthesizers/io.py` | Discover and load raw JSONL documents |
+| `synthesizers/sampler.py` | Source/content/richness-aware pilot and subset selection |
+| `synthesizers/planner.py` | Selection orchestration and category/difficulty assignment |
+| `synthesizers/source_profiles.py` | Load fixed source/content-type profiles and sample targets |
+| `synthesizers/prompt_policy.py` | Validate category, difficulty, and template policy |
+| `synthesizers/prompt_builder.py` | Pair caps, compaction, taxonomy suggestions, and prompt assembly |
+| `synthesizers/prompts/` | Layered prompt assets and source-specific compactors |
+| `synthesizers/clients/` | Provider-neutral protocol and Gemini SDK adapter |
+| `synthesizers/validators.py` | Raw-corpus and generated-pair acceptance |
+| `synthesizers/run_state.py` | Prompt hashes, run fields, and skip-present discovery |
+| `synthesizers/runner.py` | Dry-run rendering, generation, retries, persistence, manifests, and circuit breaker |
+| `validation/` | Reusable reasoning, grounding, indicator, mapping, and taxonomy primitives |
+
+### Contracts
+
+| Contract | Defined in | Role |
+|---|---|---|
+| `RawDocument` | `collectors/schemas.py` | Complete source input |
+| `PromptRecord` | `synthesizers/schemas.py` | Deterministic plan for one source document/model call |
+| `InstructionPair` | `synthesizers/schemas.py` | Strict model-neutral candidate; extra fields forbidden |
+| `ModelResponse` / `ModelClient` | `synthesizers/clients/base.py` | Provider boundary used by retry/orchestration code |
+| `GeneratedPairValidation` | `synthesizers/schemas.py` | Accepted parsed pairs plus structured validation issues |
+| `GenerationManifest` | `synthesizers/schemas.py` | Latest invocation identity and high-level plan metadata |
+
+---
+
+## CLI And Entrypoints
 
 `scripts.synthesize` exposes:
 
@@ -37,9 +99,34 @@ python -m scripts.synthesize render-prompts
 python -m scripts.synthesize run
 ```
 
-The CLI stays thin. Execution lives in `synthesizers.runner`.
+| Command | Implementation | External model calls | Primary output |
+|---|---|---|---|
+| `validate-raw` | `runner.print_validation` → `validators.validate_raw_corpus` | No | Console report and exit code |
+| `render-prompts` | `runner.write_prompt_render` | No | `prompts.jsonl`, optional prompt Markdown, dry-run manifest |
+| `run` | `runner.run_generation` | Yes | Prompt plan, raw responses, accepted/rejected rows, manifest |
 
-# Document Selection
+The CLI accepts alternate raw, synthesis-config, task-config, quality-config,
+and output paths where relevant. Source profiles remain fixed at
+`configs/source_profiles.yaml`.
+
+---
+
+## Planning Implementation
+
+### Raw Corpus Loading And Validation
+
+`synthesizers.io.raw_jsonl_paths` discovers only
+`<raw_dir>/*/*.jsonl`, sorted by path. `load_raw_documents` loads every row into
+memory as `RawDocument`.
+
+`validate_raw_corpus` checks that files and rows exist, every line parses as a
+`RawDocument`, and `doc_id` values are unique across all sources. It reports
+source counts. It does not check evidence completeness, `word_count`
+correctness, source-profile coverage, or prompt suitability. `run` refuses to
+start when this validation reports an issue; `render-prompts` currently builds
+the plan without first calling this explicit corpus validation.
+
+### Document Selection
 
 `synthesizers.planner.select_documents` loads raw documents and selects by mode:
 
@@ -59,7 +146,7 @@ For example, the current `--mode pilot --limit 10` plan contains ten
 use a small global limit when the review requires cross-source representation;
 instead, run the complete pilot plan or change the configured per-source targets.
 
-# Category Assignment
+### Category Assignment
 
 `assign_categories` reads target weights from
 `configs/task_categories.yaml`. It balances planned pair counts against target
@@ -68,12 +155,16 @@ distribution while respecting each source profile's allowed categories.
 Assignment order prioritizes documents with fewer allowed categories, then uses
 stable hash jitter from `utils.text.stable_index`.
 
-# Difficulty Assignment
+### Difficulty Assignment
 
 `assign_difficulties` uses configured difficulty targets and a stable hash of
 `doc_id`. Current labels are `junior`, `mid`, and `senior`.
 
-# PromptBuilder
+---
+
+## Prompt Implementation
+
+### `PromptBuilder`
 
 `synthesizers.prompt_builder.PromptBuilder` builds one `PromptRecord` per raw
 document.
@@ -97,7 +188,13 @@ Prompt rendering combines:
 
 The current config requests one pair per document for every source.
 
-## Canonical Response And Grounding
+The prompt ID is
+`prompt-<source_doc_id>-<category>-<difficulty>`. `run_state.prompt_hash`
+hashes only the final rendered prompt text. Model name, generation settings,
+quality taxonomy config, and source bytes are not independently included in the
+hash.
+
+#### Canonical Response And Grounding
 
 Every synthesized response uses a model-neutral reasoning contract:
 
@@ -120,7 +217,7 @@ such claim with `[GENERAL KNOWLEDGE]`.
 Do not change canonical data to model-native tags such as `<think>`. That
 conversion belongs in [Packaging](packaging.md).
 
-# Deterministic Taxonomy Refs
+### Deterministic Taxonomy Refs
 
 `PromptBuilder` suggests one to three taxonomy IDs using:
 
@@ -135,7 +232,7 @@ These refs are stored on `PromptRecord` and rendered into the prompt as JSON.
 Phase 3 validation later overwrites generated `taxonomy_refs` from the prompt
 record.
 
-# Prompt Compaction
+### Prompt Compaction
 
 Prompt-time compactors live under `synthesizers/prompts/compactors/`.
 
@@ -160,12 +257,22 @@ Current source-specific compactors:
 | `loldrivers` | Preserve commands, hashes, detections, CVEs, and selected samples. |
 | `hijacklibs` | Preserve DLL paths, hijack conditions, hashes, and privilege/elevation flags. |
 
-# Gemini Client
+---
+
+## Generation Implementation
+
+### Client Boundary And `GeminiClient`
+
+`synthesizers.clients.base.ModelClient` is a structural protocol with one
+`generate(PromptRecord) -> ModelResponse` method. The runner's API retry logic
+depends on this protocol, but `run_generation` currently imports and constructs
+`GeminiClient` directly rather than selecting a provider from configuration.
 
 `synthesizers.clients.gemini.GeminiClient`:
 
 * requires `GEMINI_API_KEY` by default;
-* supports `generate_content` / `models.generate_content`;
+* accepts `generate_content` and `models.generate_content` as configuration
+  labels; both use `client.models.generate_content`;
 * uses `response_mime_type="application/json"`;
 * supplies a sanitized schema for `list[InstructionPair]`;
 * maps `temperature` and `thinking_budget`;
@@ -174,7 +281,30 @@ Current source-specific compactors:
 The client strips unsupported `additionalProperties` keys from the response
 schema but keeps strict local Pydantic validation.
 
-# Run State
+### Runner Loop
+
+`synthesizers.runner.run_generation`:
+
+1. loads `.env` values only when the key is not already present in the process
+   environment;
+2. validates circuit-breaker arguments and the complete raw corpus;
+3. loads synthesis, task, and quality configs;
+4. verifies the configured API-key environment variable;
+5. builds the complete prompt plan and replaces `prompts.jsonl`;
+6. resolves matching terminal prompts when `--skip-present` is enabled;
+7. constructs `GeminiClient`, retry settings, and valid taxonomy IDs;
+8. processes remaining prompt records one at a time;
+9. appends every successful model response before local validation;
+10. appends one row per accepted pair or one terminal rejection per prompt;
+11. checks the subset/full circuit breaker after each attempted prompt;
+12. writes the final manifest only after leaving the loop.
+
+An API retry repeats the same prompt after exponential backoff. A validation
+retry creates a new temporary prompt ID with validator feedback, but persisted
+raw/accepted/rejected rows retain the original prompt's run fields so resume
+logic still treats it as one planned prompt.
+
+### Run State
 
 `synthesizers.run_state` owns:
 
@@ -193,7 +323,9 @@ on a later invocation when its prompt hash and model still match. Completion is
 detected from the presence of a matching row; it does not verify that all
 `pairs_requested` rows were appended before an interruption.
 
-# Output Directory And Resume Semantics
+### Output Directory And Resume Semantics
+
+<puml src="../diagrams/synthesis-resume-detail.puml" alt="Detailed synthesis output replacement and append behavior" width="900" />
 
 Synthesis output files do not all have the same replacement behavior:
 
@@ -221,7 +353,7 @@ interruption because they are appended incrementally, but an interrupted final
 line may be incomplete and no current manifest is written until the loop ends.
 Inspect and repair JSONL integrity before continuing an interrupted directory.
 
-# Generated-Output Validation
+### Generated-Output Validation
 
 `synthesizers.validators.validate_generated_pairs` checks:
 
@@ -238,7 +370,7 @@ Inspect and repair JSONL integrity before continuing an interrupted directory.
 It normalizes category, difficulty, source, source doc ID, and taxonomy refs
 from the prompt record before schema validation.
 
-# Retry And Circuit Breaker
+### Retry And Circuit Breaker
 
 API retries use exponential backoff with jitter from `configs/synthesis.yaml`.
 
@@ -246,14 +378,18 @@ Validation failures can trigger a regeneration prompt that lists validator
 errors and hard output requirements.
 
 For `subset` and `full` modes, the rejection circuit breaker can stop a run
-after the minimum attempted prompt count when rejection rate exceeds the
+after the minimum attempted prompt count when rejection rate reaches the
 configured threshold. It is inactive in pilot mode.
 
 A circuit-breaker stop returns exit code 2 and writes the final manifest with a
 free-form `Stopped early` note. Ordinary API or validation rejections do not by
 themselves make the command fail.
 
-# Configuration Boundaries
+---
+
+## Configuration And Reproducibility
+
+### Configuration Boundaries
 
 The `output` mapping in `configs/synthesis.yaml` is currently descriptive and is
 not read by the runner. `--output-dir` controls the destination, while JSONL and
@@ -271,7 +407,7 @@ unknown or misspelled placeholder remains literally in the prompt instead of
 failing preflight. Dry-run prompt review must check for unresolved `$...`
 placeholders.
 
-# Generation Manifest Scope
+### Generation Manifest Scope
 
 `GenerationManifest` records the run ID, mode, model, creation time, selected
 document and prompt counts, output directory, synthesis-config path, and notes.
@@ -281,7 +417,25 @@ no structured completion status or structured attempted/accepted/rejected/
 skipped counters. Preserve the invoked configuration and code revision
 separately when exact run reproduction is required.
 
-# Changing Synthesis
+---
+
+## Changing Synthesis
+
+Start with the narrowest owner:
+
+| Intended change | Primary owner | Coupled review |
+|---|---|---|
+| Pilot/subset source counts | `configs/source_profiles.yaml` | `synthesizers/sampler.py`, representative plan |
+| Category/difficulty targets | `configs/task_categories.yaml` | `synthesizers/planner.py`, quality distribution gates |
+| Per-source pair count or prompt-size limit | `configs/synthesis.yaml` | Thin-source/content caps and prompt review |
+| Global/category/source/content instructions | Narrowest template under `synthesizers/prompts/` | `PromptBuilder`, validators, rendered prompt |
+| Source evidence compaction | `synthesizers/prompts/compactors/` | Grounding coverage and `max_source_chars` |
+| Taxonomy suggestions | `synthesizers/prompt_builder.py` | Taxonomy reference and quality config |
+| Provider or structured-output behavior | `synthesizers/clients/` and construction in `runner.py` | Retry behavior, response metadata, local validation |
+| API/validation retry or circuit breaker | `configs/synthesis.yaml`, `synthesizers/runner.py`, CLI flags | Resume and rejection semantics |
+| Phase 3 acceptance | `synthesizers/validators.py` and reusable `validation/` primitives | Regeneration feedback and Phase 4 policy |
+| Prompt identity or resume behavior | `synthesizers/run_state.py` | Existing output compatibility and manifest scope |
+| File lifecycle or manifest fields | `synthesizers/runner.py`, `synthesizers/schemas.py` | Interrupted runs, downstream quality input |
 
 Prompt policy is layered:
 
@@ -314,7 +468,7 @@ because VQL bodies and structured parameter defaults are essential evidence.
 Reusable parsing and grounding checks belong in `validation/`; Phase 3
 acceptance policy belongs in `synthesizers/validators.py`.
 
-## Prompt Review
+### Prompt Review
 
 Before an API run, confirm that:
 
@@ -327,7 +481,7 @@ Before an API run, confirm that:
 - the rendered prompt contains no unresolved `$placeholder`;
 - the expected schema still matches `InstructionPair`.
 
-## Validation Ladder
+### Validation Ladder
 
 1. Validate the complete raw corpus.
 2. Render prompts without using API budget.
@@ -345,7 +499,7 @@ labelled directories. `--skip-present` treats API and validation errors as
 terminal; use a separate retry directory when transient failures should be
 attempted again.
 
-## Frequent Failure Patterns
+### Frequent Failure Patterns
 
 | Symptom | Likely owner |
 |---|---|
@@ -358,7 +512,9 @@ attempted again.
 | JSON wrapped in fences or wrong schema | Structured-output setup and local validation |
 | Repeated Gemini `503` responses | Retry policy and a safe `--skip-present` continuation |
 
-# Synthesis Outputs
+---
+
+## Output Handover
 
 | File | Meaning |
 |---|---|
