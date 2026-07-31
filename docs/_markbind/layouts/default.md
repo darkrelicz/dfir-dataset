@@ -42,7 +42,6 @@
   * [Command Overview]({{baseUrl}}/user/command-overview.html)
   * [Source Overview]({{baseUrl}}/user/source-overview.html)
 * [Developer Guide]({{baseUrl}}/developer/index.html) :expanded:
-  * [Pipeline Foundations]({{baseUrl}}/developer/pipeline-foundations.html)
   * [Collectors]({{baseUrl}}/developer/collectors.html)
   * [Synthesis]({{baseUrl}}/developer/synthesis.html)
   * [Quality Filtering]({{baseUrl}}/developer/quality-filtering.html)
