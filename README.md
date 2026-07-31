@@ -48,4 +48,4 @@ python -m scripts.collect_all --list
 
 ## User and Developer Guides
 
-For project documentations, please refer to [User Guide](https://tzxiang.devdfir-dataset/user/index.html) and [Developer Guide](https://tzxiang.dev/dfir-dataset/developer/index.html)
+For project documentations, please refer to [User Guide](https://tzxiang.dev/dfir-dataset/user/index.html) and [Developer Guide](https://tzxiang.dev/dfir-dataset/developer/index.html)
