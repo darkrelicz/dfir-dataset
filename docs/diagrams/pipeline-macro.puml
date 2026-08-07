@@ -1,6 +1,5 @@
 @startuml
 !pragma layout smetana
-title High-Level Architecture
 
 skinparam componentStyle rectangle
 skinparam shadowing false
@@ -9,14 +8,14 @@ left to right direction
 actor Maintainer
 
 package "DFIR Dataset Repository" {
-  [CLI\nscripts/] as CLI
-  [Policy\nconfigs/ + taxonomy/] as Control
-  [Pipeline core\ncollect · synthesize · validate\nfilter · package · train · evaluate] as Services
-  database "Artifacts\ndata/" as Artifacts
-  [Docs and state\ndocs/ + project_state/] as Knowledge
+  [**CLI**\nscripts/] as CLI
+  [**Policy**\nconfigs/ + taxonomy/] as Control
+  [**Pipeline**\ncollect · synthesize · validate ·\nfilter · package · train · evaluate] as Services
+  database "**Artifacts**\ndata/" as Artifacts
+  [**Docs & state**\ndocs/ + project_state/] as Knowledge
 }
 
-cloud "External systems\nDFIR sources · Gemini · local runtimes" as External
+cloud "**External resources**\nData sources · LLM APIs · local runtimes" as External
 
 Maintainer --> CLI
 Maintainer --> Control
