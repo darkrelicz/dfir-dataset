@@ -44,7 +44,7 @@ python -m scripts.collect_all --list
 - `evaluation/`: Phase 6 benchmarking, scoring, and comparison helpers
 - `docs/`: Canonical MarkBind documentation, including the taxonomy reference
 - `configs/`: Pipeline configuration including taxonomy IDs
-- `data/`: Output directory for generated artifacts (ignored by git)
+- `data/`: Output directory for generated artifacts (not tracked by git)
 
 ## User and Developer Guides
 
